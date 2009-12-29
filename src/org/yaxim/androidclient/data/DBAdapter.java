@@ -25,11 +25,16 @@ public class DBAdapter extends SQLiteOpenHelper {
 		onCreate(db);
 	}
 
-	public void initialize(Context context) {
+	public static void initialize(Context context) {
 		if (instance == null) {
 			instance = new DBAdapter(context, DATABASE_NAME, null, DATABASE_VERSION);
 			mSQLiteDatabase = instance.getWritableDatabase();
 		}
+	}
+	
+	public static final DBAdapter getInstance(Context context) {
+		initialize(context);
+		return instance;
 	}
 
 	public SQLiteDatabase getDatabase() {
