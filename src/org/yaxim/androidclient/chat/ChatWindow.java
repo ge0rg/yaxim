@@ -88,33 +88,20 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		bindXMPPService();
 	}
 
-	private void processMessageQueue() {
-		List<String> queue = mServiceAdapter.pullMessagesForContact(mJabberID);
-		for (String message : queue) {
-			processIncomingMessageInHandler(mJabberID, message);
-		}
-	}
-
 	private void createUICallback() {
 		mChatCallback = new IXMPPChatCallback.Stub() {
 
-			public void newMessage(String from, String message)
+			public void newMessage()
 					throws RemoteException {
-				processIncomingMessageInHandler(from, message);
+				refreshMessages();
 			}
 		};
 	}
 
-	private void processIncomingMessageInHandler(String from, String message) {
-		final ChatItem newChatItem = new ChatItem(GetDateTimeHelper.setDate()
-				+ ": " + from, message);
-		mHandler.post(new Runnable() {
-			public void run() {
-				mAdapterMap.get(mJabberID).add(newChatItem);
-			}
-		});
+	private void refreshMessages() {
+		// TODO: pull messages from database.
 	}
-
+	
 	private void registerXMPPService() {
 		Log.i(TAG, "called startXMPPService()");
 		mServiceIntent = new Intent(this, XMPPService.class);
@@ -129,7 +116,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				mServiceAdapter = new XMPPChatServiceAdapter(
 						IXMPPChatService.Stub.asInterface(service), mJabberID);
 				mServiceAdapter.registerUICallback(mChatCallback);
-				processMessageQueue();
+				refreshMessages();
 			}
 
 			public void onServiceDisconnected(ComponentName name) {

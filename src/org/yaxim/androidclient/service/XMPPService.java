@@ -136,12 +136,12 @@ public class XMPPService extends GenericService {
 			}
 
 			public void sendMessage(String user, String message)
-					throws RemoteException {
+			throws RemoteException {
 				mSmackable.sendMessage(user, message);
 			}
 
 			public List<String> pullMessagesForContact(String jabberID)
-					throws RemoteException {
+			throws RemoteException {
 				if (mSmackable != null) {
 					return mSmackable.pullMessagesForContact(jabberID);
 				}
@@ -162,13 +162,13 @@ public class XMPPService extends GenericService {
 		mService2RosterConnection = new IXMPPRosterService.Stub() {
 
 			public void registerRosterCallback(IXMPPRosterCallback callback)
-					throws RemoteException {
+			throws RemoteException {
 				if (callback != null)
 					mRosterCallbacks.register(callback);
 			}
 
 			public void unregisterRosterCallback(IXMPPRosterCallback callback)
-					throws RemoteException {
+			throws RemoteException {
 				if (callback != null)
 					mRosterCallbacks.unregister(callback);
 			}
@@ -183,7 +183,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void setStatus(String status, String statusMsg)
-					throws RemoteException {
+			throws RemoteException {
 				if (status.equals("offline")) {
 					doDisconnect();
 					return;
@@ -192,7 +192,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void addRosterItem(String user, String alias, String group)
-					throws RemoteException {
+			throws RemoteException {
 				try {
 					mSmackable.addRosterItem(user, alias, group);
 				} catch (YaximXMPPException e) {
@@ -217,7 +217,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void moveRosterItemToGroup(String user, String group)
-					throws RemoteException {
+			throws RemoteException {
 				try {
 					mSmackable.moveRosterItemToGroup(user, group);
 				} catch (YaximXMPPException e) {
@@ -228,7 +228,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void renameRosterItem(String user, String newName)
-					throws RemoteException {
+			throws RemoteException {
 				try {
 					mSmackable.renameRosterItem(user, newName);
 				} catch (YaximXMPPException e) {
@@ -243,12 +243,12 @@ public class XMPPService extends GenericService {
 			}
 
 			public List<RosterItem> getRosterEntriesByGroup(String group)
-					throws RemoteException {
+			throws RemoteException {
 				return mSmackable.getRosterEntriesByGroup(group);
 			}
 
 			public void renameRosterGroup(String group, String newGroup)
-					throws RemoteException {
+			throws RemoteException {
 				mSmackable.renameRosterGroup(group, newGroup);
 			}
 
@@ -383,7 +383,7 @@ public class XMPPService extends GenericService {
 
 	private void handleIncomingMessage(String toJID, String fromJID, String message) {
 		Log.d(TAG, "Adding Incoming Message to DB");
-		
+
 		DBAdapter db = DBAdapter.getInstance(this);
 		Chat chat = new Chat();
 		chat.setId(0);
@@ -392,8 +392,20 @@ public class XMPPService extends GenericService {
 		chat.setWithJID(fromJID);
 		chat.setRead(0);
 		chat.setMessage(message);
-		
+
 		chat.setSQLiteDatabase(db.getDatabase());
 		chat.save();
+
+		RemoteCallbackList<IXMPPChatCallback> chatCallbackList = mChatCallbacks.get(fromJID);
+		int broadCastItems = chatCallbackList.beginBroadcast();
+
+		for (int i = 0; i < broadCastItems; i++) {
+			try {
+				chatCallbackList.getBroadcastItem(i).newMessage();
+			} catch (RemoteException e) {
+				Log.e(TAG, "caught RemoteException: " + e.getMessage());
+			}
+		}
+		chatCallbackList.finishBroadcast();
 	}
 }
