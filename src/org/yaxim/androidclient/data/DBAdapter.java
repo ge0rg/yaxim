@@ -17,11 +17,11 @@ public class DBAdapter extends SQLiteOpenHelper {
 	}
 
 	public void onCreate(SQLiteDatabase db) {
-		db.execSQL(Chats.SQL_CREATE_TABLE);
+		db.execSQL(Chat.SQL_CREATE_TABLE);
 	}
 
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
-		db.execSQL("DROP TABLE IF EXISTS " + Chats.SQL_CREATE_TABLE);
+		db.execSQL("DROP TABLE IF EXISTS " + Chat.SQL_CREATE_TABLE);
 		onCreate(db);
 	}
 

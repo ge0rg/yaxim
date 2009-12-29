@@ -4,7 +4,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-public class Chats implements ActiveRecord {
+public class Chat implements ActiveRecord {
 	public static final String COL_ID = "_id";
 	public static final String COL_DATE = "date";
 	public static final String COL_WITHJID = "withJID";
