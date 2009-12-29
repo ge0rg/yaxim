@@ -6,12 +6,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.yaxim.androidclient.data.Chat;
+import org.yaxim.androidclient.data.DBAdapter;
 import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.StatusMode;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
@@ -342,12 +345,12 @@ public class XMPPService extends GenericService {
 	private void registerAdapterCallback() {
 		mSmackable.registerCallback(new XMPPServiceCallback() {
 
-			public void newMessage(String from, String message) {
+			public void newMessage(String to, String from, String message) {
 				if (!mIsBoundTo.contains(from)) {
 					Log.i(TAG, "notification: " + from);
 					notifyClient(from, message);
 				} else {
-					handleIncomingMessage(from, message);
+					handleIncomingMessage(to, from, message);
 				}
 			}
 
@@ -378,18 +381,19 @@ public class XMPPService extends GenericService {
 		});
 	}
 
-	private void handleIncomingMessage(String from, String message) {
-		RemoteCallbackList<IXMPPChatCallback> chatCallbackList = mChatCallbacks
-				.get(from);
-		int broadCastItems = chatCallbackList.beginBroadcast();
+	private void handleIncomingMessage(String toJID, String fromJID, String message) {
+		Log.d(TAG, "Adding Incoming Message to DB");
 		
-		for (int i = 0; i < broadCastItems; i++) {
-			try {
-				chatCallbackList.getBroadcastItem(i).newMessage(from, message);
-			} catch (RemoteException e) {
-				Log.e(TAG, "caught RemoteException: " + e.getMessage());
-			}
-		}
-		chatCallbackList.finishBroadcast();
+		DBAdapter db = DBAdapter.getInstance(this);
+		Chat chat = new Chat();
+		chat.setId(0);
+		chat.setFromJID(fromJID);
+		chat.setToJID(toJID);
+		chat.setWithJID(fromJID);
+		chat.setRead(0);
+		chat.setMessage(message);
+		
+		chat.setSQLiteDatabase(db.getDatabase());
+		chat.save();
 	}
 }

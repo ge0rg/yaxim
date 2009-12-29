@@ -405,7 +405,7 @@ public class SmackableImp implements Smackable {
 						queue.add(msg);
 					}
 
-					mServiceCallBack.newMessage(jabberID, msg);
+					mServiceCallBack.newMessage(getJabberID(message.getTo()), jabberID, msg);
 				}
 			}
 		};
