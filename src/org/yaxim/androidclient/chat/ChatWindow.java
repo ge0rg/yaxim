@@ -2,8 +2,12 @@ package org.yaxim.androidclient.chat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
+import org.yaxim.androidclient.R;
+import org.yaxim.androidclient.chat.IXMPPChatCallback.Stub;
+import org.yaxim.androidclient.data.Chat;
+import org.yaxim.androidclient.data.DBAdapter;
+import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.GetDateTimeHelper;
 
@@ -12,6 +16,7 @@ import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -30,12 +35,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-import org.yaxim.androidclient.R;
-import org.yaxim.androidclient.chat.IXMPPChatCallback;
-import org.yaxim.androidclient.chat.IXMPPChatCallback.Stub;
-import org.yaxim.androidclient.service.IXMPPChatService;
 
 public class ChatWindow extends ListActivity implements OnKeyListener,
 		TextWatcher {
@@ -99,7 +101,21 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	}
 
 	private void refreshMessages() {
-		// TODO: pull messages from database.
+		// TODO: Only pull new messages from the database?
+		DBAdapter db = DBAdapter.getInstance(this);
+		Chat chat = new Chat();
+		chat.setSQLiteDatabase(db.getDatabase());
+		
+		// TODO need to only pull stuff for this conversation (duh!)
+		Cursor cursor = chat.retrieveAll();
+		String[] from = new String[] { "fromJID", "message" };
+		int[] to = new int[] { R.id.chat_info, R.id.chat_message };
+		
+		SimpleCursorAdapter messagesAdapter = new SimpleCursorAdapter(
+				this, R.layout.chatrow, cursor, from, to
+		);
+		
+		setListAdapter(messagesAdapter);
 	}
 	
 	private void registerXMPPService() {
