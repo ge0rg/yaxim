@@ -161,5 +161,9 @@ public class Chat implements ActiveRecord {
 	public Cursor retrieveAll() {
 		return mSQLiteDatabase.query(SQL_TABLE_NAME, ALL_COLUMNS, null, null, null, null, null);
 	}
+	
+	public Cursor retrieveWithJID(String withJID){
+		return mSQLiteDatabase.query(SQL_TABLE_NAME, ALL_COLUMNS, COL_WITHJID + "='" + withJID +"'", null, null, null, null);
+	}
 
 }

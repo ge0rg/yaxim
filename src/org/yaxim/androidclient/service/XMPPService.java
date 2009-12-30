@@ -349,6 +349,7 @@ public class XMPPService extends GenericService {
 				if (!mIsBoundTo.contains(from)) {
 					Log.i(TAG, "notification: " + from);
 					notifyClient(from, message);
+					handleIncomingMessage(to, from, message);
 				} else {
 					handleIncomingMessage(to, from, message);
 				}
