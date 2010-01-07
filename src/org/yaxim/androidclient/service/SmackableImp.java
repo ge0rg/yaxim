@@ -25,12 +25,16 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Presence.Mode;
 import org.jivesoftware.smack.util.StringUtils;
+import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.data.YaximConfiguration;
+import org.yaxim.androidclient.data.ChatProvider.Constants;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.AdapterConstants;
 import org.yaxim.androidclient.util.StatusMode;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
 
 public class SmackableImp implements Smackable {
 
@@ -46,14 +50,16 @@ public class SmackableImp implements Smackable {
 
 	private final ConcurrentHashMap<String, ConcurrentHashMap<String, RosterItem>> mRosterItemsByGroup = new ConcurrentHashMap<String, ConcurrentHashMap<String, RosterItem>>();
 	private final HashMap<String, ArrayList<String>> mIncomingMessageQueue = new HashMap<String, ArrayList<String>>();
+	private final ContentResolver mContentResolver;
 
-	public SmackableImp(YaximConfiguration config) {
+	public SmackableImp(YaximConfiguration config,
+			ContentResolver contentResolver) {
 		this.mConfig = config;
 		this.mXMPPConfig = new ConnectionConfiguration(mConfig.server,
 				mConfig.port);
 		this.mXMPPConfig.setReconnectionAllowed(true);
-		//this.mXMPPConfig.setCompressionEnabled(true);
 		this.mXMPPConnection = new XMPPConnection(mXMPPConfig);
+		this.mContentResolver = contentResolver;
 	}
 
 	public boolean doConnect() throws YaximXMPPException {
@@ -200,7 +206,7 @@ public class SmackableImp implements Smackable {
 		mRoster = mXMPPConnection.getRoster();
 		try {
 			RosterEntry rosterEntry = mRoster.getEntry(user);
-//			unSetRosterEntry(rosterEntry);
+			// unSetRosterEntry(rosterEntry);
 			mRoster.removeEntry(rosterEntry);
 		} catch (XMPPException e) {
 			throw new YaximXMPPException(e.getMessage());
@@ -235,12 +241,13 @@ public class SmackableImp implements Smackable {
 	private void unSetRosterEntry(RosterEntry rosterEntry) {
 		String jabberID = rosterEntry.getUser();
 
-		Set<Entry<String, ConcurrentHashMap<String, RosterItem>>> groupMaps = mRosterItemsByGroup.entrySet();
-		
+		Set<Entry<String, ConcurrentHashMap<String, RosterItem>>> groupMaps = mRosterItemsByGroup
+				.entrySet();
+
 		for (Entry<String, ConcurrentHashMap<String, RosterItem>> entry : groupMaps) {
 			ConcurrentHashMap<String, RosterItem> entryMap = entry.getValue();
 			String groupName = entry.getKey();
-			
+
 			if (entryMap.containsKey(jabberID)) {
 				entryMap.remove(jabberID);
 			}
@@ -292,10 +299,10 @@ public class SmackableImp implements Smackable {
 		ArrayList<String> rosterGroups = new ArrayList<String>(
 				mRosterItemsByGroup.keySet());
 		Collections.sort(rosterGroups, new Comparator<String>() {
-			public int compare(String object1, String object2) {
-				if (object1.equals(AdapterConstants.EMPTY_GROUP))
+			public int compare(String group1, String group2) {
+				if (group1.equals(AdapterConstants.EMPTY_GROUP))
 					return -1;
-				return object1.toLowerCase().compareTo(object2.toLowerCase());
+				return group1.toLowerCase().compareTo(group2.toLowerCase());
 			}
 		});
 		return rosterGroups;
@@ -313,11 +320,12 @@ public class SmackableImp implements Smackable {
 		return Mode.valueOf(modeStr);
 	}
 
-	public void sendMessage(String user, String message) {
-		final Message newMessage = new Message(user, Message.Type.chat);
+	public void sendMessage(String toJID, String message) {
+		final Message newMessage = new Message(toJID, Message.Type.chat);
 		newMessage.setBody(message);
 		if (isAuthenticated()) {
 			mXMPPConnection.sendPacket(newMessage);
+			writeToDB(mConfig.jabberID, toJID, message, true);
 		}
 	}
 
@@ -390,26 +398,35 @@ public class SmackableImp implements Smackable {
 
 			public void processPacket(Packet packet) {
 				if (packet instanceof Message) {
-					Message message = (Message) packet;
-					String msg = message.getBody();
+					Message msg = (Message) packet;
+					String chatMessage = msg.getBody();
 
-					if (msg == null) {
+					if (chatMessage == null) {
 						return;
 					}
 
-					String jabberID = getJabberID(message.getFrom())
-							.toLowerCase();
+					String fromJID = getJabberID(msg.getFrom());
+					String toJID = getJabberID(msg.getTo());
 
-					if (!mServiceCallBack.isBoundTo(jabberID)) {
-						ArrayList<String> queue = getMessageQueueForContact(jabberID);
-						queue.add(msg);
-					}
+					writeToDB(fromJID, toJID, chatMessage, false);
 
-					mServiceCallBack.newMessage(getJabberID(message.getTo()), jabberID, msg);
 				}
 			}
 		};
 		mXMPPConnection.addPacketListener(myListener, filter);
+	}
+
+	private void writeToDB(String fromJID, String toJID, String message,
+			boolean read) {
+		ContentValues values = new ContentValues();
+
+		values.put(Constants.FROM_JID, fromJID);
+		values.put(Constants.TO_JID, toJID);
+		values.put(Constants.MESSAGE, message);
+		values.put(Constants.HAS_BEEN_READ, false);
+		values.put(Constants.DATE, System.currentTimeMillis());
+
+		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
 	}
 
 	private String getGroup(Collection<RosterGroup> groups) {

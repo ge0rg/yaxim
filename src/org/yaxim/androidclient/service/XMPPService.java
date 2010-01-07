@@ -6,15 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.yaxim.androidclient.data.Chat;
-import org.yaxim.androidclient.data.DBAdapter;
 import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.StatusMode;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
@@ -111,37 +108,13 @@ public class XMPPService extends GenericService {
 	private void createServiceChatStub() {
 		mServiceChatConnection = new IXMPPChatService.Stub() {
 
-			public void registerChatCallback(IXMPPChatCallback callback,
-					String jabberID) throws RemoteException {
-
-				if (callback != null) {
-					resetNotificationCounter();
-					if (mChatCallbacks.containsKey(jabberID))
-						mChatCallbacks.get(jabberID).register(callback);
-					else {
-						RemoteCallbackList<IXMPPChatCallback> chatCallback = new RemoteCallbackList<IXMPPChatCallback>();
-						chatCallback.register(callback);
-						mChatCallbacks.put(jabberID, chatCallback);
-					}
-				}
-				mIsBoundTo.add(jabberID);
-			}
-
-			public void unregisterChatCallback(IXMPPChatCallback callback,
-					String jabberID) throws RemoteException {
-				if (callback != null) {
-					mChatCallbacks.get(jabberID).unregister(callback);
-				}
-				mIsBoundTo.remove(jabberID);
-			}
-
 			public void sendMessage(String user, String message)
-			throws RemoteException {
+					throws RemoteException {
 				mSmackable.sendMessage(user, message);
 			}
 
 			public List<String> pullMessagesForContact(String jabberID)
-			throws RemoteException {
+					throws RemoteException {
 				if (mSmackable != null) {
 					return mSmackable.pullMessagesForContact(jabberID);
 				}
@@ -162,13 +135,13 @@ public class XMPPService extends GenericService {
 		mService2RosterConnection = new IXMPPRosterService.Stub() {
 
 			public void registerRosterCallback(IXMPPRosterCallback callback)
-			throws RemoteException {
+					throws RemoteException {
 				if (callback != null)
 					mRosterCallbacks.register(callback);
 			}
 
 			public void unregisterRosterCallback(IXMPPRosterCallback callback)
-			throws RemoteException {
+					throws RemoteException {
 				if (callback != null)
 					mRosterCallbacks.unregister(callback);
 			}
@@ -183,7 +156,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void setStatus(String status, String statusMsg)
-			throws RemoteException {
+					throws RemoteException {
 				if (status.equals("offline")) {
 					doDisconnect();
 					return;
@@ -192,7 +165,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void addRosterItem(String user, String alias, String group)
-			throws RemoteException {
+					throws RemoteException {
 				try {
 					mSmackable.addRosterItem(user, alias, group);
 				} catch (YaximXMPPException e) {
@@ -217,7 +190,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void moveRosterItemToGroup(String user, String group)
-			throws RemoteException {
+					throws RemoteException {
 				try {
 					mSmackable.moveRosterItemToGroup(user, group);
 				} catch (YaximXMPPException e) {
@@ -228,7 +201,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public void renameRosterItem(String user, String newName)
-			throws RemoteException {
+					throws RemoteException {
 				try {
 					mSmackable.renameRosterItem(user, newName);
 				} catch (YaximXMPPException e) {
@@ -243,12 +216,12 @@ public class XMPPService extends GenericService {
 			}
 
 			public List<RosterItem> getRosterEntriesByGroup(String group)
-			throws RemoteException {
+					throws RemoteException {
 				return mSmackable.getRosterEntriesByGroup(group);
 			}
 
 			public void renameRosterGroup(String group, String newGroup)
-			throws RemoteException {
+					throws RemoteException {
 				mSmackable.renameRosterGroup(group, newGroup);
 			}
 
@@ -336,7 +309,7 @@ public class XMPPService extends GenericService {
 
 	private void createAdapter() {
 		try {
-			mSmackable = new SmackableImp(mConfig);
+			mSmackable = new SmackableImp(mConfig, getContentResolver());
 		} catch (NullPointerException e) {
 			e.printStackTrace();
 		}
@@ -345,13 +318,12 @@ public class XMPPService extends GenericService {
 	private void registerAdapterCallback() {
 		mSmackable.registerCallback(new XMPPServiceCallback() {
 
-			public void newMessage(String to, String from, String message) {
+			public void newMessage(String from, String message) {
 				if (!mIsBoundTo.contains(from)) {
 					Log.i(TAG, "notification: " + from);
 					notifyClient(from, message);
-					handleIncomingMessage(to, from, message);
 				} else {
-					handleIncomingMessage(to, from, message);
+					handleIncomingMessage(from, message);
 				}
 			}
 
@@ -382,27 +354,14 @@ public class XMPPService extends GenericService {
 		});
 	}
 
-	private void handleIncomingMessage(String toJID, String fromJID, String message) {
-		Log.d(TAG, "Adding Incoming Message to DB");
-
-		DBAdapter db = DBAdapter.getInstance(this);
-		Chat chat = new Chat();
-		chat.setId(0);
-		chat.setFromJID(fromJID);
-		chat.setToJID(toJID);
-		chat.setWithJID(fromJID);
-		chat.setRead(0);
-		chat.setMessage(message);
-
-		chat.setSQLiteDatabase(db.getDatabase());
-		chat.save();
-
-		RemoteCallbackList<IXMPPChatCallback> chatCallbackList = mChatCallbacks.get(fromJID);
+	private void handleIncomingMessage(String from, String message) {
+		RemoteCallbackList<IXMPPChatCallback> chatCallbackList = mChatCallbacks
+				.get(from);
 		int broadCastItems = chatCallbackList.beginBroadcast();
 
 		for (int i = 0; i < broadCastItems; i++) {
 			try {
-				chatCallbackList.getBroadcastItem(i).newMessage();
+				chatCallbackList.getBroadcastItem(i).newMessage(from, message);
 			} catch (RemoteException e) {
 				Log.e(TAG, "caught RemoteException: " + e.getMessage());
 			}

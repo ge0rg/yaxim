@@ -1,10 +1,7 @@
 package org.yaxim.androidclient.chat;
 
-import java.util.List;
-
 import android.os.RemoteException;
 import android.util.Log;
-import org.yaxim.androidclient.chat.IXMPPChatCallback;
 import org.yaxim.androidclient.service.IXMPPChatService;
 
 public class XMPPChatServiceAdapter {
@@ -20,22 +17,6 @@ public class XMPPChatServiceAdapter {
 		this.jabberID = jabberID;
 	}
 
-	public void registerUICallback(IXMPPChatCallback uiCallback) {
-		try {
-			xmppServiceStub.registerChatCallback(uiCallback, jabberID);
-		} catch (RemoteException e) {
-			Log.e(TAG, "caught RemoteException: " + e.getMessage());
-		}
-	}
-
-	public void unregisterUICallback(IXMPPChatCallback uiCallback) {
-		try {
-			xmppServiceStub.unregisterChatCallback(uiCallback, jabberID);
-		} catch (RemoteException e) {
-			Log.e(TAG, "caught RemoteException: " + e.getMessage());
-		}
-	}
-
 	public void sendMessage(String user, String message) {
 		try {
 			Log.i(TAG, "Called sendMessage(): " + jabberID + ": " + message);
@@ -43,17 +24,6 @@ public class XMPPChatServiceAdapter {
 		} catch (RemoteException e) {
 			Log.e(TAG, "caught RemoteException: " + e.getMessage());
 		}
-	}
-
-	public List<String> pullMessagesForContact(
-			String jabberID) {
-		List<String>  queue = null;
-		try {
-			queue = xmppServiceStub.pullMessagesForContact(jabberID);
-		} catch (RemoteException e) {
-			Log.e(TAG, "caught RemoteException: " + e.getMessage());
-		}
-		return queue;
 	}
 	
 	public boolean isServiceAuthenticated() {

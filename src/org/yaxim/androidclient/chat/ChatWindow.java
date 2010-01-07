@@ -1,15 +1,13 @@
 package org.yaxim.androidclient.chat;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.yaxim.androidclient.R;
-import org.yaxim.androidclient.chat.IXMPPChatCallback.Stub;
-import org.yaxim.androidclient.data.Chat;
-import org.yaxim.androidclient.data.DBAdapter;
+import org.yaxim.androidclient.data.ChatProvider;
+import org.yaxim.androidclient.data.ChatProvider.Constants;
 import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.XMPPService;
-import org.yaxim.androidclient.util.GetDateTimeHelper;
 
 import android.app.ListActivity;
 import android.app.NotificationManager;
@@ -17,12 +15,9 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -31,10 +26,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnKeyListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
+import android.widget.ListAdapter;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,19 +38,21 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	private static final String TAG = "ChatWindow";
 	private static final int NOTIFY_ID = 0;
-	
-	private static final HashMap<String, ChatWindowAdapter> mAdapterMap = new HashMap<String, ChatWindowAdapter>();
+	private static final String[] PROJECTION_FROM = new String[] {
+			ChatProvider.Constants._ID, ChatProvider.Constants.DATE,
+			ChatProvider.Constants.FROM_JID, ChatProvider.Constants.TO_JID,
+			ChatProvider.Constants.MESSAGE };
+
+	private static final int[] PROJECTION_TO = new int[] { R.id.chat_date,
+			R.id.chat_from, R.id.chat_message };
 
 	private Button mSendButton = null;
 	private EditText mChatInput = null;
-	private String mJabberID = null;
+	private String mWithJabberID = null;
 	private Intent mServiceIntent;
 	private ServiceConnection mServiceConnection;
 	private XMPPChatServiceAdapter mServiceAdapter;
-	private Stub mChatCallback;
-	private Handler mHandler = new Handler();
 	private NotificationManager mNotificationMGR;
-	private Cursor mCursor;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -65,18 +61,28 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		setContentView(R.layout.mainchat);
 		registerForContextMenu(getListView());
 		registerXMPPService();
-		createUICallback();
 		setNotificationManager();
 		setUserInput();
 		setSendButton();
 		setContactFromUri();
-		setTitle(getText(R.string.chat_titlePrefix) + " " + mJabberID);
+		setTitle(getText(R.string.chat_titlePrefix) + " " + mWithJabberID);
+		setChatWindowAdapter();
+	}
+
+	private void setChatWindowAdapter() {
+		String selection = Constants.FROM_JID + "='" + mWithJabberID + "' OR "
+				+ Constants.TO_JID + "='" + mWithJabberID + "'";
+		Cursor cursor = managedQuery(ChatProvider.CONTENT_URI, PROJECTION_FROM,
+				selection, null, null);
+		ListAdapter adapter = new ChatWindowAdapter(cursor, PROJECTION_FROM,
+				PROJECTION_TO);
+
+		setListAdapter(adapter);
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		mServiceAdapter.unregisterUICallback(mChatCallback);
 		unbindXMPPService();
 	}
 
@@ -85,36 +91,10 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		super.onResume();
 		mNotificationMGR.cancel(NOTIFY_ID);
 		bindXMPPService();
+		mChatInput.requestFocus();
+
 	}
 
-	private void createUICallback() {
-		mChatCallback = new IXMPPChatCallback.Stub() {
-
-			public void newMessage()
-					throws RemoteException {
-				Log.d(TAG, "got newMessage callback!");
-				mHandler.post(new Runnable() {
-					public void run() {
-						refreshMessages();
-					}
-				});
-			}
-		};
-	}
-
-	private void refreshMessages() {
-		// TODO: Only pull new messages from the database?
-		DBAdapter db = DBAdapter.getInstance(this);
-		Chat chat = new Chat();
-		chat.setSQLiteDatabase(db.getDatabase());
-		
-		mCursor = chat.retrieveWithJID(mJabberID);
-		
-		SimpleCursorAdapter messagesAdapter = new ChatWindowAdapter();
-		
-		setListAdapter(messagesAdapter);
-	}
-	
 	private void registerXMPPService() {
 		Log.i(TAG, "called startXMPPService()");
 		mServiceIntent = new Intent(this, XMPPService.class);
@@ -127,14 +107,12 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			public void onServiceConnected(ComponentName name, IBinder service) {
 				Log.i(TAG, "called onServiceConnected()");
 				mServiceAdapter = new XMPPChatServiceAdapter(
-						IXMPPChatService.Stub.asInterface(service), mJabberID);
-				mServiceAdapter.registerUICallback(mChatCallback);
-				refreshMessages();
+						IXMPPChatService.Stub.asInterface(service),
+						mWithJabberID);
 			}
 
 			public void onServiceDisconnected(ComponentName name) {
 				Log.i(TAG, "called onServiceDisconnected()");
-				mServiceAdapter.unregisterUICallback(mChatCallback);
 			}
 
 		};
@@ -159,13 +137,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		mSendButton.setEnabled(false);
 	}
 
-//	private void setChatItems() {
-//		mChatView = (ListView) findViewById(android.R.id.list);
-//		if (!mAdapterMap.containsKey(mJabberID))
-//			mAdapterMap.put(mJabberID, new ChatWindowAdapter());
-//		mChatView.setAdapter(mAdapterMap.get(mJabberID));
-//	}
-
 	private void setUserInput() {
 		mChatInput = (EditText) findViewById(R.id.Chat_UserInput);
 		mChatInput.addTextChangedListener(this);
@@ -173,7 +144,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	private void setContactFromUri() {
 		Intent i = getIntent();
-		mJabberID = i.getDataString().toLowerCase();
+		mWithJabberID = i.getDataString();
 	}
 
 	private View.OnClickListener getOnSetListener() {
@@ -195,34 +166,16 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	}
 
 	private void sendMessage(String message) {
-		
-		DBAdapter db = DBAdapter.getInstance(this);
-		Chat chat = new Chat();
-		chat.setId(0);
-		chat.setFromJID(getString(R.string.Global_Me));
-		chat.setToJID(mJabberID);
-		chat.setWithJID(mJabberID);
-		chat.setRead(0);
-		chat.setMessage(message);
-
-		chat.setSQLiteDatabase(db.getDatabase());
-		chat.save();
-		refreshMessages();
-		
 		mChatInput.setText(null);
 		mSendButton.setEnabled(false);
-		mServiceAdapter.sendMessage(mJabberID, message);
+		mServiceAdapter.sendMessage(mWithJabberID, message);
 	}
 
 	class ChatWindowAdapter extends SimpleCursorAdapter {
-		ChatWindowAdapter() {			
-			super(
-					ChatWindow.this, 
-					android.R.layout.simple_list_item_1, 
-					mCursor, 
-					new String[] { "fromJID", "message" }, 
-					new int[] { R.id.chat_info, R.id.chat_message }
-			);
+
+		ChatWindowAdapter(Cursor cursor, String[] from, int[] to) {
+			super(ChatWindow.this, android.R.layout.simple_list_item_1, cursor,
+					from, to);
 		}
 
 		@Override
@@ -231,9 +184,15 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			ChatItemWrapper wrapper = null;
 			Cursor cursor = this.getCursor();
 			cursor.moveToPosition(position);
-			
-			String name = GetDateTimeHelper.setDate() + ": " + cursor.getString(cursor.getColumnIndex("fromJID"));
-			String message = cursor.getString(cursor.getColumnIndex("message"));
+
+			long dateMilliseconds = cursor.getLong(cursor
+					.getColumnIndex(ChatProvider.Constants.DATE));
+
+			String date = getDateString(dateMilliseconds);
+			String message = cursor.getString(cursor
+					.getColumnIndex(ChatProvider.Constants.MESSAGE));
+			String from = cursor.getString(cursor
+					.getColumnIndex(ChatProvider.Constants.FROM_JID));
 
 			if (row == null) {
 				LayoutInflater inflater = getLayoutInflater();
@@ -243,46 +202,56 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			} else {
 				wrapper = (ChatItemWrapper) row.getTag();
 			}
-			wrapper.populateFrom(name,message);
+
+			wrapper.populateFrom(date, from, message);
+
 			return row;
 		}
 	}
 
+	private String getDateString(long milliSeconds) {
+		SimpleDateFormat dateFormater = new SimpleDateFormat("yy-MM-dd HH:mm");
+		Date date = new Date(milliSeconds);
+		return dateFormater.format(date);
+	}
+
 	public class ChatItemWrapper {
-		private TextView name = null;
-		private TextView message = null;
-		private View row = null;
+		private TextView mDateView = null;
+		private TextView mFromView = null;
+		private TextView mMessageView = null;
+
+		private final View mRowView;
 
 		ChatItemWrapper(View row) {
-			this.row = row;
+			this.mRowView = row;
 		}
 
-		void populateFrom(String name, String message) {
-			
-			if (name.endsWith(getString(R.string.Global_Me))) {
-				getName().setTextColor(Color.WHITE);
-				getName().setShadowLayer(1, 0, 0, Color.RED);
-			} else {
-				getName().setTextColor(Color.LTGRAY);
-				getName().setShadowLayer(1, 0, 0, Color.BLUE);
-			}
-			getName().setText(name);
-			getMessage().setText(message);
-
+		void populateFrom(String date, String from, String message) {
+			getDateView().setText(date);
+			getFromView().setText(from);
+			getMessageView().setText(message);
 		}
 
-		TextView getName() {
-			if (name == null) {
-				name = (TextView) row.findViewById(R.id.chat_info);
+		TextView getDateView() {
+			if (mDateView == null) {
+				mDateView = (TextView) mRowView.findViewById(R.id.chat_date);
 			}
-			return name;
+			return mDateView;
 		}
 
-		TextView getMessage() {
-			if (message == null) {
-				message = (TextView) row.findViewById(R.id.chat_message);
+		TextView getFromView() {
+			if (mFromView == null) {
+				mFromView = (TextView) mRowView.findViewById(R.id.chat_from);
 			}
-			return message;
+			return mFromView;
+		}
+
+		TextView getMessageView() {
+			if (mMessageView == null) {
+				mMessageView = (TextView) mRowView
+						.findViewById(R.id.chat_message);
+			}
+			return mMessageView;
 		}
 
 	}
@@ -319,7 +288,8 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	}
 
 	private void showToastNotification(int message) {
-		Toast toastNotification = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+		Toast toastNotification = Toast.makeText(this, message,
+				Toast.LENGTH_SHORT);
 		toastNotification.show();
 	}
 
