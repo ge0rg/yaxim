@@ -156,5 +156,4 @@ public class XMPPRosterServiceAdapter {
 			e.printStackTrace();
 		}
 	}
-
 }

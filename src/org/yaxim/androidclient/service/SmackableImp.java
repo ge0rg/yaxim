@@ -272,7 +272,7 @@ public class SmackableImp implements Smackable {
 
 	public ArrayList<RosterItem> getRosterEntriesByGroup(String group) {
 		ArrayList<RosterItem> groupItems = new ArrayList<RosterItem>();
-
+		
 		ConcurrentHashMap<String, RosterItem> rosterItemMap = mRosterItemsByGroup
 				.get(group);
 
@@ -350,6 +350,14 @@ public class SmackableImp implements Smackable {
 		mRosterItemsByGroup.clear();
 		setStatusOffline();
 		this.mServiceCallBack = null;
+	}
+	
+	public String getNameForJID(String jid) {
+		if (null != this.mRoster.getEntry(jid) && null != this.mRoster.getEntry(jid).getName() && this.mRoster.getEntry(jid).getName().length() > 0) {
+			return this.mRoster.getEntry(jid).getName();
+		} else {
+			return jid;
+		}			
 	}
 
 	private void setStatusOffline() {
@@ -510,7 +518,7 @@ public class SmackableImp implements Smackable {
 		}
 		return StringUtils.parseName(rosterEntry.getUser());
 	}
-
+	
 	private StatusMode getStatus(Presence presence) {
 		if (presence.getType() == Presence.Type.available) {
 			if (presence.getMode() != null) {
