@@ -132,6 +132,11 @@
 	</string>
 	<string name="account_port_title">Change Port</string>
 	<string name="account_port_summ">Default Port: 5222</string>
+	<string name="account_protocol_encryption_titel">Encryption</string>
+	<string name="account_protocol_encryption_summary">Default Encryption: Disabled</string>
+	<string name="allowselfsigned_title">Ignore Certificate Errors</string>
+	<string name="allowselfsigned_summary">Useful for self-signed certificates</string>
+	
 
 	<!--StatusPopUp-->
 	<string name="RB_title">Statussettings</string>

@@ -32,7 +32,22 @@
 			android:textAppearance="?android:attr/textAppearanceLarge"
 			android:singleLine="true"
 			android:numeric="integer"
-		/>	
+		/>
+		<ListPreference 
+			android:id="@+id/account_protocol_encryption"
+			android:key="account_protocol_encryption"
+			android:title="@string/account_protocol_encryption_titel"
+			android:summary="@string/account_protocol_encryption_summary"
+			android:entries="@array/serverProtocolList"
+			android:entryValues="@array/serverProtocolCodes"
+			android:defaultValue="disabled"
+		/>
+		<CheckBoxPreference
+			android:id="@+id/allowselfsigned"
+			android:key="allowselfsigned"
+			android:title="@string/allowselfsigned_title"
+			android:summary="@string/allowselfsigned_summary"
+		/>
 		<EditTextPreference 
 			android:id="@+id/account_resource"
 			android:key="account_resource"
