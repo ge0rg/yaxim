@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.yaxim.androidclient.IXMPPRosterCallback;
+import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.ConnectionState;
@@ -19,7 +20,12 @@ import android.os.RemoteException;
 public class XMPPService extends GenericService {
 
 	private AtomicBoolean mIsConnected = new AtomicBoolean(false);
-	private AtomicBoolean mConnectionDemanded = new AtomicBoolean(false);
+	private AtomicBoolean mConnectionDemanded = new AtomicBoolean(false); // should we try to reconnect?
+	private static final int RECONNECT_AFTER = 5;
+	private static final int RECONNECT_MAXIMUM = 10*60;
+	private int mReconnectTimeout = RECONNECT_AFTER;
+	private String mLastConnectionError = null;
+	private String mReconnectInfo = "";
 
 	private Thread mConnectingThread;
 
@@ -70,6 +76,7 @@ public class XMPPService extends GenericService {
 		createServiceRosterStub();
 		createServiceChatStub();
 
+		// for the initial connection, check if autoConnect is set
 		mConnectionDemanded.set(mConfig.autoConnect);
 
 		if (mConfig.autoConnect) {
@@ -93,15 +100,6 @@ public class XMPPService extends GenericService {
 	@Override
 	public void onStart(Intent intent, int startId) {
 		super.onStart(intent, startId);
-		initiateConnection();
-	}
-
-	public void initiateConnection() {
-		setForeground(true);
-		if (mSmackable == null) {
-			createAdapter();
-			registerAdapterCallback();
-		}
 		doConnect();
 	}
 
@@ -147,6 +145,14 @@ public class XMPPService extends GenericService {
 					return ConnectionState.OFFLINE;
 				}
 			}
+
+			public String getConnectionStateString() throws RemoteException {
+				if (mLastConnectionError != null)
+					return mLastConnectionError + mReconnectInfo;
+				else
+					return null;
+			}
+
 
 			public void setStatus(String status, String statusMsg)
 					throws RemoteException {
@@ -233,10 +239,15 @@ public class XMPPService extends GenericService {
 	}
 
 	private void doConnect() {
-		mConnectionDemanded.set(true);
-
 		if (mConnectingThread != null) {
+			// a connection is still goign on!
 			return;
+		}
+
+		setForeground(true);
+		if (mSmackable == null) {
+			createAdapter();
+			registerAdapterCallback();
 		}
 
 		mConnectingThread = new Thread() {
@@ -244,12 +255,10 @@ public class XMPPService extends GenericService {
 			public void run() {
 				try {
 					if (!mSmackable.doConnect()) {
-						postConnectionFailed();
-					} else {
-						postConnectionEstablished();
+						postConnectionFailed("Inconsistency in Smackable.doConnect()");
 					}
 				} catch (YaximXMPPException e) {
-					postConnectionFailed();
+					postConnectionFailed(e.getLocalizedMessage());
 					logError("YaximXMPPException in doConnect(): " + e);
 				} finally {
 					mConnectingThread = null;
@@ -260,10 +269,10 @@ public class XMPPService extends GenericService {
 		mConnectingThread.start();
 	}
 
-	private void postConnectionFailed() {
+	private void postConnectionFailed(final String reason) {
 		mMainHandler.post(new Runnable() {
 			public void run() {
-				connectionFailed();
+				connectionFailed(reason);
 			}
 		});
 	}
@@ -284,21 +293,49 @@ public class XMPPService extends GenericService {
 		});
 	}
 
-	private void connectionFailed() {
+	private void connectionFailed(String reason) {
+		logInfo("connectionFailed: " + reason);
+		mLastConnectionError = reason;
+		mIsConnected.set(false);
 		final int broadCastItems = mRosterCallbacks.beginBroadcast();
 		for (int i = 0; i < broadCastItems; i++) {
 			try {
-				mRosterCallbacks.getBroadcastItem(i).connectionFailed();
+				mRosterCallbacks.getBroadcastItem(i).connectionFailed(mConnectionDemanded.get());
 			} catch (RemoteException e) {
 				logError("caught RemoteException: " + e.getMessage());
 			}
 		}
 		mRosterCallbacks.finishBroadcast();
-		mIsConnected.set(false);
-		mConnectionDemanded.set(false);
+		// post reconnection
+		if (mConnectionDemanded.get()) {
+			mReconnectInfo = getString(R.string.conn_reconnect, mReconnectTimeout);
+			logInfo("connectionFailed(): registering reconnect in " + mReconnectTimeout + "s");
+			mMainHandler.postDelayed(new Runnable() {
+				public void run() {
+					if (!mConnectionDemanded.get()) {
+						return;
+					}
+					if (mIsConnected.get()) {
+						logError("Reconnect attempt aborted: we are connected again!");
+						return;
+					}
+					doConnect();
+				}
+			}, mReconnectTimeout * 1000);
+			mReconnectTimeout = mReconnectTimeout * 2;
+			if (mReconnectTimeout > RECONNECT_MAXIMUM)
+				mReconnectTimeout = RECONNECT_MAXIMUM;
+		} else
+			mReconnectInfo = "";
+
 	}
 
 	private void connectionEstablished() {
+		// once we are connected, use autoReconnect to determine reconnections
+		mConnectionDemanded.set(mConfig.autoReconnect);
+		mLastConnectionError = null;
+		mIsConnected.set(true);
+		mReconnectTimeout = RECONNECT_AFTER;
 		final int broadCastItems = mRosterCallbacks.beginBroadcast();
 		for (int i = 0; i < broadCastItems; i++) {
 			try {
@@ -308,11 +345,15 @@ public class XMPPService extends GenericService {
 			}
 		}
 		mRosterCallbacks.finishBroadcast();
-		mIsConnected.set(true);
-		mConnectionDemanded.set(false);
 	}
 
 	private void rosterChanged() {
+		if (!mIsConnected.get() && mSmackable.isAuthenticated()) {
+			// We get a roster changed update, but we are not connected,
+			// that means we just got connected and need to notify the Activity.
+			logInfo("rosterChanged(): we just got connected");
+			connectionEstablished();
+		}
 		if (mIsConnected.get()) {
 			final int broadCastItems = mRosterCallbacks.beginBroadcast();
 
@@ -325,11 +366,14 @@ public class XMPPService extends GenericService {
 			}
 			mRosterCallbacks.finishBroadcast();
 		}
+		if (mIsConnected.get() && mSmackable != null && !mSmackable.isAuthenticated()) {
+			logInfo("rosterChanged(): disconnected without warning");
+			connectionFailed("Connection closed");
+		}
 	}
 
 	public void doDisconnect() {
 		mConnectionDemanded.set(false);
-		mIsConnected.set(false); /* hack to prevent recursion in rosterChanged() */
 		if (mSmackable != null) {
 			mSmackable.unRegisterCallback();
 		}

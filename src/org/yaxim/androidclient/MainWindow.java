@@ -22,8 +22,6 @@ import org.yaxim.androidclient.util.ExpandableRosterAdapter;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -40,7 +38,9 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.ExpandableListView;
+import android.widget.TextView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import org.yaxim.androidclient.IXMPPRosterCallback;
 import org.yaxim.androidclient.R;
@@ -50,7 +50,6 @@ import org.yaxim.androidclient.service.IXMPPRosterService;
 public class MainWindow extends GenericExpandableListActivity {
 
 	private static final String TAG = "MainWindow";
-	private static final int DIALOG_CONNECTING = 1;
 
 	private final List<ArrayList<HashMap<String, RosterItem>>> rosterEntryList = new ArrayList<ArrayList<HashMap<String, RosterItem>>>();
 	private final List<HashMap<String, String>> rosterGroupList = new ArrayList<HashMap<String, String>>();
@@ -61,9 +60,8 @@ public class MainWindow extends GenericExpandableListActivity {
 	private XMPPRosterServiceAdapter serviceAdapter;
 	private Stub rosterCallback;
 	private ExpandableRosterAdapter rosterListAdapter;
-	private ProgressDialog progressDialog;
+	private TextView mConnectingText;
 	private boolean showOffline;
-	private boolean isConnected;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -73,7 +71,9 @@ public class MainWindow extends GenericExpandableListActivity {
 		showFirstStartUpDialogIfPrefsEmpty();
 		registerXMPPService();
 		createUICallback();
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setContentView(R.layout.main);
+		mConnectingText = (TextView)findViewById(R.id.error_view);
 		registerForContextMenu(getExpandableListView());
 	}
 
@@ -97,11 +97,11 @@ public class MainWindow extends GenericExpandableListActivity {
 		}
 	}
 
-	private void setIsConnected() {
-		if (serviceAdapter != null)
-			isConnected = serviceAdapter.isAuthenticated();
-		else
-			isConnected = false;
+	private boolean isConnected() {
+		return serviceAdapter != null && serviceAdapter.isAuthenticated();
+	}
+	private boolean isConnecting() {
+		return serviceAdapter != null && serviceAdapter.getConnectionState() == ConnectionState.CONNECTING;
 	}
 
 	public void updateRoster() {
@@ -345,8 +345,29 @@ public class MainWindow extends GenericExpandableListActivity {
 		return true;
 	}
 
+	private void setConnectingStatus(boolean isConnecting) {
+		setProgressBarIndeterminateVisibility(isConnecting);
+		String conn, lastStatus;
+		if (isConnecting) {
+			conn = getString(R.string.conn_connecting);
+		} else if (isConnected()) {
+			conn = getString(R.string.conn_online);
+		} else {
+			conn = getString(R.string.conn_offline);
+		}
+		setTitle(getString(R.string.conn_title, conn));
+
+		if (serviceAdapter != null && (lastStatus =
+					serviceAdapter.getConnectionStateString()) != null) {
+			mConnectingText.setVisibility(View.VISIBLE);
+			mConnectingText.setText(lastStatus);
+		} else
+			mConnectingText.setVisibility(View.GONE);
+	}
+
 	private void toggleConnection(MenuItem item) {
-		if (serviceAdapter.isAuthenticated()) {
+		if (isConnected() || isConnecting()) {
+			setConnectingStatus(false);
 			(new Thread() {
 				public void run() {
 					serviceAdapter.disconnect();
@@ -354,30 +375,26 @@ public class MainWindow extends GenericExpandableListActivity {
 				}
 			}).start();
 
-			clearRoster();
-			isConnected = false;
-
 		} else {
-			showDialog(DIALOG_CONNECTING);
+			setConnectingStatus(true);
 			(new Thread() {
 				public void run() {
 					startService(xmppServiceIntent);
 				}
 			}).start();
-			isConnected = true;
 		}
 
 	}
 
 	private int getConnectDisconnectIcon() {
-		if (isConnected) {
+		if (isConnected() || isConnecting()) {
 			return R.drawable.yaxim_menu_disconnect;
 		}
 		return R.drawable.yaxim_menu_connect;
 	}
 
 	private String getConnectDisconnectText() {
-		if (isConnected) {
+		if (isConnected() || isConnecting()) {
 			return getString(R.string.Menu_disconnect);
 		}
 		return getString(R.string.Menu_connect);
@@ -404,14 +421,10 @@ public class MainWindow extends GenericExpandableListActivity {
 						IXMPPRosterService.Stub.asInterface(service));
 				serviceAdapter.registerUICallback(rosterCallback);
 				createRosterIfConnected();
-				setIsConnected();
 				Log.i(TAG, "getConnectionState(): "
 						+ serviceAdapter.getConnectionState());
-				if (serviceAdapter.getConnectionState() == ConnectionState.CONNECTING) {
-					showDialog(DIALOG_CONNECTING);
-				} else if (null != progressDialog && progressDialog.isShowing()) {
-					dismissDialog(DIALOG_CONNECTING);
-				}
+
+				setConnectingStatus(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 			}
 
 			public void onServiceDisconnected(ComponentName name) {
@@ -505,22 +518,17 @@ public class MainWindow extends GenericExpandableListActivity {
 
 					public void run() {
 						createRosterIfConnected();
-						isConnected = true;
-						if (progressDialog.isShowing()) {
-							dismissDialog(DIALOG_CONNECTING);
-						}
+						setConnectingStatus(false);
 					}
 				});
 			}
 
-			public void connectionFailed() throws RemoteException {
+			public void connectionFailed(final boolean willReconnect)
+						throws RemoteException {
 				mainHandler.post(new Runnable() {
 					public void run() {
 						showToastNotification(R.string.toast_connectfail_message);
-						isConnected = false;
-						if (progressDialog.isShowing()) {
-							dismissDialog(DIALOG_CONNECTING);
-						}
+						setConnectingStatus(willReconnect);
 					}
 				});
 			}
@@ -530,21 +538,6 @@ public class MainWindow extends GenericExpandableListActivity {
 	public void expandGroups() {
 		for (int count = 0; count < getExpandableListAdapter().getGroupCount(); count++) {
 			getExpandableListView().expandGroup(count);
-		}
-	}
-
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		switch (id) {
-		case DIALOG_CONNECTING:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setIcon(android.R.drawable.ic_dialog_info);
-			progressDialog.setTitle(R.string.dialog_connect_title);
-			progressDialog.setMessage(getText(R.string.dialog_connect_message));
-			progressDialog.setCancelable(false);
-			return progressDialog;
-		default:
-			return super.onCreateDialog(id);
 		}
 	}
 

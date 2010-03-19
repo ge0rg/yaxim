@@ -1,17 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <LinearLayout
-		xmlns:android="http://schemas.android.com/apk/res/android"
-         android:orientation="vertical"
-         android:layout_width="fill_parent" 
-         android:layout_height="fill_parent">
- 
-     <ExpandableListView android:id="@android:id/list"
-               android:layout_width="fill_parent" 
-               android:layout_height="fill_parent"
-               android:scrollingCache="true"/>
- 
-     <TextView android:id="@+id/android:empty"
-               android:layout_width="fill_parent" 
-               android:layout_height="fill_parent"
-               android:text="Yaxim is offline. No Contacts to show!"/>
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent" 
+	android:layout_height="fill_parent">
+
+	<TextView android:id="@+id/error_view"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:textSize="18sp"
+		android:padding="5sp"
+		android:textColor="#000"
+		android:background="#b44"
+		android:visibility="gone"
+		android:shadowColor="#44000000"
+		android:shadowRadius="3.0"
+		android:text=""/>
+
+	<ExpandableListView android:id="@android:id/list"
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent"
+		android:scrollingCache="true"/>
+
+	<TextView android:id="@+id/android:empty"
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent"
+		android:textSize="18sp"
+		android:text="@string/conn_empty_roster"/>
 </LinearLayout>
