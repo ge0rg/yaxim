@@ -26,6 +26,14 @@
 			android:showSilent="true"
 			android:summary="@string/ringtone_summ"
 		/>
+		<CheckBoxPreference
+			android:id="@+id/appnotification"
+			android:key="appnotification"
+			android:title="@string/notification_title"
+			android:summaryOff="@string/notification_summOff"
+			android:summaryOn="@string/notification_summOn"
+			android:defaultValue="true"
+		/>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/preftitle_boot">
 		<CheckBoxPreference

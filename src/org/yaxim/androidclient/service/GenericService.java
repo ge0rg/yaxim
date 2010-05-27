@@ -20,6 +20,8 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import org.yaxim.androidclient.MainWindow;
 import org.yaxim.androidclient.R;
 
 public abstract class GenericService extends Service {
@@ -32,6 +34,7 @@ public abstract class GenericService extends Service {
 	private Vibrator mVibrator;
 	private Intent mNotificationIntent;
 	//private int mNotificationCounter = 0;
+	private final int appNotificationId = -1;
 	
 	private Map<String, Integer> notificationCount = new HashMap<String, Integer>(2);
 	private Map<String, Integer> notificationId = new HashMap<String, Integer>(2);
@@ -65,12 +68,14 @@ public abstract class GenericService extends Service {
 				.getDefaultSharedPreferences(this));
 		mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 		addNotificationMGR();
+		createAppNotification();
 	}
 
 	@Override
 	public void onDestroy() {
 		Log.i(TAG, "called onDestroy()");
 		super.onDestroy();
+		destroyAppNotification();
 	}
 
 	@Override
@@ -106,10 +111,9 @@ public abstract class GenericService extends Service {
 		int mNotificationCounter = 0;
 		if (notificationCount.containsKey(fromJid)) {
 			mNotificationCounter = notificationCount.get(fromJid);
-		} else {
-			notificationCount.put(fromJid, Integer.valueOf(1));
 		}
 		mNotificationCounter++;
+		notificationCount.put(fromJid, mNotificationCounter);
 
 		String author;
 		if (null == fromUserId || fromUserId.length() == 0 || fromJid.equals(fromUserId)) {
@@ -172,4 +176,26 @@ public abstract class GenericService extends Service {
 		}
 	}
 
+	private void createAppNotification() {
+		if (mConfig.isAppNotify) {
+			
+			Notification appNotification = new Notification(R.drawable.icon, getString(R.string.notification_text), System.currentTimeMillis());
+			Intent mainWindowIntent = new Intent(this, MainWindow.class);
+			
+			PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+					mainWindowIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+			appNotification.setLatestEventInfo(this, getString(R.string.notification_text), "", pendingIntent);
+			appNotification.flags = Notification.FLAG_NO_CLEAR
+				| Notification.FLAG_ONGOING_EVENT;
+			mNotificationMGR.notify(appNotificationId, appNotification);
+		}		
+	}
+	
+	private void destroyAppNotification() {
+		if (mConfig.isAppNotify) {
+			Log.i(TAG, "Destroying app config");
+			mNotificationMGR.cancel(appNotificationId);
+		}
+	}
 }

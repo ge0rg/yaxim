@@ -39,6 +39,10 @@
 	<string name="vibr_summOff">Vibration notification are off</string>
 	<string name="ringtone_title">Ringtone preferences</string>
 	<string name="ringtone_summ">Edit ringtone settings</string>
+	<string name="notification_title">Notification when connected</string>
+	<string name="notification_summOn">Permanent notification is on</string>
+	<string name="notification_summOff">Permanent notification is off</string>
+	<string name="notification_text">yaxim is running</string>
 
 	<!-- Startup Setting Strings -->
 	<string name="preftitle_boot">Bootoptions</string>
