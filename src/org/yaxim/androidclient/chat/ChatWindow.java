@@ -22,14 +22,19 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Handler;
+import android.text.ClipboardManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnKeyListener;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListAdapter;
@@ -61,7 +66,8 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	private ServiceConnection mServiceConnection;
 	private XMPPChatServiceAdapter mServiceAdapter;
 	private NotificationManager mNotificationMGR;
-
+	private ClipboardManager mClipboardManager;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -85,6 +91,8 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		
 		setTitle(getText(R.string.chat_titlePrefix) + " " + titleUserid);
 		setChatWindowAdapter();
+		
+		mClipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
 	}
 
 	private void setChatWindowAdapter() {
@@ -104,12 +112,44 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	}
 
 	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenu.ContextMenuInfo menuInfo) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.chatwindow_contextmenu, menu);
+	}
+	
+	@Override
 	protected void onResume() {
 		super.onResume();
 		mNotificationMGR.cancel(NOTIFY_ID);
 		bindXMPPService();
 		mChatInput.requestFocus();
 
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		return applyMenuContextChoice(item);
+	}
+
+	private boolean applyMenuContextChoice(MenuItem item) {
+		AdapterView.AdapterContextMenuInfo info;
+		try {
+			info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+		} catch (ClassCastException e) {
+			Log.e(TAG, "bad menuInfo", e);
+			return false;
+		}
+		long msgId = getListAdapter().getItemId(info.position);
+
+		int menuItemID = item.getItemId();
+		switch (menuItemID) {
+		case R.id.chatwindow_contextmenu_copy:
+			ChatItemWrapper chatItem = (ChatItemWrapper) info.targetView.getTag();
+			mClipboardManager.setText(chatItem.getMessageView().getText());
+			return true;
+		}
+		return false;
 	}
 
 	private void registerXMPPService() {

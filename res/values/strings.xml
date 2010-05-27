@@ -175,6 +175,7 @@
 	<string name="chat_from_me">Me:</string>
 	<string name="toast_connectfail_message">Connecting Failed!</string>
 	<string name="toast_stored_offline">The message has been stored for transmission.</string>
+	<string name="chatwindow_contextmenu_copy">Copy</string>
 
 	<!-- GPS settings -->
 	<string name="showGPS_title">GPS to status</string>
