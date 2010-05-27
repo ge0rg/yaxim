@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
@@ -18,6 +19,7 @@ import org.jivesoftware.smack.RosterListener;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.ConnectionConfiguration.SecurityMode;
 import org.jivesoftware.smack.filter.PacketTypeFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
@@ -70,12 +72,22 @@ public class SmackableImp implements Smackable {
 		this.mXMPPConfig = new ConnectionConfiguration(mConfig.server,
 				mConfig.port);
 		this.mXMPPConfig.setReconnectionAllowed(true);
+
+		this.mXMPPConfig.setSecurityMode(SecurityMode.valueOf(mConfig.encryption));
+		
+		if (mConfig.checkCertificate && !(SecurityMode.disabled == SecurityMode.valueOf(mConfig.encryption))) {
+			this.mXMPPConfig.setExpiredCertificatesCheckEnabled(true);
+			this.mXMPPConfig.setNotMatchingDomainCheckEnabled(true);
+			this.mXMPPConfig.setVerifyRootCAEnabled(true);
+			this.mXMPPConfig.setSelfSignedCertificateEnabled(false);
+		}
+		
 		this.mXMPPConnection = new XMPPConnection(mXMPPConfig);
 		this.mContentResolver = contentResolver;
 	}
 
-	public boolean doConnect() throws YaximXMPPException {
-		tryToConnect();
+	public boolean doConnect(IConnectionListener listener) throws YaximXMPPException {
+		tryToConnect(listener);
 		// actually, authenticated must be true now, or an exception must have
 		// been thrown.
 		if (isAuthenticated()) {
@@ -135,13 +147,46 @@ public class SmackableImp implements Smackable {
 		mXMPPConnection.sendPacket(response);
 	}
 
-	private void tryToConnect() throws YaximXMPPException {
+	private void tryToConnect(final IConnectionListener listener) throws YaximXMPPException {
 		try {
 			if (!mXMPPConnection.isConnected()) {
+				
+				//does currently not work, because addConnectionListener checks if connection is up already...
+				//see http://code.google.com/p/asmack/issues/detail?id=5
+				
+//				mXMPPConnection.addConnectionListener(new ConnectionListener() {
+//					
+//					public void reconnectionSuccessful() {
+//						// NYI						
+//					}
+//					
+//					public void reconnectionFailed(Exception e) {
+//						// NYI						
+//					}
+//					
+//					public void reconnectingIn(int seconds) {
+//						// NYI						
+//					}
+//					
+//					public void connectionClosedOnError(Exception e) {
+//						listener.connectionClosedOnError(e);
+//						
+//					}
+//					
+//					public void connectionClosed() {
+//						// NYI						
+//					}
+//				});
+				
 				SmackConfiguration.setPacketReplyTimeout(PACKET_TIMEOUT);
 				SmackConfiguration.setKeepAliveInterval(KEEPALIVE_TIMEOUT);
 				mXMPPConnection.connect();
 			}
+			
+			if (!mXMPPConnection.isConnected()) {
+				throw new YaximXMPPException("Connection to server failed. This might be because of SSL errors.");
+			}
+			
 			// SMACK auto-logins if we were authenticated before
 			if (!mXMPPConnection.isAuthenticated()) {
 				mXMPPConnection.login(mConfig.userName, mConfig.password,
@@ -457,7 +502,9 @@ public class SmackableImp implements Smackable {
 				String jabberID = getJabberID(presence.getFrom());
 				RosterEntry rosterEntry = mRoster.getEntry(jabberID);
 				setRosterEntry(rosterEntry);
-				mServiceCallBack.rosterChanged();
+				if (null != mServiceCallBack) {
+					mServiceCallBack.rosterChanged();
+				}
 				updateOrInsertRosterEntryToDB(rosterEntry);
 			}
 		});

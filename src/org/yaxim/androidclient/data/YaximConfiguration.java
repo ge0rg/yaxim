@@ -23,7 +23,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	public String userName;
 	public String server;
 	public String jabberID;
-	public boolean allowselfsigned;
+	public boolean checkCertificate;
 	public String encryption;
 
 	public boolean isLEDNotify;
@@ -90,7 +90,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 		jabberID = prefs.getString(PreferenceConstants.JID, "");
 
-		this.allowselfsigned = prefs.getBoolean(PreferenceConstants.ALLOW_SELFSIGNED, false);
+		this.checkCertificate = prefs.getBoolean(PreferenceConstants.CHECK_CERTIFICATE, false);
 		
 		this.encryption = prefs.getString(PreferenceConstants.ENCRYPTION, "disabled");
 		

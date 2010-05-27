@@ -9,7 +9,7 @@ import org.yaxim.androidclient.util.StatusMode;
 
 
 public interface Smackable {
-	boolean doConnect() throws YaximXMPPException;
+	boolean doConnect(IConnectionListener listener) throws YaximXMPPException;
 	boolean isAuthenticated();
 
 	void addRosterItem(String user, String alias, String group) throws YaximXMPPException;

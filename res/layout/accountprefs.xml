@@ -43,10 +43,10 @@
 			android:defaultValue="disabled"
 		/>
 		<CheckBoxPreference
-			android:id="@+id/allowselfsigned"
-			android:key="allowselfsigned"
-			android:title="@string/allowselfsigned_title"
-			android:summary="@string/allowselfsigned_summary"
+			android:id="@+id/checkcertificate"
+			android:key="checkcertificate"
+			android:title="@string/checkcertificate_title"
+			android:summary="@string/checkcertificate_summary"
 		/>
 		<EditTextPreference 
 			android:id="@+id/account_resource"

@@ -254,7 +254,8 @@ public class XMPPService extends GenericService {
 
 			public void run() {
 				try {
-					if (!mSmackable.doConnect()) {
+					
+					if (!mSmackable.doConnect(new XMPPConnectionListener())) {
 						postConnectionFailed("Inconsistency in Smackable.doConnect()");
 					}
 				} catch (YaximXMPPException e) {
@@ -348,7 +349,7 @@ public class XMPPService extends GenericService {
 	}
 
 	private void rosterChanged() {
-		if (!mIsConnected.get() && mSmackable.isAuthenticated()) {
+		if (!mIsConnected.get() && null != mSmackable && mSmackable.isAuthenticated()) {
 			// We get a roster changed update, but we are not connected,
 			// that means we just got connected and need to notify the Activity.
 			logInfo("rosterChanged(): we just got connected");
@@ -408,5 +409,11 @@ public class XMPPService extends GenericService {
 				return mIsBoundTo.contains(jabberID);
 			}
 		});
+	}
+	
+	private class XMPPConnectionListener implements IConnectionListener {
+		public void connectionClosedOnError(Exception e) {
+			postConnectionFailed(e.getLocalizedMessage());
+		}
 	}
 }
