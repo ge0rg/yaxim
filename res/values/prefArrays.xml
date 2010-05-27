@@ -36,14 +36,4 @@
 		<item>12</item>
 		<item>14</item>
 	</string-array>
-	<string-array name="serverProtocolList">
-        <item>Disabled</item>
-        <item>Optional</item>
-        <item>Always</item>
-    </string-array>
-    <string-array name="serverProtocolCodes">
-        <item>disabled</item>
-        <item>enabled</item>
-        <item>required</item>   
-    </string-array>
 </resources>

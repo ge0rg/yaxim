@@ -23,8 +23,6 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	public String userName;
 	public String server;
 	public String jabberID;
-	public boolean allowselfsigned;
-	public String encryption;
 
 	public boolean isLEDNotify;
 	public boolean isVibraNotify;
@@ -90,10 +88,6 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 		jabberID = prefs.getString(PreferenceConstants.JID, "");
 
-		this.allowselfsigned = prefs.getBoolean(PreferenceConstants.ALLOW_SELFSIGNED, false);
-		
-		this.encryption = prefs.getString(PreferenceConstants.ENCRYPTION, "disabled");
-		
 		try {
 			XMPPHelper.verifyJabberID(jabberID);
 			splitAndSetJabberID(jabberID);

@@ -16,6 +16,4 @@ public class PreferenceConstants {
 	public final static String BOOTSTART = "bootstart";
 	public final static String SMACKDEBUG = "smackdebug";
 	public final static String REPORT_CRASH = "reportcrash";
-	public static final String ALLOW_SELFSIGNED = "allowselfsigned";
-	public static final String ENCRYPTION = "account_protocol_encryption";
 }
