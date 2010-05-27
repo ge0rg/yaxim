@@ -13,6 +13,7 @@ public class PreferenceConstants {
 	public final static String LEDNOTIFY = "led";
 	public final static String VIBRATIONNOTIFY = "vibration";
 	public final static String RINGTONENOTIFY= "ringtone";
+	public final static String APP_NOTIFICATION = "appnotification";
 	public final static String BOOTSTART = "bootstart";
 	public final static String SMACKDEBUG = "smackdebug";
 	public final static String REPORT_CRASH = "reportcrash";
