@@ -92,7 +92,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		Cursor cursor = managedQuery(ChatProvider.CONTENT_URI, PROJECTION_FROM,
 				selection, null, null);
 		ListAdapter adapter = new ChatWindowAdapter(cursor, PROJECTION_FROM,
-				PROJECTION_TO);
+				PROJECTION_TO, mWithJabberID, mUserScreenName);
 
 		setListAdapter(adapter);
 	}
@@ -180,10 +180,9 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	private void sendMessageIfNotNull() {
 		if (mChatInput.getText().length() >= 1) {
-			if (mServiceAdapter.isServiceAuthenticated())
-				sendMessage(mChatInput.getText().toString());
-			else
-				showToastNotification(R.string.toast_connect_before_send);
+			sendMessage(mChatInput.getText().toString());
+			if (!mServiceAdapter.isServiceAuthenticated())
+				showToastNotification(R.string.toast_stored_offline);
 		}
 	}
 
@@ -194,20 +193,23 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	}
 
 	private void markAsRead(int id) {
-		final String selection = ChatConstants.JID + "='" + mWithJabberID + "'"
-		       + " AND " + ChatConstants.FROM_ME + " = 0";
 		Uri rowuri = Uri.parse("content://" + ChatProvider.AUTHORITY
 			+ "/" + ChatProvider.TABLE_NAME + "/" + id);
+		Log.d(TAG, "markAsRead: " + rowuri);
 		ContentValues values = new ContentValues();
 		values.put(ChatConstants.HAS_BEEN_READ, true);
-		getContentResolver().update(rowuri, values, selection, null);
+		getContentResolver().update(rowuri, values, null, null);
 	}
 
 	class ChatWindowAdapter extends SimpleCursorAdapter {
+		String mScreenName, mJID;
 
-		ChatWindowAdapter(Cursor cursor, String[] from, int[] to) {
+		ChatWindowAdapter(Cursor cursor, String[] from, int[] to,
+				String JID, String screenName) {
 			super(ChatWindow.this, android.R.layout.simple_list_item_1, cursor,
 					from, to);
+			mScreenName = screenName;
+			mJID = JID;
 		}
 
 		@Override
@@ -241,11 +243,14 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				wrapper = (ChatItemWrapper) row.getTag();
 			}
 
-			if (has_been_read == 0) {
+			if (from_me == 0 && has_been_read == 0) {
 				markAsRead(_id);
 			}
 
-			wrapper.populateFrom(date, from_me != 0, jid, message, has_been_read != 0);
+			String from = jid;
+			if (jid.equals(mJID))
+				from = mScreenName;
+			wrapper.populateFrom(date, from_me != 0, from, message, has_been_read != 0);
 
 			return row;
 		}
@@ -284,7 +289,11 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			if (!has_been_read) {
 				ColorDrawable layers[] = new ColorDrawable[2];
 				layers[0] = new ColorDrawable(0xff404040);
-				layers[1] = new ColorDrawable(0x00000000);
+				if (from_me) {
+					layers[1] = new ColorDrawable(0x60404040);
+				} else {
+					layers[1] = new ColorDrawable(0x00000000);
+				}
 				TransitionDrawable backgroundColorAnimation = new
 					TransitionDrawable(layers);
 				mRowView.setBackgroundDrawable(backgroundColorAnimation);

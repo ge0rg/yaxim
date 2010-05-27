@@ -38,6 +38,7 @@ import org.yaxim.androidclient.util.StatusModeInt;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.database.Cursor;
 
 import android.net.Uri;
 import android.util.Log;
@@ -47,6 +48,11 @@ public class SmackableImp implements Smackable {
 
 	final static private int PACKET_TIMEOUT = 12000;
 	final static private int KEEPALIVE_TIMEOUT = 300000; // 5min
+
+	final static private String[] SEND_OFFLINE_PROJECTION = new String[] {
+			ChatConstants._ID, ChatConstants.JID, ChatConstants.MESSAGE };
+	final static private String SEND_OFFLINE_SELECTION = "from_me = 1 AND read = 0";
+
 
 	private final YaximConfiguration mConfig;
 	private final ConnectionConfiguration mXMPPConfig;
@@ -141,6 +147,7 @@ public class SmackableImp implements Smackable {
 				mXMPPConnection.login(mConfig.userName, mConfig.password,
 						mConfig.ressource);
 			}
+			sendOfflineMessages();
 		} catch (XMPPException e) {
 			throw new YaximXMPPException(e.getLocalizedMessage());
 		}
@@ -232,7 +239,9 @@ public class SmackableImp implements Smackable {
 		Collection<RosterEntry> rosterEntries = mRoster.getEntries();
 		for (RosterEntry rosterEntry : rosterEntries) {
 			setRosterEntry(rosterEntry);
+			addRosterEntryToDB(rosterEntry);
 		}
+		mServiceCallBack.rosterChanged();
 	}
 
 	private void setRosterEntry(RosterEntry rosterEntry) {
@@ -295,6 +304,8 @@ public class SmackableImp implements Smackable {
 		String userStatusMessage = userPresence.getStatus();
 		String userGroups = getGroup(entry.getGroups());
 
+
+		debugLog("getRosterItemForRosterEntry(): " + jabberID + " -> " + userName);
 		return new RosterItem(jabberID, userName, userStatus,
 				userStatusMessage, userGroups);
 	}
@@ -324,12 +335,42 @@ public class SmackableImp implements Smackable {
 		return Mode.valueOf(modeStr);
 	}
 
+	public void sendOfflineMessages() {
+		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI,
+				SEND_OFFLINE_PROJECTION, SEND_OFFLINE_SELECTION,
+				null, null);
+		final int _ID_COL = cursor.getColumnIndexOrThrow(ChatConstants._ID);
+		final int JID_COL = cursor.getColumnIndexOrThrow(ChatConstants.JID);
+		final int MSG_COL = cursor.getColumnIndexOrThrow(ChatConstants.MESSAGE);
+		ContentValues mark_delivered = new ContentValues();
+		mark_delivered.put(ChatConstants.HAS_BEEN_READ, ChatConstants.DELIVERED);
+		while (cursor.moveToNext()) {
+			int _id = cursor.getInt(_ID_COL);
+			String toJID = cursor.getString(JID_COL);
+			String message = cursor.getString(MSG_COL);
+			Log.d(TAG, "sendOfflineMessages: " + toJID + " > " + message);
+			final Message newMessage = new Message(toJID, Message.Type.chat);
+			newMessage.setBody(message);
+			mXMPPConnection.sendPacket(newMessage);
+
+			Uri rowuri = Uri.parse("content://" + ChatProvider.AUTHORITY
+				+ "/" + ChatProvider.TABLE_NAME + "/" + _id);
+				mContentResolver.update(rowuri, mark_delivered,
+						null, null);
+			mContentResolver.update(ChatProvider.CONTENT_URI, mark_delivered,
+					SEND_OFFLINE_SELECTION, null);
+		}
+	}
+
 	public void sendMessage(String toJID, String message) {
 		final Message newMessage = new Message(toJID, Message.Type.chat);
 		newMessage.setBody(message);
 		if (isAuthenticated()) {
 			mXMPPConnection.sendPacket(newMessage);
-			addChatMessageToDB(true, toJID, message, true);
+			addChatMessageToDB(ChatConstants.OUTGOING, toJID, message, ChatConstants.DELIVERED);
+		} else {
+			// send offline -> store to DB
+			addChatMessageToDB(ChatConstants.OUTGOING, toJID, message, ChatConstants.UNREAD);
 		}
 	}
 
@@ -370,6 +411,8 @@ public class SmackableImp implements Smackable {
 	};
 
 	private void registerRosterListener() {
+		// flush roster on connecting.
+		mContentResolver.delete(RosterProvider.CONTENT_URI, "", null);
 		mRoster = mXMPPConnection.getRoster();
 
 		mRoster.addRosterListener(new RosterListener() {
@@ -442,7 +485,7 @@ public class SmackableImp implements Smackable {
 					String fromJID = getJabberID(msg.getFrom());
 					String toJID = getJabberID(msg.getTo());
 
-					addChatMessageToDB(false, fromJID, chatMessage, false);
+					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.UNREAD);
 					mServiceCallBack.newMessage(fromJID, chatMessage);
 				}
 			}
@@ -516,10 +559,14 @@ public class SmackableImp implements Smackable {
 
 	private String getName(RosterEntry rosterEntry) {
 		String name = rosterEntry.getName();
-		if (name != null) {
+		if (name != null && name != "") {
 			return name;
 		}
-		return StringUtils.parseName(rosterEntry.getUser());
+		name = StringUtils.parseName(rosterEntry.getUser());
+		if (name != "") {
+			return name;
+		}
+		return rosterEntry.getUser();
 	}
 	
 	private StatusMode getStatus(Presence presence) {

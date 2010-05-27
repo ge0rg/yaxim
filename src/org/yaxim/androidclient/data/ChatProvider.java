@@ -189,7 +189,7 @@ public class ChatProvider extends ContentProvider {
 
 	private static void infoLog(String data) {
 		if (LogConstants.LOG_INFO) {
-			Log.i(TAG, "ChatProvider.query: failed");
+			Log.i(TAG, data);
 		}
 	}
 
@@ -246,6 +246,12 @@ public class ChatProvider extends ContentProvider {
 		public static final String JID = "jid";
 		public static final String MESSAGE = "message";
 		public static final String HAS_BEEN_READ = "read";
+
+		// boolean mappings
+		public static final boolean INCOMING = false;
+		public static final boolean OUTGOING = true;
+		public static final boolean UNREAD = false;
+		public static final boolean DELIVERED = true;
 
 		public static ArrayList<String> getRequiredColumns() {
 			ArrayList<String> tmpList = new ArrayList<String>();

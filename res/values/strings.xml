@@ -11,8 +11,6 @@
 	<string name="conn_reconnect">\nReconnect in %d seconds.</string>
 
 	<!-- Global Strings -->
-	<string name="Global_Cancel">Cancel</string>
-	<string name="Global_OK">OK</string>
 	<string name="Global_Exit">Exit</string>
 	<string name="Global_authenticate_first">Please connect first</string>
 	<string name="Global_Me">Me</string>
@@ -27,6 +25,9 @@
 	<string name="StartupDialog_Username_title">Enter your Jabber ID:</string>
 	<string name="StartupDialog_passwd_title">Password:</string>
 	<string name="StartupDialog_port_title">Port:</string>
+
+	<!-- Notifications -->
+	<string name="notification_message">Message from %s:</string>
 
 	<!-- Notification Settings 	-->
 	<string name="preftitle_notify">Notification Preferences</string>
@@ -158,7 +159,7 @@
 	<string name="AddContact_SpinnerPrompt">Choose Group</string>
 	<string name="addFriend_aliasHint">Enter desired alias</string>
 	<string name="setStatusmsgHint">Enter your statusmessage here</string>
-	<string name="setStatusmsgDefault">This is Yaxims default statusmessage!</string>
+	<string name="setStatusmsgDefault"></string>
 	<string name="setStatusTitle">Set your status</string>
 	<string name="newGroup_summ">Enter the desired name for your new Group</string>
 	<string name="newGroup_title">Add New Group</string>
@@ -169,7 +170,7 @@
 	<string name="MoveRosterEntryToGroupDialog_summ">Select a group from the spinner below</string>
 	<string name="MoveRosterEntryToGroupDialog_title">Change group</string>
 	<string name="ConnectProgressMessage">Please wait while connecting to server ...</string>
-	<string name="deleteRosterItem_text">Really remove </string>
+	<string name="deleteRosterItem_text">Really remove %s?</string>
 	<string name="deleteRosterItem_title">Remove contact</string>
 
 	<!-- CHATWINDOW -->
@@ -178,7 +179,7 @@
 	<string name="chat_sendButtonTitle">Send</string>
 	<string name="chat_from_me">Me:</string>
 	<string name="toast_connectfail_message">Connecting Failed!</string>
-	<string name="toast_connect_before_send">Please connect before sending a message!</string>
+	<string name="toast_stored_offline">The message has been stored for transmission.</string>
 
 	<!-- GPS settings -->
 	<string name="showGPS_title">GPS to status</string>
@@ -257,5 +258,15 @@
 		SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 		SOFTWARE.
     </string>
-	<string name="AboutDialog_greetings">The yaxim Team - 22.01.2010</string>
+	<string name="AboutDialog_greetings">The yaxim Team - 24.05.2010</string>
+
+	<!-- list of Status codes to display -->
+	<string-array name="statuslist">
+		<item>Online</item>
+		<item>Away</item>
+		<item>Chat</item>
+		<item>Do not disturb</item>
+		<item>Not available</item>
+		<item>Offline</item>
+	</string-array>
 </resources>
