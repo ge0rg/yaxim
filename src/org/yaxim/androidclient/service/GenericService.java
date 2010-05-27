@@ -14,6 +14,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.Vibrator;
@@ -150,8 +151,13 @@ public abstract class GenericService extends Service {
 	}
 
 	private void vibraNotififaction() {
+		//TODO instead of vibrating here, we should let the notification do that. There seems to be a bug in there though
 		if (mConfig.isVibraNotify) {
-			mVibrator.vibrate(400);
+			AudioManager am = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
+			boolean vibrate = am.shouldVibrate(AudioManager.VIBRATE_TYPE_NOTIFICATION);
+			if (vibrate) {
+				mVibrator.vibrate(400);
+			}
 		}
 	}
 
