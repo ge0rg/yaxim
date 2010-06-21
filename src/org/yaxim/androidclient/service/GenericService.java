@@ -118,6 +118,7 @@ public abstract class GenericService extends Service {
 		String title = getString(R.string.notification_message, author);
 		mNotification = new Notification(R.drawable.icon, title,
 				System.currentTimeMillis());
+		mNotification.sound = mConfig.ringtone;
 		Uri userNameUri = Uri.parse(fromJid);
 		mNotificationIntent.setData(userNameUri);
 		mNotificationIntent.putExtra(ChatWindow.INTENT_EXTRA_USERNAME, fromUserId);
