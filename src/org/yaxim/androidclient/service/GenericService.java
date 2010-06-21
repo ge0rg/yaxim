@@ -113,7 +113,7 @@ public abstract class GenericService extends Service {
 		if (null == fromUserId || fromUserId.length() == 0 || fromJid.equals(fromUserId)) {
 			author = fromJid;
 		} else {
-			author = fromUserId + " (" + fromJid + ")";
+			author = fromUserId;
 		}
 		String title = getString(R.string.notification_message, author);
 		mNotification = new Notification(R.drawable.icon, title,
