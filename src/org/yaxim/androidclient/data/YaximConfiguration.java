@@ -9,6 +9,8 @@ import org.yaxim.androidclient.util.XMPPHelper;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.net.Uri;
+import android.provider.Settings;
 import android.util.Log;
 
 public class YaximConfiguration implements OnSharedPreferenceChangeListener {
@@ -33,6 +35,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 	public boolean isLEDNotify;
 	public boolean isVibraNotify;
+	public Uri ringtone;
 
 	public boolean smackdebug;
 
@@ -75,6 +78,12 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 				false);
 		this.isVibraNotify = prefs.getBoolean(
 				PreferenceConstants.VIBRATIONNOTIFY, false);
+		String rt = prefs.getString(
+				PreferenceConstants.RINGTONENOTIFY, null);
+		if(rt == null)
+				this.ringtone = Settings.System.DEFAULT_NOTIFICATION_URI;
+		else
+				this.ringtone = Uri.parse(rt);
 		this.password = prefs.getString(PreferenceConstants.PASSWORD, "");
 		this.ressource = prefs
 				.getString(PreferenceConstants.RESSOURCE, "yaxim");
