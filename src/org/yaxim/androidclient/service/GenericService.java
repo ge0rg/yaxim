@@ -115,7 +115,7 @@ public abstract class GenericService extends Service {
 		} else {
 			author = fromUserId;
 		}
-		String title = getString(R.string.notification_message, author);
+		String title = author+": "+message;
 		mNotification = new Notification(R.drawable.icon, title,
 				System.currentTimeMillis());
 		//mNotification.sound = mConfig.ringtone;
