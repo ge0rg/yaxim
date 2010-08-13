@@ -61,6 +61,8 @@ public class SmackableImp implements Smackable {
 	private XMPPServiceCallback mServiceCallBack;
 	private Roster mRoster;
 
+	private Packet lastPacket = null;
+
 	private final ConcurrentHashMap<String, ConcurrentHashMap<String, RosterItem>> mRosterItemsByGroup = new ConcurrentHashMap<String, ConcurrentHashMap<String, RosterItem>>();
 	private final ContentResolver mContentResolver;
 
@@ -485,6 +487,7 @@ public class SmackableImp implements Smackable {
 	}
 
 	private void registerMessageListener() {
+		Log.d(TAG, "registerMessageListener()");
 		PacketTypeFilter filter = new PacketTypeFilter(Message.class);
 
 		PacketListener listener = new PacketListener() {
@@ -492,8 +495,10 @@ public class SmackableImp implements Smackable {
 			long lastTime = 0;
 
 			public void processPacket(Packet packet) {
+				try {
 				// do equality check against looping bug in smack
 				long time = System.currentTimeMillis();
+				debugLog("processPacket: l=" + lastPacket +  "(" + lastTime + ") p=" + packet + "(" + time + ")");
 				if (packet.equals(lastPacket) && time < lastTime + 100) {
 					debugLog("processPacket: duplicate " + packet);
 					return;
@@ -504,14 +509,24 @@ public class SmackableImp implements Smackable {
 					String chatMessage = msg.getBody();
 
 					if (chatMessage == null) {
+						debugLog("processPacket: empty message body");
 						return;
 					}
+					if (lastPacket != null && packet == lastPacket) {
+						debugLog("processPacket: duplicate " + chatMessage);
+						return;
+					} else lastPacket = packet;
 
 					String fromJID = getJabberID(msg.getFrom());
 					String toJID = getJabberID(msg.getTo());
 
 					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.UNREAD);
 					mServiceCallBack.newMessage(fromJID, chatMessage);
+					debugLog("processPacket: added to db");
+				} else
+					debugLog("processPacket: WTF! not a message!");
+				} catch (Exception e) {
+					debugLog("processPacket: fail at " + Log.getStackTraceString(e));
 				}
 			}
 		};
