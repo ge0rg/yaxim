@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.RosterGroup;
 import org.jivesoftware.smack.RosterListener;
@@ -487,37 +487,20 @@ public class SmackableImp implements Smackable {
 	private void registerMessageListener() {
 		PacketTypeFilter filter = new PacketTypeFilter(Message.class);
 
-		PacketListener listener = new PacketListener() {
-			Packet lastPacket = null;
-			long lastTime = 0;
-
-			public void processPacket(Packet packet) {
-				// do equality check against looping bug in smack
-				long time = System.currentTimeMillis();
-				if (packet.equals(lastPacket) && time < lastTime + 100) {
-					debugLog("processPacket: duplicate " + packet);
-					return;
-				} else lastPacket = packet;
-				lastTime = time;
-				if (packet instanceof Message) {
-					Message msg = (Message) packet;
-					String chatMessage = msg.getBody();
-
-					if (chatMessage == null) {
-						return;
-					}
-
-					String fromJID = getJabberID(msg.getFrom());
-					String toJID = getJabberID(msg.getTo());
-
-					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.UNREAD);
-					mServiceCallBack.newMessage(fromJID, chatMessage);
-				}
-			}
-		};
+		PacketListener listener = new MessagePacketListener(this);
 
 		mXMPPConnection.addPacketListener(listener, filter);
 	}
+
+  public void processMessage(Message msg) {
+    String fromJID = getJabberID(msg.getFrom());
+    String toJID = getJabberID(msg.getTo());
+
+    // maybe check against db
+    String chatMessage = msg.getBody();
+    addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.UNREAD);
+    mServiceCallBack.newMessage(fromJID, chatMessage);
+  }
 
 	private void addChatMessageToDB(boolean from_me, String JID,
 			String message, boolean read) {
