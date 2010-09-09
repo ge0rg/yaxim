@@ -393,24 +393,38 @@ public class XMPPService extends GenericService {
 		}
 	}
 
+  private class MyXMPPServiceCallback implements XMPPServiceCallback {
+    private String lastID = "";
+    public void newMessage(String from, String message, String newID) {
+      // Called from SmackableImp.processMessage
+      // duplicate-anti-dupe-till-it-works-somewhere-trick
+      if (newID == lastID) {
+        logInfo("ignoring duplicate ID: " + newID); 
+        return;
+      }
+      lastID = newID;
+
+      if (!mIsBoundTo.contains(from)) {
+        logInfo("notification: " + from);
+        notifyClient(from, mSmackable.getNameForJID(from), message);
+      }
+    }
+
+    public void rosterChanged() {
+      postRosterChanged();
+    }
+
+    public boolean isBoundTo(String jabberID) {
+      return mIsBoundTo.contains(jabberID);
+    }
+  }
+
+  private XMPPServiceCallback myXMPPCallback = null;
+
 	private void registerAdapterCallback() {
-		mSmackable.registerCallback(new XMPPServiceCallback() {
-
-			public void newMessage(String from, String message) {
-        // FIXME who calles here?
-				if (!mIsBoundTo.contains(from)) {
-					logInfo("notification: " + from);
-					notifyClient(from, mSmackable.getNameForJID(from), message);
-				}
-			}
-
-			public void rosterChanged() {
-				postRosterChanged();
-			}
-
-			public boolean isBoundTo(String jabberID) {
-				return mIsBoundTo.contains(jabberID);
-			}
-		});
+    if (myXMPPCallback == null)
+      myXMPPCallback = new MyXMPPServiceCallback();
+		mSmackable.registerCallback(myXMPPCallback);
 	}
 }
+

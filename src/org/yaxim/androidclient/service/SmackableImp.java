@@ -80,6 +80,7 @@ public class SmackableImp implements Smackable {
 		// actually, authenticated must be true now, or an exception must have
 		// been thrown.
 		if (isAuthenticated()) {
+      debugLog("Registering a MessageListener");
 			registerMessageListener();
 			registerRosterListener();
 			Presence presence = new Presence(Presence.Type.available);
@@ -96,7 +97,7 @@ public class SmackableImp implements Smackable {
 	}
 
 	public void removeRosterItem(String user) throws YaximXMPPException {
-		debugLog("removeRosterItem(" + user + ")");
+		//debugLog("removeRosterItem(" + user + ")");
 
 		tryToRemoveRosterEntry(user);
 		mServiceCallBack.rosterChanged();
@@ -140,6 +141,7 @@ public class SmackableImp implements Smackable {
 		try {
 			if (mXMPPConnection.isConnected()) {
 				try {
+          unRegisterCallback();
 					mXMPPConnection.disconnect();
 				} catch (Exception e) {
 					debugLog("conn.disconnect() failed: " + e);
@@ -495,11 +497,12 @@ public class SmackableImp implements Smackable {
   public void processMessage(Message msg) {
     String fromJID = getJabberID(msg.getFrom());
     String toJID = getJabberID(msg.getTo());
+    String msgID = msg.getPacketID();
 
     // maybe check against db
     String chatMessage = msg.getBody();
     addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.UNREAD);
-    mServiceCallBack.newMessage(fromJID, chatMessage);
+    mServiceCallBack.newMessage(fromJID, chatMessage, msgID);
   }
 
 	private void addChatMessageToDB(boolean from_me, String JID,
