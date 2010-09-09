@@ -3,9 +3,12 @@ import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 //import org.yaxim.androidclient.Smackable;
+import org.yaxim.androidclient.util.LogConstants;
+import android.util.Log;
 
 public final class MessagePacketListener implements PacketListener {
 
+	final static private String TAG = "MessagePacketListener";
   SmackableImp smackable;
   Message msg;
 
@@ -14,28 +17,28 @@ public final class MessagePacketListener implements PacketListener {
   }
 
 
-  /*
-     Packet lastPacket = null;
-     long lastTime = 0;
-     */
-
+  private String lastID = "";
   public void processPacket(Packet packet) {
-    /*
-    // do equality check against looping bug in smack
-    long time = System.currentTimeMillis();
-    if (packet.equals(lastPacket) && time < lastTime + 100) {
-    debugLog("processPacket: duplicate " + packet);
-    return;
-    } else lastPacket = packet;
-    lastTime = time;
-    */
-
     if (packet instanceof Message) {
       msg = (Message) packet;
       String chatMessage = msg.getBody();
 
-      if (chatMessage == null) {
+      if (chatMessage == null)
         return;
+      
+      String newID = msg.getPacketID();
+      if (newID=="")
+        Log.i(TAG, "received message without ID!!!\n" + msg.toXML());
+
+      if (newID == lastID)
+        return;
+
+      lastID = newID;
+
+      if (LogConstants.LOG_DEBUG) {
+        Log.d(TAG, "received " + msg.getPacketID());
+        //Log.d(TAG, msg.toString());
+        //Log.d(TAG, msg.toXML());
       }
 
       this.smackable.processMessage(msg);
