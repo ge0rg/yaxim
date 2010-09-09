@@ -80,6 +80,7 @@ public class SmackableImp implements Smackable {
 		// actually, authenticated must be true now, or an exception must have
 		// been thrown.
 		if (isAuthenticated()) {
+      // this is called multiple times due to reconnects??!!!!
       debugLog("Registering a MessageListener");
 			registerMessageListener();
 			registerRosterListener();
