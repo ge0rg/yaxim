@@ -60,6 +60,7 @@ public class SmackableImp implements Smackable {
 
 	private XMPPServiceCallback mServiceCallBack;
 	private Roster mRoster;
+	private PacketListener mPacketListener;
 
 	private Packet lastPacket = null;
 
@@ -487,10 +488,13 @@ public class SmackableImp implements Smackable {
 	}
 
 	private void registerMessageListener() {
+		// do not register multiple packet listeners
+		if (mPacketListener != null)
+			return;
 		Log.d(TAG, "registerMessageListener()");
 		PacketTypeFilter filter = new PacketTypeFilter(Message.class);
 
-		PacketListener listener = new PacketListener() {
+		mPacketListener = new PacketListener() {
 			Packet lastPacket = null;
 			long lastTime = 0;
 
@@ -531,7 +535,7 @@ public class SmackableImp implements Smackable {
 			}
 		};
 
-		mXMPPConnection.addPacketListener(listener, filter);
+		mXMPPConnection.addPacketListener(mPacketListener, filter);
 	}
 
 	private void addChatMessageToDB(boolean from_me, String JID,
