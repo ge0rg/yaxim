@@ -170,6 +170,20 @@ public class MainWindow extends GenericExpandableListActivity {
 		menu.setHeaderTitle(getString(R.string.roster_contextmenu_title, menuName));
 	}
 
+	void removeChatHistoryDialog(final String JID, final String userName) {
+		new AlertDialog.Builder(this)
+			.setTitle(R.string.deleteRosterItem_title)
+			.setMessage(getString(R.string.deleteRosterItem_text, userName, JID))
+			.setPositiveButton(android.R.string.yes,
+					new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							// TODO
+						}
+					})
+			.setNegativeButton(android.R.string.no, null)
+			.create().show();
+	}
+
 	void removeRosterItemDialog(final String JID, final String userName) {
 		new AlertDialog.Builder(this)
 			.setTitle(R.string.deleteRosterItem_title)
@@ -274,6 +288,10 @@ public class MainWindow extends GenericExpandableListActivity {
 			switch (itemID) {
 			case R.id.roster_contextmenu_contact_open_chat:
 				startChatActivity(userJid, userName);
+				return true;
+
+			case R.id.roster_contextmenu_contact_delmsg:
+				removeChatHistoryDialog(userJid, userName);
 				return true;
 
 			case R.id.roster_contextmenu_contact_delete:
