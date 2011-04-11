@@ -41,6 +41,8 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 	private final SharedPreferences prefs;
 
+	public Uri notifySoundAvailable;
+
 	public YaximConfiguration(SharedPreferences _prefs) {
 		prefs = _prefs;
 		prefs.registerOnSharedPreferenceChangeListener(this);
@@ -89,6 +91,8 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 				PreferenceConstants.VIBRATIONNOTIFY, false);
 		this.notifySound = Uri.parse(prefs.getString(
 				PreferenceConstants.RINGTONENOTIFY, ""));
+		this.notifySoundAvailable = Uri.parse(prefs.getString(
+				PreferenceConstants.RINGTONENOTIFY_AVAILABLE, ""));
 		this.password = prefs.getString(PreferenceConstants.PASSWORD, "");
 		this.ressource = prefs
 				.getString(PreferenceConstants.RESSOURCE, "yaxim");

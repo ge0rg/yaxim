@@ -18,14 +18,16 @@
 			android:summaryOn="@string/vibr_summOn"
 		/>
 		<RingtonePreference
-			android:id="@+id/ringtone"
-			android:key="ringtone"
 			android:title="@string/ringtone_title"
 			android:ringtoneType="notification"
 			android:showDefault="true"
 			android:showSilent="true"
 			android:summary="@string/ringtone_summ"
-		/>
+		android:id="@+id/ringtone" android:key="ringtone"/><RingtonePreference
+			android:ringtoneType="notification"
+			android:showDefault="true"
+			android:showSilent="true"
+			android:id="@+id/ringtone" android:key="ringtone_available" android:title="@string/ringtone_avail_title" android:summary="@string/ringtone_avail_summ"/>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/preftitle_boot">
 		<CheckBoxPreference

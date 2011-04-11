@@ -15,10 +15,12 @@ import org.yaxim.androidclient.util.StatusMode;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.util.Log;
 
 public class XMPPService extends GenericService {
 
@@ -40,6 +42,7 @@ public class XMPPService extends GenericService {
 	private RemoteCallbackList<IXMPPRosterCallback> mRosterCallbacks = new RemoteCallbackList<IXMPPRosterCallback>();
 	private HashSet<String> mIsBoundTo = new HashSet<String>();
 	private Handler mMainHandler = new Handler();
+	private static final String ROSTER_NOTIFY_PREF = "RosterNotifySettings"; 
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -239,6 +242,19 @@ public class XMPPService extends GenericService {
 			public void requestAuthorizationForRosterItem(String user)
 					throws RemoteException {
 				mSmackable.requestAuthorizationForRosterItem(user);
+			}
+			
+			public void setNotifyOnAvailable(String user, boolean doNotify) {
+				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+			    SharedPreferences.Editor editor = pref.edit();
+			    editor.putBoolean(user, doNotify);
+
+			    editor.commit();
+			}
+			
+			public boolean getNotifyOnAvailable(String user) {
+				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+			    return pref.getBoolean(user, false);
 			}
 		};
 	}
@@ -445,6 +461,15 @@ public class XMPPService extends GenericService {
 				if (!mIsBoundTo.contains(from)) {
 					logInfo("notification: " + from);
 					notifyClient(from, mSmackable.getNameForJID(from), message);
+				}
+			}
+			
+			public void presenceChanged(String from, boolean available) {
+				Log.d("XMPP Service", "new Status " + available);
+				
+				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+				if (available && pref.getBoolean(from, false)) {
+					notifyJidIsAvailable(from, mSmackable.getNameForJID(from));
 				}
 			}
 

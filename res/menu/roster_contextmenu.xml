@@ -39,10 +39,11 @@
 			android:title="@string/roster_contextmenu_contact_change_group">
 		</item>
 
-	</group>
+	<item android:visible="true" android:enabled="true" android:orderInCategory="6" android:title="@string/roster_contextmenu_contact_notify_available" android:id="@+id/roster_contextmenu_contact_notify_available"></item></group>
 
 	<item android:id="@+id/roster_exit" android:visible="true"
 		android:enabled="true" android:orderInCategory="8" android:title="@android:string/cancel">
 	</item>
+	
 
 </menu>
