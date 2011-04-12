@@ -20,7 +20,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
-import android.util.Log;
 
 public class XMPPService extends GenericService {
 
@@ -41,6 +40,7 @@ public class XMPPService extends GenericService {
 
 	private RemoteCallbackList<IXMPPRosterCallback> mRosterCallbacks = new RemoteCallbackList<IXMPPRosterCallback>();
 	private HashSet<String> mIsBoundTo = new HashSet<String>();
+	private boolean mIsBound = false;
 	private Handler mMainHandler = new Handler();
 	private static final String ROSTER_NOTIFY_PREF = "RosterNotifySettings"; 
 
@@ -53,6 +53,7 @@ public class XMPPService extends GenericService {
 			mIsBoundTo.add(chatPartner);
 			return mServiceChatConnection;
 		}
+		mIsBound = true;
 
 		return mService2RosterConnection;
 	}
@@ -65,6 +66,7 @@ public class XMPPService extends GenericService {
 			mIsBoundTo.add(chatPartner);
 			resetNotificationCounter(chatPartner);
 		}
+		mIsBound = true;
 	}
 
 	@Override
@@ -73,6 +75,7 @@ public class XMPPService extends GenericService {
 		if ((chatPartner != null)) {
 			mIsBoundTo.remove(chatPartner);
 		}
+		mIsBound = false;
 		return true;
 	}
 
@@ -465,10 +468,12 @@ public class XMPPService extends GenericService {
 			}
 			
 			public void presenceChanged(String from, boolean available) {
-				Log.d("XMPP Service", "new Status " + available);
 				
 				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
-				if (available && pref.getBoolean(from, false)) {
+				// notify of user presence if app is not bound to service
+				// OR is bound, but to another chat
+				if (available && pref.getBoolean(from, false) &&
+				    ((mIsBound == false) || ((!mIsBoundTo.contains(from)) && !mIsBoundTo.isEmpty())) ) {
 					notifyJidIsAvailable(from, mSmackable.getNameForJID(from));
 				}
 			}
