@@ -76,9 +76,55 @@ public class XMPPService extends GenericService {
 			mIsBoundTo.remove(chatPartner);
 		}
 		mIsBound = false;
+		updateAvailableUsers();
 		return true;
 	}
 
+	private void updateAvailableUsers() {
+		List<String> rosterGroups = null;
+		try {
+			rosterGroups = mService2RosterConnection.getRosterGroups();
+			if (rosterGroups == null) return;
+			for (String group : rosterGroups) {
+				List<RosterItem> rosterItems = mService2RosterConnection.getRosterEntriesByGroup(group);
+				for (RosterItem item : rosterItems) {
+					boolean available = mSmackable.isAvailable(item.jabberID);
+					logInfo(item.jabberID + " status " + available);
+					mAvailable.put(item.jabberID, available);
+				}
+			}
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void notifyNewAvailableUsers() {
+		List<String> rosterGroups = null;
+		try {
+			rosterGroups = mService2RosterConnection.getRosterGroups();
+			if (rosterGroups == null) return;
+			for (String group : rosterGroups) {
+				List<RosterItem> rosterItems = mService2RosterConnection.getRosterEntriesByGroup(group);
+				for (RosterItem item : rosterItems) {
+					boolean available = mSmackable.isAvailable(item.jabberID);
+					logInfo(item.jabberID + " status " + available);
+					if (mAvailable.containsKey(item.jabberID) && (mAvailable.get(item.jabberID) == false) && (available == true)) {
+						mAvailable.put(item.jabberID, available);
+						SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+						// notify of user presence if app is not bound to service
+						// OR is bound, but to another chat
+						if (available && pref.getBoolean(item.jabberID, false) &&
+						    ((mIsBound == false) || ((!mIsBoundTo.contains(item.jabberID)) && !mIsBoundTo.isEmpty())) ) {
+								notifyJidIsAvailable(item.jabberID, item.screenName);
+						}
+					}
+				}
+			}
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -220,6 +266,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public List<String> getRosterGroups() throws RemoteException {
+				if (mSmackable == null) return null;
 				return mSmackable.getRosterGroups();
 			}
 
@@ -422,6 +469,7 @@ public class XMPPService extends GenericService {
 				}
 			}
 			mRosterCallbacks.finishBroadcast();
+			notifyNewAvailableUsers();
 		}
 		if (mIsConnected.get() && mSmackable != null && !mSmackable.isAuthenticated()) {
 			logInfo("rosterChanged(): disconnected without warning");
@@ -467,17 +515,6 @@ public class XMPPService extends GenericService {
 				}
 			}
 			
-			public void presenceChanged(String from, boolean available) {
-				
-				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
-				// notify of user presence if app is not bound to service
-				// OR is bound, but to another chat
-				if (available && pref.getBoolean(from, false) &&
-				    ((mIsBound == false) || ((!mIsBoundTo.contains(from)) && !mIsBoundTo.isEmpty())) ) {
-					notifyJidIsAvailable(from, mSmackable.getNameForJID(from));
-				}
-			}
-
 			public void rosterChanged() {
 				postRosterChanged();
 			}

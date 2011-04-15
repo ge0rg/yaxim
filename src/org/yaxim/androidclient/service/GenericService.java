@@ -44,6 +44,7 @@ public abstract class GenericService extends Service {
 	private int lastNotificationId = 2;
 
 	protected YaximConfiguration mConfig;
+	public Map<String, Boolean> mAvailable = new HashMap<String, Boolean>();
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -93,6 +94,9 @@ public abstract class GenericService extends Service {
 	}
 
 	protected void notifyJidIsAvailable(String fromJid, String fromUserName) {
+		
+		if (notificationCount.containsKey(fromJid)) return;
+		
 		mWakeLock.acquire();
 		setNotificationForAvailability(fromJid, fromUserName);
 		setLEDNotification();
@@ -114,12 +118,8 @@ public abstract class GenericService extends Service {
 	
 	private void setNotificationForAvailability(String fromJid, String fromUserId) {
 		
-		int mNotificationCounter = 0;
-		if (notificationCount.containsKey(fromJid)) {
-			mNotificationCounter = notificationCount.get(fromJid);
-		}
-		mNotificationCounter++;
-		notificationCount.put(fromJid, mNotificationCounter);
+		int mNotificationCounter = 1;
+		
 		String author;
 		if (null == fromUserId || fromUserId.length() == 0 || fromJid.equals(fromUserId)) {
 			author = fromJid;

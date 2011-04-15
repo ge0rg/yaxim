@@ -487,7 +487,6 @@ public class SmackableImp implements Smackable {
 				RosterEntry rosterEntry = mRoster.getEntry(jabberID);
 				setRosterEntry(rosterEntry);
 				mServiceCallBack.rosterChanged();
-				mServiceCallBack.presenceChanged(jabberID, presence.isAvailable());
 				updateOrInsertRosterEntryToDB(rosterEntry);
 			}
 		};
@@ -638,4 +637,13 @@ public class SmackableImp implements Smackable {
 			Log.d(TAG, data);
 		}
 	}
+	
+	public boolean isAvailable(String jid) {
+		if (null != this.mRoster.getEntry(jid)) {
+			return this.mRoster.getPresence(jid).isAvailable();
+		} else {
+			return false;
+		}			
+	}
+	
 }
