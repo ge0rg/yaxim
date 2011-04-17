@@ -254,4 +254,6 @@
 		René Moser https://launchpad.net/~resmo</string>
 	<string name="notifyOnAvailable_title">Bei Erreichbarkeit</string>
 	<string name="notifyOnAvailable_summ">Bei Erreichbarkeit des Users benachrichtigen</string>
+	
+	<string name="chooseContact">Kontakt wählen</string>
 </resources>
