@@ -4,13 +4,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.net.ssl.SSLContext;
 
-import de.duenndns.ssl.MemorizingTrustManager;
+import javax.net.ssl.SSLContext;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.PacketListener;
@@ -26,13 +25,17 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Presence.Mode;
+import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
+import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.data.ChatProvider;
+import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.data.RosterProvider;
-import org.yaxim.androidclient.data.YaximConfiguration;
-import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
+import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.AdapterConstants;
 import org.yaxim.androidclient.util.LogConstants;
@@ -43,11 +46,18 @@ import android.app.Service;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.database.Cursor;
-
 import android.net.Uri;
 import android.util.Log;
+import de.duenndns.ssl.MemorizingTrustManager;
 
 public class SmackableImp implements Smackable {
+
+	/**
+	 * Identifies the client type to other clients, according to
+	 * http://xmpp.org/registrar/disco-categories.html#client.
+	 */
+	private static final String CLIENT_IDENTITY_TYPE = "handheld";
+
 	final static private String TAG = "SmackableImp";
 
 	final static private int PACKET_TIMEOUT = 12000;
@@ -73,6 +83,17 @@ public class SmackableImp implements Smackable {
 	public SmackableImp(YaximConfiguration config,
 			ContentResolver contentResolver,
 			Service service) {
+
+		// This is a workaround for Smack on Android
+		// See http://community.igniterealtime.org/thread/31118
+		ProviderManager.getInstance().addIQProvider("query",
+				"http://jabber.org/protocol/disco#info",
+				new DiscoverInfoProvider());
+
+		ServiceDiscoveryManager.setIdentityType(CLIENT_IDENTITY_TYPE);
+		ServiceDiscoveryManager.setIdentityName(service
+				.getString(R.string.app_name));
+
 		this.mConfig = config;
 		this.mXMPPConfig = new ConnectionConfiguration(mConfig.customServer,
 				mConfig.port, mConfig.server);
@@ -169,6 +190,13 @@ public class SmackableImp implements Smackable {
 			if (!mXMPPConnection.isConnected()) {
 				throw new YaximXMPPException("SMACK connect failed without exception!");
 			}
+
+			// Provide service discovery info as described in
+			// http://xmpp.org/extensions/xep-0030.html
+			ServiceDiscoveryManager discoManager = ServiceDiscoveryManager
+					.getInstanceFor(mXMPPConnection);
+			discoManager.addFeature("http://jabber.org/protocol/disco#info");
+
 			// SMACK auto-logins if we were authenticated before
 			if (!mXMPPConnection.isAuthenticated()) {
 				mXMPPConnection.login(mConfig.userName, mConfig.password,
