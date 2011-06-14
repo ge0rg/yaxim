@@ -52,7 +52,10 @@ import de.duenndns.ssl.MemorizingTrustManager;
 
 public class SmackableImp implements Smackable {
 
-	/**  */
+	/**
+	 * The XML namespace URL for service discovery:
+	 * http://xmpp.org/protocols/disco/
+	 */
 	private static final String JABBER_PROTOCOL_DISCO_INFO = "http://jabber.org/protocol/disco#info";
 
 	/**
