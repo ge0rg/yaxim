@@ -52,6 +52,9 @@ import de.duenndns.ssl.MemorizingTrustManager;
 
 public class SmackableImp implements Smackable {
 
+	/**  */
+	private static final String JABBER_PROTOCOL_DISCO_INFO = "http://jabber.org/protocol/disco#info";
+
 	/**
 	 * Identifies the client type to other clients, according to
 	 * http://xmpp.org/registrar/disco-categories.html#client.
@@ -87,7 +90,7 @@ public class SmackableImp implements Smackable {
 		// This is a workaround for Smack on Android
 		// See http://community.igniterealtime.org/thread/31118
 		ProviderManager.getInstance().addIQProvider("query",
-				"http://jabber.org/protocol/disco#info",
+				JABBER_PROTOCOL_DISCO_INFO,
 				new DiscoverInfoProvider());
 
 		ServiceDiscoveryManager.setIdentityType(CLIENT_IDENTITY_TYPE);
@@ -195,7 +198,7 @@ public class SmackableImp implements Smackable {
 			// http://xmpp.org/extensions/xep-0030.html
 			ServiceDiscoveryManager discoManager = ServiceDiscoveryManager
 					.getInstanceFor(mXMPPConnection);
-			discoManager.addFeature("http://jabber.org/protocol/disco#info");
+			discoManager.addFeature(JABBER_PROTOCOL_DISCO_INFO);
 
 			// SMACK auto-logins if we were authenticated before
 			if (!mXMPPConnection.isAuthenticated()) {
