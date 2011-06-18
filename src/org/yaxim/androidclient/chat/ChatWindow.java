@@ -2,6 +2,8 @@ package org.yaxim.androidclient.chat;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.yaxim.androidclient.MainWindow;
 import org.yaxim.androidclient.R;
@@ -30,6 +32,7 @@ import android.os.Handler;
 import android.text.ClipboardManager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.util.Linkify;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -60,6 +63,13 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	private static final int[] PROJECTION_TO = new int[] { R.id.chat_date,
 			R.id.chat_from, R.id.chat_message };
+
+	private static final Pattern GEO_PATTERN = Pattern
+			.compile("\\b(geo|l):([0-9.]+),([0-9.]+)\\b");
+
+	private static final String GEO_SCHEME = "http://maps.google.com/maps?q=";
+
+	private static GeoTransform GEO_TRANSFORM = new GeoTransform();
 
 	private Handler mHandler = null;
 	private Button mSendButton = null;
@@ -336,6 +346,10 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				backgroundColorAnimation.startTransition(2000);
 			}
 			getMessageView().setText(message);
+
+			Linkify.addLinks(mMessageView, Linkify.ALL);
+			Linkify.addLinks(mMessageView, GEO_PATTERN, GEO_SCHEME, null,
+					GEO_TRANSFORM);
 		}
         
 		
@@ -361,6 +375,14 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			return mMessageView;
 		}
 
+	}
+
+	private static class GeoTransform implements Linkify.TransformFilter {
+		public String transformUrl(Matcher match, String url) {
+			StringBuilder builder = new StringBuilder();
+			builder.append(match.group(2)).append(',').append(match.group(3));
+			return builder.toString();
+		}
 	}
 
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
