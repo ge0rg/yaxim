@@ -13,6 +13,7 @@ import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.XMPPService;
 
 import com.markupartist.android.widget.ActionBar;
+import com.markupartist.android.widget.ActionBar.Action;
 import com.markupartist.android.widget.ActionBar.IntentAction;
 
 import android.app.ListActivity;
@@ -25,6 +26,8 @@ import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -106,6 +109,29 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		actionBar.setTitle(getString(R.string.chat_titlePrefix, titleUserid));
 		actionBar.setHomeAction(new IntentAction(this, MainWindow
 				.createIntent(this), R.drawable.ic_action_appicon));
+
+		actionBar.addAction(new Action() {
+
+			@Override
+			public void performAction(View view) {
+				LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+				Location location = manager
+						.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+				if (location != null) {
+					StringBuilder builder = new StringBuilder("geo:")
+							.append(location.getLatitude()).append(',')
+							.append(location.getLongitude());
+
+					mChatInput.append(builder);
+				}
+			}
+
+			@Override
+			public int getDrawable() {
+				return R.drawable.ic_action_location;
+			}
+		});
 
 		setChatWindowAdapter();
 	}
