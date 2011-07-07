@@ -74,7 +74,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	private XMPPChatServiceAdapter mServiceAdapter;
 	private XMPPRosterServiceAdapter mRosterServiceAdapter = null;
 	private NotificationManager mNotificationMGR;
-	private Context mContext;
 
 	private AlertDialog mChooser;
 	private Intent mRosterServiceIntent;
@@ -87,7 +86,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		setContentView(R.layout.mainchat);
 
 		mHandler = new Handler();
-		mContext = this;
 		registerForContextMenu(getListView());
 		setContactFromUri();
 		registerXMPPService();
@@ -180,7 +178,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 						}
 					}
 	
-					AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+					AlertDialog.Builder builder = new AlertDialog.Builder(ChatWindow.this);
 					builder.setTitle(getText(R.string.chooseContact))
 					       .setCancelable(true)
 					       .setItems(screenNames, new DialogInterface.OnClickListener() {
