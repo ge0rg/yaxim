@@ -19,8 +19,14 @@
 		<TextView
 			android:layout_width="fill_parent"
 			android:layout_height="wrap_content"
+			android:text="@string/AboutDialog_Developers"
+			android:padding="2sp"
+			/>
+		<TextView
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
 			android:autoLink="web"
-			android:text="@string/AboutDialog_DevelopersText"
+			android:text="@string/AboutDialog_DevelopersAddendum"
 			android:padding="2sp"
 			/>
 		<TextView
