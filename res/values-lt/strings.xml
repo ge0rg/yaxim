@@ -133,7 +133,7 @@
 	<string name="account_customserver_summ">Alternatyvus serverio vardas</string>
 	<string name="account_customserver_dialog_title">Įveskite serverio vardą:</string>
 	<string name="account_customserver_hint">serveris.pavyzdys.com</string>
-	<string name="require_ssl_title">Require SSL/TLS</string>
+	<string name="require_ssl_title">Reikalauti SSL/TLS</string>
 	<string name="require_ssl_summOn">Always encrypt server connection</string>
 	<string name="require_ssl_summOff">Allow unencrypted server connection</string>
 
@@ -151,7 +151,6 @@
 	<string name="deleteRosterItem_title">Pašalinti kontaktą</string>
 
 	<!-- CHATWINDOW -->
-	<string name="chat_titlePrefix">Pokalbis su: %s</string>
 	<string name="chat_from_me">Aš:</string>
 	<string name="toast_connectfail_message">Connection closed!</string>
 	<string name="toast_stored_offline">Žinutė išsaugota perdavimui.</string>
@@ -229,16 +228,14 @@
 		SOFTWARE.
     </string>
 
-	<!-- ATTENTION: statuslist needs to match prefArrays.xml:statusCodes -->
-	<string-array name="statuslist">
-		<item>Prisijungęs (-usi)</item>
-		<item>Pasitraukęs (-usi)</item>
-		<item>Laisvas pašnekesiams</item>
-		<item>Netrukdyti</item>
-		<item>Nepasiekiamas</item>
-		<item>Neprisijungęs (-usi)</item>
-	</string-array>
+	<string name="status_available">Prisijungęs (-usi)</string>
+	<string name="status_away">Pasitraukęs (-usi)</string>
+	<string name="status_chat">Laisvas pašnekesiams</string>
+	<string name="status_dnd">Netrukdyti</string>
+	<string name="status_xa">Nepasiekiamas</string>
+	<string name="status_offline">Neprisijungęs (-usi)</string>
 
 	<string name="translator_credits">Launchpad Contributions:
-  Antanas https://launchpad.net/~antanas</string>
+  Antanas https://launchpad.net/~antanas
+  Georg Lukas https://launchpad.net/~ge0rg</string>
 </resources>

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.yaxim.androidclient.MainWindow;
 import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.XMPPRosterServiceAdapter;
 import org.yaxim.androidclient.data.ChatProvider;
@@ -15,6 +16,9 @@ import org.yaxim.androidclient.service.IXMPPRosterService;
 import org.yaxim.androidclient.service.XMPPService;
 
 import android.app.AlertDialog;
+import com.markupartist.android.widget.ActionBar;
+import com.markupartist.android.widget.ActionBar.IntentAction;
+
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
@@ -95,13 +99,17 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		setSendButton();
 		
 		String titleUserid;
-		if (mUserScreenName != null && !mUserScreenName.equals(mWithJabberID)) {
-			titleUserid = mUserScreenName + " (" + mWithJabberID + ")";
+		if (mUserScreenName != null) {
+			titleUserid = mUserScreenName;
 		} else {
 			titleUserid = mWithJabberID;
 		}
-		
-		setTitle(getString(R.string.chat_titlePrefix, titleUserid));
+
+		ActionBar actionBar = (ActionBar) findViewById(R.id.actionbar);
+		actionBar.setTitle(titleUserid);
+		actionBar.setHomeAction(new IntentAction(this, MainWindow
+				.createIntent(this), R.drawable.ic_action_appicon));
+
 		setChatWindowAdapter();
 	}
 

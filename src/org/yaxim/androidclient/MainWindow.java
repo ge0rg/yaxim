@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.dialogs.AddRosterItemDialog;
+import org.yaxim.androidclient.dialogs.ChangeStatusDialog;
 import org.yaxim.androidclient.dialogs.FirstStartDialog;
 import org.yaxim.androidclient.dialogs.GroupNameView;
 import org.yaxim.androidclient.preferences.AccountPrefs;
@@ -18,6 +19,7 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -27,6 +29,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -45,6 +48,7 @@ import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
@@ -53,9 +57,14 @@ import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.IXMPPRosterCallback.Stub;
 import org.yaxim.androidclient.service.IXMPPRosterService;
 
+import com.markupartist.android.widget.ActionBar;
+import com.markupartist.android.widget.ActionBar.Action;
+
 public class MainWindow extends GenericExpandableListActivity {
 
 	private static final String TAG = "MainWindow";
+	
+	private static final int DIALOG_CHANGE_STATUS_ID = 0;
 
 	private final List<ArrayList<HashMap<String, RosterItem>>> rosterEntryList = new ArrayList<ArrayList<HashMap<String, RosterItem>>>();
 	private final List<HashMap<String, String>> rosterGroupList = new ArrayList<HashMap<String, String>>();
@@ -68,8 +77,13 @@ public class MainWindow extends GenericExpandableListActivity {
 	private ExpandableRosterAdapter rosterListAdapter;
 	private TextView mConnectingText;
 	private boolean showOffline;
+
 	private String mStatusMessage;
-	private String mStatusMode;
+	private StatusMode mStatusMode;
+
+	private ActionBar actionBar;
+	private ChangeStatusAction changeStatusAction;
+	private ToggleOfflineContactsAction toggleOfflineContactsAction;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -80,6 +94,64 @@ public class MainWindow extends GenericExpandableListActivity {
 		createUICallback();
 		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setupContenView();
+
+		actionBar = (ActionBar) findViewById(R.id.actionbar);
+		actionBar.setTitle(R.string.app_name);
+		actionBar.setSubTitle(mStatusMessage);
+
+		toggleOfflineContactsAction = new ToggleOfflineContactsAction();
+		actionBar.addAction(toggleOfflineContactsAction);
+
+		changeStatusAction = new ChangeStatusAction();
+		actionBar.setHomeAction(changeStatusAction);
+	}
+	
+	private abstract class AbstractAction implements Action {
+
+		/** Causes the view to reload the {@link Drawable}. */
+		void invalidate() {
+			ImageButton imageButton = (ImageButton) actionBar
+					.findViewWithTag(this);
+			imageButton.setImageResource(getDrawable());
+		}
+	}
+
+	private class ChangeStatusAction extends AbstractAction {
+		public void performAction(View view) {
+			if (serviceAdapter.isAuthenticated()) {
+				showDialog(DIALOG_CHANGE_STATUS_ID);
+			} else {
+				showToastNotification(R.string.Global_authenticate_first);
+			}
+		}
+		
+		public int getDrawable() {
+
+			boolean showOffline = !isConnected() || isConnecting()
+					|| getStatusMode() == null;
+
+			if (showOffline) {
+				return StatusMode.offline.getDrawableId();
+			}
+
+			return getStatusMode().getDrawableId();
+		}
+	}
+
+	private class ToggleOfflineContactsAction extends AbstractAction {
+
+		public int getDrawable() {
+			if (showOffline) {
+				return R.drawable.ic_action_online_friends;
+			}
+
+			return R.drawable.ic_action_all_friends;
+		}
+
+		public void performAction(View view) {
+			setOfflinceContactsVisibility(!showOffline);
+			updateRoster();
+		}
 	}
 
 	void setupContenView() {
@@ -102,6 +174,9 @@ public class MainWindow extends GenericExpandableListActivity {
 		super.onResume();
 		getPreferences(PreferenceManager.getDefaultSharedPreferences(this));
 		bindXMPPService();
+
+		// Causes the toggle button to show correct state on application start
+		toggleOfflineContactsAction.invalidate();
 	}
 
 
@@ -170,6 +245,16 @@ public class MainWindow extends GenericExpandableListActivity {
 				.get(AdapterConstants.CONTACT_ID).screenName;
 		}
 		menu.setHeaderTitle(getString(R.string.roster_contextmenu_title, menuName));
+	}
+
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		switch (id) {
+		case DIALOG_CHANGE_STATUS_ID:
+			return new ChangeStatusDialog(this);
+		}
+
+		return null;
 	}
 
 	void removeRosterItemDialog(final String JID, final String userName) {
@@ -400,8 +485,8 @@ public class MainWindow extends GenericExpandableListActivity {
 	}
 
 	private int getShowHideMenuIcon() {
-		return showOffline ? R.drawable.ic_menu_block
-				: android.R.drawable.ic_menu_view;
+		return showOffline ? R.drawable.ic_menu_online_friends
+				: R.drawable.ic_menu_all_friends;
 	}
 
 	private String getShowHideMenuText() {
@@ -409,70 +494,56 @@ public class MainWindow extends GenericExpandableListActivity {
 				: getString(R.string.Menu_ShowOff);
 	}
 
+	public StatusMode getStatusMode() {
+		return mStatusMode;
+	}
+
+	public String getStatusMessage() {
+		return mStatusMessage;
+	}
+
 	public static String getStatusTitle(Context context, String status, String statusMessage) {
-		String[] statusCodes = context.getResources().getStringArray(R.array.statusCodes);
-		String[] statusNames = context.getResources().getStringArray(R.array.statuslist);
-		// look up the UI string for the status mode
-		for (int i = 0; i < statusCodes.length; i++) {
-			if (statusCodes[i].equals(status)) {
-				status = statusNames[i];
-				break;
-			}
-		}
-		if (statusMessage.length() > 0)
+		status = context.getString(StatusMode.fromString(status).getTextId());
+
+		if (statusMessage.length() > 0) {
 			status = status + " (" + statusMessage + ")";
+		}
+
 		return status;
 	}
 
-	private void setStatusTitle() {
-		setTitle(getString(R.string.conn_title, getStatusTitle(this, mStatusMode, mStatusMessage)));
-	}
+	public void setAndSaveStatus(StatusMode statusMode, String message) {
+		setStatus(statusMode, message);
 
-
-	private void setStatus(String statusmode, String message) {
-		SharedPreferences.Editor prefedit = PreferenceManager.getDefaultSharedPreferences(this).edit();
-		mStatusMode = statusmode;
-		mStatusMessage = message;
 		// do not save "offline" to prefs, or else!
-		if (statusmode.equals("offline")) {
+		if (statusMode == StatusMode.offline) {
 			serviceAdapter.disconnect();
 			setConnectingStatus(false);
 			stopService(xmppServiceIntent);
 			return;
 		}
-		prefedit.putString(PreferenceConstants.STATUS_MODE, statusmode);
+
+		SharedPreferences.Editor prefedit = PreferenceManager
+				.getDefaultSharedPreferences(this).edit();
+		prefedit.putString(PreferenceConstants.STATUS_MODE, statusMode.name());
 		prefedit.putString(PreferenceConstants.STATUS_MESSAGE, message);
 		prefedit.commit();
+
 		serviceAdapter.setStatusFromConfig();
-		setStatusTitle();
 	}
 
-	private void changeStatusDialog() {
-		LayoutInflater inflater = (LayoutInflater)getSystemService(
-			      LAYOUT_INFLATER_SERVICE);
-		View group = inflater.inflate(R.layout.statusview, null, false);
-		final Spinner status = (Spinner)group.findViewById(R.id.statusview_spinner);
-		final EditText message = (EditText)group.findViewById(R.id.statusview_message);
-		final String[] statusCodes = getResources().getStringArray(R.array.statusCodes);
-		message.setText(mStatusMessage);
-		for (int i = 0; i < statusCodes.length; i++) {
-			if (statusCodes[i].equals(mStatusMode))
-				status.setSelection(i);
+	private void setStatus(StatusMode statusMode, String message) {
+		mStatusMode = statusMode;
+		mStatusMessage = message;
+
+		// This and many other things like it should be done with observer
+		changeStatusAction.invalidate();
+
+		if (mStatusMessage.equals("")) {
+			actionBar.setSubTitle(null);
+		} else {
+			actionBar.setSubTitle(mStatusMessage);
 		}
-		new AlertDialog.Builder(this)
-			.setTitle(R.string.statuspopup_name)
-			.setView(group)
-			.setPositiveButton(android.R.string.ok,
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						String statusStr = statusCodes[status.getSelectedItemPosition()];
-						Log.d(TAG, "changeStatusDialog: status=" + statusStr);
-						Log.d(TAG, "changeStatusDialog: message=" + message.getText().toString());
-						setStatus(statusStr, message.getText().toString());
-					}
-				})
-			.setNegativeButton(android.R.string.cancel, null)
-			.create().show();
 	}
 
 	private void aboutDialog() {
@@ -500,7 +571,7 @@ public class MainWindow extends GenericExpandableListActivity {
 
 		switch (itemID) {
 		case R.id.menu_connect:
-			toggleConnection(item);
+			toggleConnection();
 			return true;
 
 		case R.id.menu_add_friend:
@@ -512,15 +583,13 @@ public class MainWindow extends GenericExpandableListActivity {
 			return true;
 
 		case R.id.menu_show_hide:
-			showOffline = !showOffline;
-			PreferenceManager.getDefaultSharedPreferences(this).edit().
-				putBoolean(PreferenceConstants.SHOW_OFFLINE, showOffline).commit();
+			setOfflinceContactsVisibility(!showOffline);
 			updateRoster();
 			return true;
 
 		case R.id.menu_status:
 			if (serviceAdapter.isAuthenticated()) {
-				changeStatusDialog();
+				showDialog(DIALOG_CHANGE_STATUS_ID);
 			} else {
 				showToastNotification(R.string.Global_authenticate_first);
 			}
@@ -549,6 +618,15 @@ public class MainWindow extends GenericExpandableListActivity {
 
 	}
 
+	/** Sets if all contacts are shown in the roster or online contacts only. */
+	private void setOfflinceContactsVisibility(boolean showOffline) {
+		this.showOffline = showOffline;
+		toggleOfflineContactsAction.invalidate();
+
+		PreferenceManager.getDefaultSharedPreferences(this).edit().
+			putBoolean(PreferenceConstants.SHOW_OFFLINE, showOffline).commit();
+	}
+
 	@Override
 	public boolean onChildClick(ExpandableListView parent, View v,
 			int groupPosition, int childPosition, long id) {
@@ -564,17 +642,10 @@ public class MainWindow extends GenericExpandableListActivity {
 	}
 
 	private void setConnectingStatus(boolean isConnecting) {
-		setProgressBarIndeterminateVisibility(isConnecting);
+		_setProgressBarIndeterminateVisibility(isConnecting);
+		changeStatusAction.invalidate();
+
 		String lastStatus;
-		if (isConnecting) {
-			setTitle(getString(R.string.conn_title,
-						getString(R.string.conn_connecting)));
-		} else if (isConnected()) {
-			setStatusTitle();
-		} else {
-			setTitle(getString(R.string.conn_title,
-						getString(R.string.conn_offline)));
-		}
 
 		if (serviceAdapter != null && (lastStatus =
 					serviceAdapter.getConnectionStateString()) != null) {
@@ -583,8 +654,21 @@ public class MainWindow extends GenericExpandableListActivity {
 		} else
 			mConnectingText.setVisibility(View.GONE);
 	}
+	
+	/**
+	 * Sets the visibility of the indeterminate progress bar in the action bar.
+	 * Name starts with an underscore, becuase super
+	 * {@link #setProgressBarIndeterminateVisibility(boolean)} is final.
+	 */
+	private void _setProgressBarIndeterminateVisibility(boolean visibility) {
+		if (visibility) {
+			actionBar.setProgressBarVisibility(View.VISIBLE);
+		} else {
+			actionBar.setProgressBarVisibility(View.GONE);
+		}
+	}
 
-	private void toggleConnection(MenuItem item) {
+	private void toggleConnection() {
 		boolean oldState = isConnected() || isConnecting();
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.CONN_STARTUP, !oldState).commit();
@@ -761,7 +845,7 @@ public class MainWindow extends GenericExpandableListActivity {
 
 	public void expandGroups() {
 		Log.d(TAG, "expandGroups(): " + rosterGroupList.size() + " vs " + getExpandableListAdapter().getGroupCount());
-		for (int count = 0; count < rosterGroupList.size(); count++) {
+		for (int count = 0; count < getExpandableListAdapter().getGroupCount(); count++) {
 			getExpandableListView().expandGroup(count);
 		}
 	}
@@ -786,7 +870,15 @@ public class MainWindow extends GenericExpandableListActivity {
 
 	private void getPreferences(SharedPreferences prefs) {
 		showOffline = prefs.getBoolean(PreferenceConstants.SHOW_OFFLINE, true);
-		mStatusMode = prefs.getString(PreferenceConstants.STATUS_MODE, "available");
-		mStatusMessage = prefs.getString(PreferenceConstants.STATUS_MESSAGE, "");
+
+		setStatus(StatusMode.fromString(prefs.getString(
+				PreferenceConstants.STATUS_MODE, StatusMode.available.name())),
+				prefs.getString(PreferenceConstants.STATUS_MESSAGE, ""));
+	}
+
+	public static Intent createIntent(Context context) {
+		Intent i = new Intent(context, MainWindow.class);
+		i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		return i;
 	}
 }

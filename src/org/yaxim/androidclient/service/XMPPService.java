@@ -376,7 +376,9 @@ public class XMPPService extends GenericService {
 					logError("YaximXMPPException in doConnect():");
 					e.printStackTrace();
 				} finally {
-					mConnectingThread = null;
+					synchronized(mConnectingThread) {
+						mConnectingThread = null;
+					}
 				}
 			}
 
@@ -498,13 +500,15 @@ public class XMPPService extends GenericService {
 	public void doDisconnect() {
 		mConnectionDemanded.set(false);
 		if (mConnectingThread != null) {
-			try {
-				mConnectingThread.interrupt();
-				mConnectingThread.join();
-			} catch (InterruptedException e) {
-				logError("doDisconnect: failed catching connecting thread");
-			} finally {
-				mConnectingThread = null;
+			synchronized(mConnectingThread) {
+				try {
+					mConnectingThread.interrupt();
+					mConnectingThread.join(50);
+				} catch (InterruptedException e) {
+					logError("doDisconnect: failed catching connecting thread");
+				} finally {
+					mConnectingThread = null;
+				}
 			}
 		}
 		if (mSmackable != null) {

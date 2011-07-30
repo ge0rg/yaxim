@@ -30,4 +30,16 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>MemorizingActivity_src</name>
+			<type>2</type>
+			<locationURI>_android_MemorizingActivity_595953e8/src</locationURI>
+		</link>
+		<link>
+			<name>actionbar_src</name>
+			<type>2</type>
+			<locationURI>_android_actionbar_bd1ca1d/src</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
