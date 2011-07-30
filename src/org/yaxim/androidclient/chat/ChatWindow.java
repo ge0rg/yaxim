@@ -192,16 +192,15 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 					       .setItems(screenNames, new DialogInterface.OnClickListener() {
 							    public void onClick(DialogInterface dialog, int item) {
 									mWithJabberID = new String(jabberIDs[item].toString());
-									mUserScreenName = mWithJabberID;
+									mUserScreenName = new String(screenNames[item].toString());
 									
-									String titleUserid;
-									if (mUserScreenName != null && !mUserScreenName.equals(mWithJabberID)) {
-										titleUserid = mUserScreenName + " (" + mWithJabberID + ")";
-									} else {
-										titleUserid = mWithJabberID;
-									}
+									String titleUserid = mUserScreenName;
 									
-									setTitle(getString(R.string.chat_titlePrefix, titleUserid));
+									ActionBar actionBar = (ActionBar) findViewById(R.id.actionbar);
+									actionBar.setTitle(titleUserid);
+									actionBar.setHomeAction(new IntentAction(ChatWindow.this, MainWindow
+											.createIntent(ChatWindow.this), R.drawable.ic_action_appicon));
+
 									setChatWindowAdapter();
 									mChatInput.setText(text);
 									unbindService(mRosterServiceConnection);
