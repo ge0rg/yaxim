@@ -1,7 +1,6 @@
 package org.yaxim.androidclient.chat;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -59,7 +58,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	public static final String INTENT_EXTRA_USERNAME = ChatWindow.class.getName() + ".username";
 	
 	private static final String TAG = "ChatWindow";
-	private static final int NOTIFY_ID = 0;
 	private static final String[] PROJECTION_FROM = new String[] {
 			ChatProvider.ChatConstants._ID, ChatProvider.ChatConstants.DATE,
 			ChatProvider.ChatConstants.FROM_ME, ChatProvider.ChatConstants.JID,
@@ -68,7 +66,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	private static final int[] PROJECTION_TO = new int[] { R.id.chat_date,
 			R.id.chat_from, R.id.chat_message };
 
-	private Handler mHandler = null;
 	private Button mSendButton = null;
 	private EditText mChatInput = null;
 	private String mWithJabberID = null;
@@ -77,8 +74,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	private ServiceConnection mServiceConnection;
 	private XMPPChatServiceAdapter mServiceAdapter;
 	private XMPPRosterServiceAdapter mRosterServiceAdapter = null;
-	private NotificationManager mNotificationMGR;
-
 	private AlertDialog mChooser;
 	private Intent mRosterServiceIntent;
 	private ServiceConnection mRosterServiceConnection = null;
@@ -89,12 +84,10 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 		setContentView(R.layout.mainchat);
 
-		mHandler = new Handler();
 		registerForContextMenu(getListView());
 		setContactFromUri();
 		registerXMPPService();
 		registerXMPPRosterService();
-		setNotificationManager();
 		setUserInput();
 		setSendButton();
 		
@@ -132,10 +125,8 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	@Override
 	protected void onResume() {
 		super.onResume();
-		mNotificationMGR.cancel(NOTIFY_ID);
 		bindXMPPService();
 		mChatInput.requestFocus();
-
 	}
 
 	private void registerXMPPRosterService() {
@@ -247,6 +238,8 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				mServiceAdapter = new XMPPChatServiceAdapter(
 						IXMPPChatService.Stub.asInterface(service),
 						mWithJabberID);
+				
+				mServiceAdapter.clearNotifications(mWithJabberID);
 			}
 
 			public void onServiceDisconnected(ComponentName name) {
@@ -431,7 +424,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 		void populateFrom(String date, boolean from_me, String from, String message,
 				boolean has_been_read) {
-			Log.i(TAG, "populateFrom(" + from_me + ", " + from + ", " + message + ")");
+//			Log.i(TAG, "populateFrom(" + from_me + ", " + from + ", " + message + ")");
 			getDateView().setText(date);
 			if (from_me) {
 				getDateView().setTextColor(0xff8888ff);
@@ -509,10 +502,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	public void onTextChanged(CharSequence s, int start, int before, int count) {
 
-	}
-
-	private void setNotificationManager() {
-		mNotificationMGR = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 	}
 
 	private void showToastNotification(int message) {

@@ -226,4 +226,12 @@ public abstract class GenericService extends Service {
 		}
 	}
 
+	public void clearNotification(String Jid) {
+		int notifyId = 0;
+		if (notificationId.containsKey(Jid)) {
+			notifyId = notificationId.get(Jid);
+			mNotificationMGR.cancel(notifyId);
+		}
+	}
+
 }
