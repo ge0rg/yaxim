@@ -244,4 +244,8 @@
 	<string name="status_offline">Offline</string>
 
 	<string name="translator_credits">translator-credits</string>
+	
+	<string name="notifyOnAvailable_title">On availability</string>
+	<string name="notifyOnAvailable_summ">Notify on availability of this user</string>
+	<string name="chooseContact">Choose contact</string>
 </resources>
