@@ -15,6 +15,7 @@ import org.yaxim.androidclient.util.StatusMode;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteCallbackList;
@@ -39,7 +40,9 @@ public class XMPPService extends GenericService {
 
 	private RemoteCallbackList<IXMPPRosterCallback> mRosterCallbacks = new RemoteCallbackList<IXMPPRosterCallback>();
 	private HashSet<String> mIsBoundTo = new HashSet<String>();
+	private boolean mIsBound = false;
 	private Handler mMainHandler = new Handler();
+	private static final String ROSTER_NOTIFY_PREF = "RosterNotifySettings"; 
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -50,6 +53,7 @@ public class XMPPService extends GenericService {
 			mIsBoundTo.add(chatPartner);
 			return mServiceChatConnection;
 		}
+		mIsBound = true;
 
 		return mService2RosterConnection;
 	}
@@ -62,6 +66,7 @@ public class XMPPService extends GenericService {
 			mIsBoundTo.add(chatPartner);
 			resetNotificationCounter(chatPartner);
 		}
+		mIsBound = true;
 	}
 
 	@Override
@@ -70,9 +75,56 @@ public class XMPPService extends GenericService {
 		if ((chatPartner != null)) {
 			mIsBoundTo.remove(chatPartner);
 		}
+		mIsBound = false;
+		updateAvailableUsers();
 		return true;
 	}
 
+	private void updateAvailableUsers() {
+		List<String> rosterGroups = null;
+		try {
+			rosterGroups = mService2RosterConnection.getRosterGroups();
+			if (rosterGroups == null) return;
+			for (String group : rosterGroups) {
+				List<RosterItem> rosterItems = mService2RosterConnection.getRosterEntriesByGroup(group);
+				for (RosterItem item : rosterItems) {
+					boolean available = mSmackable.isAvailable(item.jabberID);
+					logInfo(item.jabberID + " status " + available);
+					mAvailable.put(item.jabberID, available);
+				}
+			}
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void notifyNewAvailableUsers() {
+		List<String> rosterGroups = null;
+		try {
+			rosterGroups = mService2RosterConnection.getRosterGroups();
+			if (rosterGroups == null) return;
+			for (String group : rosterGroups) {
+				List<RosterItem> rosterItems = mService2RosterConnection.getRosterEntriesByGroup(group);
+				for (RosterItem item : rosterItems) {
+					boolean available = mSmackable.isAvailable(item.jabberID);
+					logInfo(item.jabberID + " status " + available);
+					if (mAvailable.containsKey(item.jabberID) && (mAvailable.get(item.jabberID) == false) && (available == true)) {
+						mAvailable.put(item.jabberID, available);
+						SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+						// notify of user presence if app is not bound to service
+						// OR is bound, but to another chat
+						if (available && pref.getBoolean(item.jabberID, false) &&
+						    ((mIsBound == false) || ((!mIsBoundTo.contains(item.jabberID)) && !mIsBoundTo.isEmpty())) ) {
+								notifyJidIsAvailable(item.jabberID, item.screenName);
+						}
+					}
+				}
+			}
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -82,6 +134,7 @@ public class XMPPService extends GenericService {
 
 		// for the initial connection, check if autoConnect is set
 		mConnectionDemanded.set(mConfig.autoConnect);
+		YaximBroadcastReceiver.initNetworkStatus(getApplicationContext());
 
 		if (mConfig.autoConnect) {
 			/*
@@ -106,6 +159,20 @@ public class XMPPService extends GenericService {
 	@Override
 	public void onStart(Intent intent, int startId) {
 		super.onStart(intent, startId);
+		boolean disconnect = intent.getBooleanExtra("disconnect", false);
+		boolean reconnect = intent.getBooleanExtra("reconnect", false);
+		
+		logInfo("disconnect/reconnect: "+disconnect+ " " + reconnect);
+		
+		if (disconnect) {
+			doDisconnect();
+			return;
+		}
+		
+		if (reconnect) {
+			doConnect();
+		}
+		
 		mConnectionDemanded.set(mConfig.autoConnect);
 		doConnect();
 	}
@@ -124,6 +191,10 @@ public class XMPPService extends GenericService {
 				}
 
 				return false;
+			}
+			
+			public void clearNotifications(String Jid) throws RemoteException {
+				clearNotification(Jid);
 			}
 		};
 	}
@@ -214,6 +285,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public List<String> getRosterGroups() throws RemoteException {
+				if (mSmackable == null) return null;
 				return mSmackable.getRosterGroups();
 			}
 
@@ -239,6 +311,19 @@ public class XMPPService extends GenericService {
 			public void requestAuthorizationForRosterItem(String user)
 					throws RemoteException {
 				mSmackable.requestAuthorizationForRosterItem(user);
+			}
+			
+			public void setNotifyOnAvailable(String user, boolean doNotify) {
+				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+			    SharedPreferences.Editor editor = pref.edit();
+			    editor.putBoolean(user, doNotify);
+
+			    editor.commit();
+			}
+			
+			public boolean getNotifyOnAvailable(String user) {
+				SharedPreferences pref = getSharedPreferences(ROSTER_NOTIFY_PREF, 0);
+			    return pref.getBoolean(user, false);
 			}
 		};
 	}
@@ -408,6 +493,7 @@ public class XMPPService extends GenericService {
 				}
 			}
 			mRosterCallbacks.finishBroadcast();
+			notifyNewAvailableUsers();
 		}
 		if (mIsConnected.get() && mSmackable != null && !mSmackable.isAuthenticated()) {
 			logInfo("rosterChanged(): disconnected without warning");
@@ -454,7 +540,7 @@ public class XMPPService extends GenericService {
 					notifyClient(from, mSmackable.getNameForJID(from), message);
 				}
 			}
-
+			
 			public void rosterChanged() {
 				postRosterChanged();
 			}

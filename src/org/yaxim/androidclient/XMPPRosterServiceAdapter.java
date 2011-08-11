@@ -6,6 +6,7 @@ import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.StatusMode;
 
+import android.content.SharedPreferences;
 import android.os.RemoteException;
 import android.util.Log;
 import org.yaxim.androidclient.IXMPPRosterCallback;
@@ -166,4 +167,25 @@ public class XMPPRosterServiceAdapter {
 		}
 	}
 
+	public void setNotifyOnAvailable(String user, boolean doNotify) {
+		try {
+			xmppServiceStub.setNotifyOnAvailable(user, doNotify);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public boolean getNotifyOnAvailable(String user) {
+		boolean doNotify = false;
+		try {
+			doNotify = xmppServiceStub.getNotifyOnAvailable(user);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		}
+		return doNotify;
+	}
 }

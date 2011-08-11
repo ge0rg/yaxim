@@ -30,4 +30,5 @@ public interface Smackable {
 	ArrayList<String> getRosterGroups();
 	
 	String getNameForJID(String jid);
+	boolean isAvailable(String jid);
 }

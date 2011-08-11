@@ -43,7 +43,9 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ImageButton;
@@ -269,19 +271,50 @@ public class MainWindow extends GenericExpandableListActivity {
 			.create().show();
 	}
 
+	abstract class CheckBoxOk {
+		abstract public void ok(boolean result);
+	}
+
 	abstract class EditOk {
 		abstract public void ok(String result);
 	}
 
+	void checkBoxDialog(int titleId, CharSequence message, boolean isChecked,
+			final CheckBoxOk ok) {
+		LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+		View layout = inflater.inflate(R.layout.checkbox_dialog,
+		                               (ViewGroup) findViewById(R.id.layout_root));
+
+		TextView text = (TextView) layout.findViewById(R.id.text);
+		final CheckBox input = (CheckBox) layout.findViewById(R.id.checkbox);
+		input.setChecked(isChecked);
+		text.setText(message);
+
+		new AlertDialog.Builder(this)
+			.setTitle(titleId)
+			.setView(layout)
+			.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							ok.ok(input.isChecked());
+						}})
+			.setNegativeButton(android.R.string.cancel, null)
+			.create().show();
+	}
+
 	void editTextDialog(int titleId, CharSequence message, String text,
 			final EditOk ok) {
-		final EditText input = new EditText(this);
+		LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+		View layout = inflater.inflate(R.layout.edittext_dialog,
+		                               (ViewGroup) findViewById(R.id.layout_root));
+
+		TextView messageView = (TextView) layout.findViewById(R.id.text);
+		messageView.setText(message);
+		final EditText input = (EditText) layout.findViewById(R.id.editText);
 		input.setTransformationMethod(android.text.method.SingleLineTransformationMethod.getInstance());
 		input.setText(text);
 		new AlertDialog.Builder(this)
 			.setTitle(titleId)
-			.setMessage(message)
-			.setView(input)
+			.setView(layout)
 			.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int which) {
 							String newName = input.getText().toString();
@@ -298,6 +331,16 @@ public class MainWindow extends GenericExpandableListActivity {
 				userName, new EditOk() {
 					public void ok(String result) {
 						serviceAdapter.renameRosterItem(JID, result);
+					}
+				});
+	}
+
+	void setNotifyOnAvailabilityDialog(final String JID, final boolean doNotify) {
+		checkBoxDialog(R.string.notifyOnAvailable_title,
+				getString(R.string.notifyOnAvailable_summ),
+				doNotify, new CheckBoxOk() {
+					public void ok(boolean result) {
+						serviceAdapter.setNotifyOnAvailable(JID, result);
 					}
 				});
 	}
@@ -375,6 +418,10 @@ public class MainWindow extends GenericExpandableListActivity {
 
 			case R.id.roster_contextmenu_contact_change_group:
 				moveRosterItemToGroupDialog(userJid);
+				return true;
+				
+			case R.id.roster_contextmenu_contact_notify_available:
+				setNotifyOnAvailabilityDialog(userJid, serviceAdapter.getNotifyOnAvailable(userJid));
 				return true;
 
 			case R.id.roster_exit:
