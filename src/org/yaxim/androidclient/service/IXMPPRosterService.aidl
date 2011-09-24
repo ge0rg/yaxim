@@ -24,6 +24,8 @@ interface IXMPPRosterService {
 	void requestAuthorizationForRosterItem(String user);
 	void renameRosterItem(String user, String newName);
 	void moveRosterItemToGroup(String user, String group);
+	void setNotifyOnAvailable(String user, boolean doNotify);
+	boolean getNotifyOnAvailable(String user);
 	
 	List<RosterItem> getRosterEntriesByGroup(String group);
 	List<String> getRosterGroups();

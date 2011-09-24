@@ -22,6 +22,8 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import org.yaxim.androidclient.MainWindow;
 import org.yaxim.androidclient.R;
 
 public abstract class GenericService extends Service {
@@ -42,6 +44,7 @@ public abstract class GenericService extends Service {
 	private int lastNotificationId = 2;
 
 	protected YaximConfiguration mConfig;
+	public Map<String, Boolean> mAvailable = new HashMap<String, Boolean>();
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -88,6 +91,53 @@ public abstract class GenericService extends Service {
 	private void addNotificationMGR() {
 		mNotificationMGR = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		mNotificationIntent = new Intent(this, ChatWindow.class);
+	}
+
+	protected void notifyJidIsAvailable(String fromJid, String fromUserName) {
+		
+		if (notificationCount.containsKey(fromJid)) return;
+		
+		mWakeLock.acquire();
+		setNotificationForAvailability(fromJid, fromUserName);
+		setLEDNotification();
+		mNotification.sound = mConfig.notifySoundAvailable;
+		
+		int notifyId = 0;
+		if (notificationId.containsKey(fromJid)) {
+			notifyId = notificationId.get(fromJid);
+		} else {
+			lastNotificationId++;
+			notifyId = lastNotificationId;
+			notificationId.put(fromJid, Integer.valueOf(notifyId));
+		}
+		mNotificationMGR.notify(notifyId, mNotification);
+		
+		vibraNotification();
+		mWakeLock.release();
+	}
+	
+	private void setNotificationForAvailability(String fromJid, String fromUserId) {
+		
+		int mNotificationCounter = 1;
+		
+		String author;
+		if (null == fromUserId || fromUserId.length() == 0 || fromJid.equals(fromUserId)) {
+			author = fromJid;
+		} else {
+			author = fromUserId + " (" + fromJid + ")";
+		}
+		String title = getString(R.string.notification_available, author);
+		mNotification = new Notification(R.drawable.icon, title,
+				System.currentTimeMillis());
+		
+		String message = getString(R.string.notification_available, fromUserId);
+		//need to set flag FLAG_UPDATE_CURRENT to get extras transferred
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+				new Intent(this, MainWindow.class), PendingIntent.FLAG_UPDATE_CURRENT);
+
+		mNotification.setLatestEventInfo(this, title, message, pendingIntent);
+		mNotification.number = mNotificationCounter;
+		mNotification.flags = Notification.FLAG_AUTO_CANCEL;
 	}
 
 	protected void notifyClient(String fromJid, String fromUserName, String message) {

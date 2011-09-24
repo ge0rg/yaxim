@@ -248,4 +248,6 @@
 
 	<string name="translator_credits">translator-credits</string>
 	<string name="chooseContact">Choose contact</string>
+	<string name="notifyOnAvailable_title">Presence ringtone</string>
+	<string name="notifyOnAvailable_summ">Notify on presence</string>
 </resources>
