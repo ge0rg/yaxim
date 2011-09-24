@@ -130,10 +130,13 @@ public abstract class GenericService extends Service {
 		mNotification = new Notification(R.drawable.icon, title,
 				System.currentTimeMillis());
 		
+		Intent notificationIntent = new Intent(this, MainWindow.class);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		
 		String message = getString(R.string.notification_available, fromUserId);
 		//need to set flag FLAG_UPDATE_CURRENT to get extras transferred
 		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-				new Intent(this, MainWindow.class), PendingIntent.FLAG_UPDATE_CURRENT);
+				notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
 		mNotification.setLatestEventInfo(this, title, message, pendingIntent);
 		mNotification.number = mNotificationCounter;
@@ -180,6 +183,7 @@ public abstract class GenericService extends Service {
 		Uri userNameUri = Uri.parse(fromJid);
 		mNotificationIntent.setData(userNameUri);
 		mNotificationIntent.putExtra(ChatWindow.INTENT_EXTRA_USERNAME, fromUserId);
+		mNotificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		
 		//need to set flag FLAG_UPDATE_CURRENT to get extras transferred
 		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
