@@ -194,4 +194,10 @@
 	<string name="chooseContact">Kontakt wählen</string>
 	<string name="notifyOnAvailable_title">Bei Erreichbarkeit</string>
 	<string name="notifyOnAvailable_summ">Bei Erreichbarkeit des Kontakts benachrichtigen</string>
+	<string name="pref_theme">Theme</string>
+	<string-array name="pref_theme_entries">
+		<item>Dunkel</item>
+		<item>Hell</item>
+	</string-array>
+	<string name="preftitle_ui">Anzeige</string>
 </resources>

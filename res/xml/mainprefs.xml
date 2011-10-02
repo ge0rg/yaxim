@@ -46,13 +46,15 @@
 			android:defaultValue="true"
 		/>	
 		<CheckBoxPreference
-			android:id="@+id/foregroundService"
 			android:key="foregroundService"
 			android:title="@string/foregroundService_title"
 			android:summaryOn="@string/foregroundService_summ_on"
 			android:summaryOff="@string/foregroundService_summ_off"
 			android:defaultValue="true"
-		/>	
+		android:id="@+id/foregroundService"/>	
+	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/preftitle_ui">
+		<ListPreference android:title="@string/pref_theme" android:entryValues="@array/pref_theme_values" android:entries="@array/pref_theme_entries" android:defaultValue="dark" android:key="theme"></ListPreference>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/preftitle_debug">
 		<CheckBoxPreference
@@ -93,6 +95,7 @@
 			android:dialogTitle="@string/FontChat_dialog"
 		/>
 	</PreferenceCategory>
---></PreferenceScreen>
+-->
+</PreferenceScreen>
 
 

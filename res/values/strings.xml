@@ -250,4 +250,10 @@
 	<string name="chooseContact">Choose contact</string>
 	<string name="notifyOnAvailable_title">Presence ringtone</string>
 	<string name="notifyOnAvailable_summ">Notify on presence</string>
+	<string name="pref_theme">Theme</string>
+	<string-array name="pref_theme_entries">
+		<item>Dark</item>
+		<item>Light</item>
+	</string-array>
+	<string name="preftitle_ui">User Interface</string>
 </resources>

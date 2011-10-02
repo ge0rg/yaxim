@@ -1,6 +1,7 @@
 package org.yaxim.androidclient.preferences;
 
 import org.yaxim.androidclient.exceptions.YaximXMPPAdressMalformedException;
+import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.XMPPHelper;
 
 import android.content.SharedPreferences;
@@ -31,6 +32,10 @@ public class AccountPrefs extends PreferenceActivity {
 	private EditTextPreference prefAccountID;
 
 	public void onCreate(Bundle savedInstanceState) {
+		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		if (theme.equals("light")) {
+			setTheme(android.R.style.Theme_Light);
+		}
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.layout.accountprefs);
 

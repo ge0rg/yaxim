@@ -15,9 +15,9 @@
 	    android:paddingTop="5dp" android:paddingBottom="5dp">
 
 		<TextView android:id="@+id/roster_screenname"
-			android:textColor="#fff"
+			style="?GroupItem"
 			android:paddingLeft="10dp" android:longClickable="false"
-			android:textSize="23sp" android:layout_width="fill_parent"
+			android:layout_width="fill_parent"
 			android:layout_height="wrap_content" android:singleLine="true" />
 
 		<TextView android:id="@+id/roster_statusmsg"

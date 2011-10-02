@@ -85,9 +85,17 @@ public class MainWindow extends GenericExpandableListActivity {
 	private ActionBar actionBar;
 	private ChangeStatusAction changeStatusAction;
 	private ToggleOfflineContactsAction toggleOfflineContactsAction;
+	private String mTheme;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		mTheme = theme;
+		if (theme.equals("light")) {
+			setTheme(R.style.LightTheme_NoTitle);
+		} else {
+			setTheme(R.style.DarkTheme_NoTitle);
+		}
 		super.onCreate(savedInstanceState);
 
 		showFirstStartUpDialogIfPrefsEmpty();
@@ -174,6 +182,14 @@ public class MainWindow extends GenericExpandableListActivity {
 	protected void onResume() {
 		super.onResume();
 		getPreferences(PreferenceManager.getDefaultSharedPreferences(this));
+		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		if (theme.equals(mTheme) == false) {
+			// restart
+			Intent restartIntent = new Intent(this, MainWindow.class);
+			restartIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(restartIntent);
+			finish();
+		}
 		bindXMPPService();
 
 		// Causes the toggle button to show correct state on application start

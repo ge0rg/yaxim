@@ -28,4 +28,8 @@
 		<item>12</item>
 		<item>14</item>
 	</string-array>
+	<string-array name="pref_theme_values">
+		<item>dark</item>
+		<item>light</item>
+	</string-array>
 </resources>

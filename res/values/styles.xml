@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<style name="RosterGroupName">
+		<item name="android:textSize">22sp</item>
+		<item name="android:textStyle">bold</item> 
+	</style>
+	
+	<style name="RosterGroupName.Dark">
+		<item name="android:textColor">#fff</item>
+		<item name="android:background">@drawable/group_background</item>
+	</style>
+	
+	<style name="RosterGroupName.Light">
+		<item name="android:textColor">#000</item>
+		<item name="android:background">@drawable/group_background_light</item>
+	</style>
+	
+	<style name="RosterGroupItem">
+		<item name="android:textColor">#fff</item>
+		<item name="android:textSize">23sp</item> 
+	</style>
+	
+	<style name="RosterGroupItem.Light">
+		<item name="android:textColor">#000</item>
+	</style>
+	
+	<style name="RosterGroupItem.Dark">
+	</style>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<!-- View styles -->
+	<attr name="GroupName" format="reference" />
+	<attr name="GroupItem" format="reference" />
+	
+	<!-- Attributes -->
+	<attr name="ChatMsgHeaderMeColor" format="reference|color" />
+	<attr name="ChatMsgHeaderYouColor" format="reference|color" />
+</resources>

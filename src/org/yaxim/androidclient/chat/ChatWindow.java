@@ -13,6 +13,7 @@ import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.IXMPPRosterService;
 import org.yaxim.androidclient.service.XMPPService;
+import org.yaxim.androidclient.util.PreferenceConstants;
 
 import com.markupartist.android.widget.ActionBar;
 import com.markupartist.android.widget.ActionBar.IntentAction;
@@ -27,16 +28,19 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.text.ClipboardManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -80,6 +84,12 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		if (theme.equals("light")) {
+			setTheme(R.style.LightTheme_NoTitle);
+		} else {
+			setTheme(R.style.DarkTheme_NoTitle);
+		}
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.mainchat);
@@ -422,14 +432,17 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				boolean has_been_read) {
 //			Log.i(TAG, "populateFrom(" + from_me + ", " + from + ", " + message + ")");
 			getDateView().setText(date);
+			TypedValue tv = new TypedValue();
 			if (from_me) {
-				getDateView().setTextColor(0xff8888ff);
+				getTheme().resolveAttribute(R.attr.ChatMsgHeaderMeColor, tv, true);
+				getDateView().setTextColor(tv.data);
 				getFromView().setText(getString(R.string.chat_from_me));
-				getFromView().setTextColor(0xff8888ff);
+				getFromView().setTextColor(tv.data);
 			} else {
-				getDateView().setTextColor(0xffff8888);
+				getTheme().resolveAttribute(R.attr.ChatMsgHeaderYouColor, tv, true);
+				getDateView().setTextColor(tv.data);
 				getFromView().setText(from + ":");
-				getFromView().setTextColor(0xffff8888);
+				getFromView().setTextColor(tv.data);
 			}
 			if (!has_been_read) {
 				ColorDrawable layers[] = new ColorDrawable[2];

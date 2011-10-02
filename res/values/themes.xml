@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<style name="LightTheme" parent="@android:style/Theme.Light">
+		<item name="GroupName">@style/RosterGroupName.Light</item>
+		<item name="GroupItem">@style/RosterGroupItem.Light</item>
+        <item name="android:listSeparatorTextViewStyle">@style/PreferenceListHeader</item>
+        <item name="ChatMsgHeaderMeColor">#ff6d6dcc</item>
+        <item name="ChatMsgHeaderYouColor">#ffcc5050</item>
+	</style>
+	
+	<style name="DarkTheme" parent="@android:style/Theme.Black">
+		<item name="GroupName">@style/RosterGroupName.Dark</item>
+		<item name="GroupItem">@style/RosterGroupItem</item>
+        <item name="ChatMsgHeaderMeColor">#ff8888ff</item>
+        <item name="ChatMsgHeaderYouColor">#ffff8888</item>
+	</style>
+	
+	<style name="LightTheme.NoTitle" parent="@style/LightTheme">
+	    <item name="android:windowNoTitle">true</item>
+	</style>
+	
+	<style name="DarkTheme.NoTitle" parent="@style/DarkTheme">
+	    <item name="android:windowNoTitle">true</item>
+	</style>
+	
+	<style name="PreferenceListHeader">
+	    <item name="android:background">@drawable/dark_header_dither</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">25dip</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#fff</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingLeft">5sp</item>
+	</style>
+	
+</resources>
