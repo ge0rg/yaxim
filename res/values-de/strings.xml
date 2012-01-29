@@ -17,7 +17,8 @@
 
 	<!-- FirstStartUpDialog -->
 	<string name="StartupDialog_Title">Willkommen zu yaxim!</string>
-	<string name="StartupDialog_Summary">Sie müssen yaxim zuerst konfigurieren. Bitte geben Sie Ihre Jabber-ID und Ihr Passwort ein.</string>
+	<string name="StartupDialog_Summary">Sie müssen yaxim zuerst konfigurieren. Bitte geben
+		Sie Ihre Jabber-ID und Ihr Passwort ein.</string>
 	<string name="StartupDialog_pwHint">Passwort eingeben</string>
 	<string name="StartupDialog_portHint">5222</string>
 	<string name="StartupDialog_Username_title">Jabber-ID eingeben:</string>
@@ -26,6 +27,7 @@
 
 	<!-- Notifications -->
 	<string name="notification_message">Nachricht von %s:</string>
+	<string name="notification_available">%s ist erreichbar.</string>
 
 	<!-- Notification Settings -->
 	<string name="preftitle_notify">Benachrichtigung</string>
@@ -36,7 +38,9 @@
 	<string name="vibr_summOn">Vibrationsalarm ist an</string>
 	<string name="vibr_summOff">Vibrationsalarm ist aus</string>
 	<string name="ringtone_title">Klingelton</string>
+	<string name="ringtone_avail_title">Erreichbarkeitston</string>
 	<string name="ringtone_summ">Ton für neue Nachrichten</string>
+	<string name="ringtone_avail_summ">Ton für Erreichbarkeit von Kontakten</string>
 
 	<!-- Startup Setting Strings -->
 	<string name="preftitle_boot">Programmstart-Einstellungen</string>
@@ -62,14 +66,14 @@
 
 	<!-- Appearence Strings -->
 	<!--
-	<string name="preftitle_app">Appearance</string>
-	<string name="FontChat_title">Chat font size</string>
-	<string name="FontChat_summ">Set chat font size</string>
-	<string name="FontChat_dialog">Chat font fize</string>
-	<string name="FontRost_title">Roster font size</string>
-	<string name="FontRost_summ">Set roster font size</string>
-	<string name="FontRost_dialog">Roster font fize</string>
-	<string name="setFontRoster">Set roster font size</string>
+		<string name="preftitle_app">Appearance</string> <string
+		name="FontChat_title">Chat font size</string> <string
+		name="FontChat_summ">Set chat font size</string> <string
+		name="FontChat_dialog">Chat font fize</string> <string
+		name="FontRost_title">Roster font size</string> <string
+		name="FontRost_summ">Set roster font size</string> <string
+		name="FontRost_dialog">Roster font fize</string> <string
+		name="setFontRoster">Set roster font size</string>
 	-->
 
 	<!-- Mainmenu 	-->
@@ -99,6 +103,7 @@
 	<string name="roster_contextmenu_contact_rename">Umbenennen</string>
 	<string name="roster_contextmenu_contact_request_auth">Autorisierung anfordern</string>
 	<string name="roster_contextmenu_contact_change_group">Gruppe wechseln</string>
+	<string name="roster_contextmenu_contact_notify_available">Hinweis bei Erreichbarkeit</string>
 
 	<!-- Accountprefs -->
 	<string name="account_settings_login">Login-Informationen</string>
@@ -136,7 +141,8 @@
 	<string name="account_customserver_hint">host.example.com</string>
 	<string name="require_ssl_title">SSL/TLS erfordern</string>
 	<string name="require_ssl_summOn">Serverkommunikation immer verschlüsseln</string>
-	<string name="require_ssl_summOff">Unverschlüsselte Serverkommunikation erlauben</string>
+	<string name="require_ssl_summOff">Unverschlüsselte Serverkommunikation erlauben
+	</string>
 
 	<!--StatusPopUp-->
 	<string name="AddContact_SpinnerPrompt">Gruppe auswählen</string>
@@ -185,4 +191,7 @@
   Markus Unterwaditzer https://launchpad.net/~untitaker
   Michael Kanis https://launchpad.net/~mkanis
   René Moser https://launchpad.net/~resmo</string>
+	<string name="chooseContact">Kontakt wählen</string>
+	<string name="notifyOnAvailable_title">Bei Erreichbarkeit</string>
+	<string name="notifyOnAvailable_summ">Bei Erreichbarkeit des Kontakts benachrichtigen</string>
 </resources>

@@ -2,22 +2,28 @@ package org.yaxim.androidclient.chat;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import org.yaxim.androidclient.MainWindow;
 import org.yaxim.androidclient.R;
+import org.yaxim.androidclient.XMPPRosterServiceAdapter;
+import org.yaxim.androidclient.data.RosterItem;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.service.IXMPPChatService;
+import org.yaxim.androidclient.service.IXMPPRosterService;
 import org.yaxim.androidclient.service.XMPPService;
 
 import com.markupartist.android.widget.ActionBar;
 import com.markupartist.android.widget.ActionBar.IntentAction;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
@@ -67,6 +73,10 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	private Intent mServiceIntent;
 	private ServiceConnection mServiceConnection;
 	private XMPPChatServiceAdapter mServiceAdapter;
+	private XMPPRosterServiceAdapter mRosterServiceAdapter = null;
+	private AlertDialog mChooser;
+	private Intent mRosterServiceIntent;
+	private ServiceConnection mRosterServiceConnection = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -77,6 +87,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		registerForContextMenu(getListView());
 		setContactFromUri();
 		registerXMPPService();
+		registerXMPPRosterService();
 		setUserInput();
 		setSendButton();
 		
@@ -118,8 +129,99 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		mChatInput.requestFocus();
 	}
 
+	private void registerXMPPRosterService() {
+		Log.i(TAG, "called startXMPPRosterService()");
+		Intent i = getIntent();
+
+		String action = i.getAction();
+		if (!((action != null) && (action.equals(Intent.ACTION_SEND)))) return;
+		mRosterServiceIntent = new Intent(this, XMPPService.class);
+		mRosterServiceIntent.setAction("org.yaxim.androidclient.XMPPSERVICE");
+		
+		mRosterServiceConnection = new ServiceConnection() {
+		
+			public void onServiceConnected(ComponentName name, final IBinder service) {
+				Log.i(TAG, "called onServiceConnected() Roster");
+				mRosterServiceAdapter = new XMPPRosterServiceAdapter(IXMPPRosterService.Stub.asInterface(service));
+						
+				Intent i = getIntent();
+						
+				String action = i.getAction();
+				if ((action != null) && (action.equals(Intent.ACTION_SEND))) {
+					final String text = i.getStringExtra(Intent.EXTRA_TEXT);
+							
+					List<String> rosterGroups = null;
+					rosterGroups = mRosterServiceAdapter.getRosterGroups();
+					if (rosterGroups == null) return;
+					int itemCount = 0;
+					for (String group : rosterGroups) {
+						List<RosterItem> rosterItems = mRosterServiceAdapter.getGroupItems(group);
+						itemCount += rosterItems.size();
+					}
+							
+					final CharSequence[] screenNames = new CharSequence[itemCount];
+					final CharSequence[] jabberIDs = new CharSequence[itemCount];
+					itemCount = 0;
+							
+					for (String group : rosterGroups) {
+						List<RosterItem> rosterItems = mRosterServiceAdapter.getGroupItems(group);
+						for (RosterItem item : rosterItems) {
+							if (item.screenName.length() > 0) {
+								screenNames[itemCount] = item.screenName;
+							} else {
+								screenNames[itemCount] = item.jabberID;
+							}
+							jabberIDs[itemCount] = item.jabberID;
+							itemCount++;
+						}
+					}
+			
+					AlertDialog.Builder builder = new AlertDialog.Builder(ChatWindow.this);
+					builder.setTitle(getText(R.string.chooseContact))
+					       .setCancelable(true)
+					       .setItems(screenNames, new DialogInterface.OnClickListener() {
+							    public void onClick(DialogInterface dialog, int item) {
+									mWithJabberID = new String(jabberIDs[item].toString());
+									mUserScreenName = new String(screenNames[item].toString());
+									
+									String titleUserid = mUserScreenName;
+
+									ActionBar actionBar = (ActionBar) findViewById(R.id.actionbar);
+									actionBar.setTitle(titleUserid);
+									actionBar.setHomeAction(new IntentAction(ChatWindow.this, MainWindow
+											.createIntent(ChatWindow.this), R.drawable.ic_action_appicon));
+
+									setChatWindowAdapter();
+									mChatInput.setText(text);
+									unbindService(mRosterServiceConnection);
+
+									mRosterServiceConnection = null;
+									registerXMPPService();
+									bindXMPPService();
+							    }
+					       }).setOnCancelListener(new DialogInterface.OnCancelListener() {
+								public void onCancel(DialogInterface dialog) {
+									unbindService(mRosterServiceConnection);
+									finish();
+								}
+						});
+				
+					mChooser = builder.create();
+					mChooser.show();
+				} 
+			}
+		
+			public void onServiceDisconnected(ComponentName name) {
+				Log.i(TAG, "called onServiceDisconnected() Roster");
+			}
+		};
+	}
+
 	private void registerXMPPService() {
 		Log.i(TAG, "called startXMPPService()");
+		if (mWithJabberID.length() == 0) {
+			return;
+		}
 		mServiceIntent = new Intent(this, XMPPService.class);
 		Uri chatURI = Uri.parse(mWithJabberID);
 		mServiceIntent.setData(chatURI);
@@ -145,14 +247,20 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	private void unbindXMPPService() {
 		try {
-			unbindService(mServiceConnection);
+			if (mServiceConnection != null) unbindService(mServiceConnection);
+			if (mRosterServiceConnection != null) unbindService(mRosterServiceConnection);
 		} catch (IllegalArgumentException e) {
 			Log.e(TAG, "Service wasn't bound!");
 		}
 	}
 
 	private void bindXMPPService() {
-		bindService(mServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+		if ((mRosterServiceIntent != null) && (mRosterServiceConnection != null)) {
+			bindService(mRosterServiceIntent, mRosterServiceConnection, BIND_AUTO_CREATE);
+		}
+		if ((mServiceIntent != null) && (mServiceConnection != null)) {
+			bindService(mServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+		}
 	}
 
 	private void setSendButton() {
@@ -169,7 +277,14 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 
 	private void setContactFromUri() {
 		Intent i = getIntent();
-		mWithJabberID = i.getDataString().toLowerCase();
+
+		String action = i.getAction();
+		if ((action != null) && (action.equals(Intent.ACTION_SEND))) {
+			mWithJabberID = "";
+		} else {
+			mWithJabberID = i.getDataString().toLowerCase();
+		}
+		
 		if (i.hasExtra(INTENT_EXTRA_USERNAME)) {
 			mUserScreenName = i.getExtras().getString(INTENT_EXTRA_USERNAME);
 		} else {
