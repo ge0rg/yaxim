@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<!-- for emulator include bg -->
+<!-- <color name="holo_light_bg_color">#fff3f3f3</color> -->
+    
+<style name="YaximLightTheme" parent="@android:style/Theme.Holo.Light">
+    <item name="android:actionBarStyle">@style/MyActionBar</item>
+<!--     <item name="android:windowBackground">@color/holo_light_bg_color</item> -->
+</style>
+
+<style name="MyActionBar" parent="@android:style/Widget.Holo.Light.ActionBar">
+    <item name="android:background">#3000</item>
+</style>
+</resources>
