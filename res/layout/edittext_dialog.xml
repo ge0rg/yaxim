@@ -2,9 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/layout_root" android:orientation="vertical"
 	android:layout_width="fill_parent" android:layout_height="fill_parent"
-	android:paddingLeft="20dp" android:paddingRight="20dp" android:paddingBottom="20dp" android:paddingTop="15dp" android:layout_gravity="top">
+	android:paddingLeft="15dp" android:paddingRight="15dp" android:paddingBottom="15dp" android:paddingTop="10dp" android:layout_gravity="top">
 	<TextView android:id="@+id/text" android:layout_width="wrap_content"
-		android:layout_height="wrap_content" android:textColor="#FFF"
+		android:layout_height="wrap_content"
 		android:gravity="top" android:textSize="16sp" android:paddingBottom="20dp"/>
 	<EditText android:layout_height="wrap_content" android:id="@+id/editText" android:layout_width="match_parent">
 		<requestFocus></requestFocus>

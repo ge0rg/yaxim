@@ -4,7 +4,12 @@
 		android:orientation="vertical"
 		android:layout_width="fill_parent" 
 		android:minWidth="240sp" 
-		android:layout_height="fill_parent">
+		android:layout_height="fill_parent"
+		android:paddingLeft="15dp"
+		android:paddingRight="15dp"
+		android:paddingBottom="15dp"
+		android:paddingTop="10dp"
+		>
 
 	<Spinner android:id="@+id/statusview_spinner"
 		android:layout_height="wrap_content"
