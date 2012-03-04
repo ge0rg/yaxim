@@ -333,7 +333,7 @@ public class MainWindow extends ExpandableListActivity {
 
 	void editTextDialog(int titleId, CharSequence message, String text,
 			final EditOk ok) {
-		LayoutInflater inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
+		LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 		View layout = inflater.inflate(R.layout.edittext_dialog,
 		                               (ViewGroup) findViewById(R.id.layout_root));
 
