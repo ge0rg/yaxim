@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-	<item android:drawable="@drawable/group_background_normal" />
-</selector>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+		<shape xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:shape="rectangle" >
+
+		    <solid android:color="#000"/>
+
+		</shape>
+    </item>
+    <item android:bottom="1dp">
+		<shape xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:shape="rectangle" >
+
+		    <solid android:color="#ddd"/>
+
+		</shape>
+    </item>
+</layer-list>
