@@ -19,6 +19,7 @@ import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 
+import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ExpandableListActivity;
@@ -62,8 +63,6 @@ import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.IXMPPRosterCallback.Stub;
 import org.yaxim.androidclient.service.IXMPPRosterService;
 
-import com.markupartist.android.widget.ActionBar;
-import com.markupartist.android.widget.ActionBar.Action;
 
 import com.nullwire.trace.ExceptionHandler;
 
@@ -86,18 +85,20 @@ public class MainWindow extends ExpandableListActivity {
 	private String mStatusMessage;
 	private StatusMode mStatusMode;
 
-	private ActionBar actionBar;
-	private ChangeStatusAction changeStatusAction;
-	private ToggleOfflineContactsAction toggleOfflineContactsAction;
-
 	private ContentObserver mRosterObserver = new RosterObserver();
 	private HashMap<String, Boolean> mGroupsExpanded = new HashMap<String, Boolean>();
+
+	private ActionBar actionBar;
+	private Menu mOptionsMenu = null; 
+	private View mIndeterminateProgressView;
 
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		actionBar = getActionBar();
+		actionBar.setHomeButtonEnabled(true);
 		mConfig = new YaximConfiguration(PreferenceManager
 				.getDefaultSharedPreferences(this));
 		registerCrashReporter();
@@ -107,19 +108,11 @@ public class MainWindow extends ExpandableListActivity {
 				true, mRosterObserver);
 		registerXMPPService();
 		createUICallback();
-		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setupContenView();
 		registerListAdapter();
 
-		actionBar = (ActionBar) findViewById(R.id.actionbar);
-		actionBar.setTitle(R.string.app_name);
-		actionBar.setSubTitle(mStatusMessage);
+		actionBar.setSubtitle(mStatusMessage);
 
-		toggleOfflineContactsAction = new ToggleOfflineContactsAction();
-		actionBar.addAction(toggleOfflineContactsAction);
-
-		changeStatusAction = new ChangeStatusAction();
-		actionBar.setHomeAction(changeStatusAction);
 	}
 	@Override
 	public void onDestroy() {
@@ -127,48 +120,15 @@ public class MainWindow extends ExpandableListActivity {
 		getContentResolver().unregisterContentObserver(mRosterObserver);
 	}
 
-	private abstract class AbstractAction implements Action {
-
-		/** Causes the view to reload the {@link Drawable}. */
-		void invalidate() {
-			ImageButton imageButton = (ImageButton) actionBar
-					.findViewWithTag(this);
-			imageButton.setImageResource(getDrawable());
-		}
-	}
-
-	private class ChangeStatusAction extends AbstractAction {
-		public void performAction(View view) {
-			new ChangeStatusDialog(MainWindow.this).show();
-		}
-		
-		public int getDrawable() {
-
-			boolean showOffline = !isConnected() || isConnecting()
+	public int getStatusActionIcon() {
+		boolean showOffline = !isConnected() || isConnecting()
 					|| getStatusMode() == null;
 
-			if (showOffline) {
-				return StatusMode.offline.getDrawableId();
-			}
-
-			return getStatusMode().getDrawableId();
-		}
-	}
-
-	private class ToggleOfflineContactsAction extends AbstractAction {
-
-		public int getDrawable() {
-			if (showOffline) {
-				return R.drawable.ic_action_online_friends;
-			}
-
-			return R.drawable.ic_action_all_friends;
+		if (showOffline) {
+			return StatusMode.offline.getDrawableId();
 		}
 
-		public void performAction(View view) {
-			setOfflinceContactsVisibility(!showOffline);
-			updateRoster();
-		}
+		return getStatusMode().getDrawableId();
 	}
 
 	// need this to workaround unwanted OnGroupCollapse/Expand events
@@ -233,8 +193,6 @@ public class MainWindow extends ExpandableListActivity {
 		bindXMPPService();
 
 		YaximApplication.getApp(this).mMTM.bindDisplayActivity(this);
-		// Causes the toggle button to show correct state on application start
-		toggleOfflineContactsAction.invalidate();
 	}
 
 
@@ -481,6 +439,8 @@ public class MainWindow extends ExpandableListActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.roster_options, menu);
+		actionBar.setIcon(getStatusActionIcon());
+		mOptionsMenu = menu;
 		return true;
 	}
 
@@ -507,8 +467,8 @@ public class MainWindow extends ExpandableListActivity {
 	}
 
 	private int getShowHideMenuIcon() {
-		return showOffline ? R.drawable.ic_menu_online_friends
-				: R.drawable.ic_menu_all_friends;
+		return showOffline ? R.drawable.ic_action_online_friends
+				: R.drawable.ic_action_all_friends;
 	}
 
 	private String getShowHideMenuText() {
@@ -563,12 +523,12 @@ public class MainWindow extends ExpandableListActivity {
 		mStatusMessage = message;
 
 		// This and many other things like it should be done with observer
-		changeStatusAction.invalidate();
+		actionBar.setIcon(getStatusActionIcon());
 
 		if (mStatusMessage.equals("")) {
-			actionBar.setSubTitle(null);
+			actionBar.setSubtitle(null);
 		} else {
-			actionBar.setSubTitle(mStatusMessage);
+			actionBar.setSubtitle(mStatusMessage);
 		}
 	}
 
@@ -613,6 +573,7 @@ public class MainWindow extends ExpandableListActivity {
 			updateRoster();
 			return true;
 
+		case android.R.id.home:
 		case R.id.menu_status:
 			new ChangeStatusDialog(this).show();
 			return true;
@@ -645,7 +606,7 @@ public class MainWindow extends ExpandableListActivity {
 	/** Sets if all contacts are shown in the roster or online contacts only. */
 	private void setOfflinceContactsVisibility(boolean showOffline) {
 		this.showOffline = showOffline;
-		toggleOfflineContactsAction.invalidate();
+		invalidateOptionsMenu();
 
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.SHOW_OFFLINE, showOffline).commit();
@@ -666,8 +627,6 @@ public class MainWindow extends ExpandableListActivity {
 	}
 
 	private void setConnectingStatus(boolean isConnecting) {
-		_setProgressBarIndeterminateVisibility(isConnecting);
-		changeStatusAction.invalidate();
 
 		String lastStatus;
 
@@ -689,10 +648,25 @@ public class MainWindow extends ExpandableListActivity {
 	 * {@link #setProgressBarIndeterminateVisibility(boolean)} is final.
 	 */
 	private void _setProgressBarIndeterminateVisibility(boolean visibility) {
-		if (visibility) {
-			actionBar.setProgressBarVisibility(View.VISIBLE);
-		} else {
-			actionBar.setProgressBarVisibility(View.GONE);
+		if (mOptionsMenu == null) {
+			return;
+		}
+
+		final MenuItem connectItem = mOptionsMenu.findItem(R.id.menu_connect);
+		if (connectItem != null) {
+			if (visibility) {
+				if (mIndeterminateProgressView == null) {
+					LayoutInflater inflater = (LayoutInflater)
+							getSystemService(
+									Context.LAYOUT_INFLATER_SERVICE);
+					mIndeterminateProgressView = inflater.inflate(
+							R.layout.actionbar_indeterminate_progress, null);
+				}
+
+				connectItem.setActionView(mIndeterminateProgressView);
+			} else {
+				connectItem.setActionView(null);
+			}
 		}
 	}
 
@@ -711,6 +685,7 @@ public class MainWindow extends ExpandableListActivity {
 		boolean oldState = isConnected() || isConnecting();
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.CONN_STARTUP, !oldState).commit();
+		_setProgressBarIndeterminateVisibility(true);
 		if (oldState) {
 			setConnectingStatus(false);
 			(new Thread() {
@@ -726,9 +701,9 @@ public class MainWindow extends ExpandableListActivity {
 
 	private int getConnectDisconnectIcon() {
 		if (isConnected() || isConnecting()) {
-			return R.drawable.yaxim_menu_disconnect;
+			return R.drawable.ic_action_unplug;
 		}
-		return R.drawable.yaxim_menu_connect;
+		return R.drawable.ic_action_plug;
 	}
 
 	private String getConnectDisconnectText() {
@@ -752,7 +727,10 @@ public class MainWindow extends ExpandableListActivity {
 				serviceAdapter.registerUICallback(rosterCallback);
 				Log.i(TAG, "getConnectionState(): "
 						+ serviceAdapter.getConnectionState());
+				invalidateOptionsMenu();	// to load the action bar contents on time for access to icons/progressbar
+				actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
 				setConnectingStatus(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
+				_setProgressBarIndeterminateVisibility(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 			}
 
 			public void onServiceDisconnected(ComponentName name) {
@@ -789,6 +767,8 @@ public class MainWindow extends ExpandableListActivity {
 					public void run() {
 						Log.d(TAG, "connectionStatusChanged: " + isConnected + "/" + willReconnect);
 						setConnectingStatus(!isConnected && willReconnect);
+						_setProgressBarIndeterminateVisibility(false);
+						invalidateOptionsMenu();
 					}
 				});
 			}
