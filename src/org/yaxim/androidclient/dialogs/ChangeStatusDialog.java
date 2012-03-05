@@ -53,7 +53,7 @@ public class ChangeStatusDialog extends AlertDialog {
 
 		mStatus = (Spinner) group.findViewById(R.id.statusview_spinner);
 		mStatus.setAdapter(new StatusModeAdapter(context,
-				R.layout.status_spinner_item, modes));
+				android.R.layout.simple_spinner_item, modes));
 
 		for (int i = 0; i < modes.size(); i++) {
 			if (modes.get(i).equals(context.getStatusMode())) {
