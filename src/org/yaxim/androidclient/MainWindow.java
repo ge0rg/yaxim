@@ -41,6 +41,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -91,10 +92,17 @@ public class MainWindow extends ExpandableListActivity {
 	private ActionBar actionBar;
 	private Menu mOptionsMenu = null; 
 	private View mIndeterminateProgressView;
-
+	private String mTheme;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		mTheme = theme;
+		if (theme.equals("light")) {
+			setTheme(R.style.YaximLightTheme);
+		} else {
+			setTheme(R.style.YaximDarkTheme);
+		}
 		super.onCreate(savedInstanceState);
 
 		actionBar = getActionBar();
@@ -189,6 +197,14 @@ public class MainWindow extends ExpandableListActivity {
 	protected void onResume() {
 		super.onResume();
 		getPreferences(PreferenceManager.getDefaultSharedPreferences(this));
+		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		if (theme.equals(mTheme) == false) {
+			// restart
+			Intent restartIntent = new Intent(this, MainWindow.class);
+			restartIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(restartIntent);
+			finish();
+		}
 		updateRoster();
 		bindXMPPService();
 
@@ -467,8 +483,13 @@ public class MainWindow extends ExpandableListActivity {
 	}
 
 	private int getShowHideMenuIcon() {
-		return showOffline ? R.drawable.ic_action_online_friends
-				: R.drawable.ic_action_all_friends;
+		TypedValue tv = new TypedValue();
+		if (showOffline) {
+			getTheme().resolveAttribute(R.attr.OnlineFriends, tv, true);
+			return tv.resourceId;
+		}
+		getTheme().resolveAttribute(R.attr.AllFriends, tv, true);
+		return tv.resourceId;
 	}
 
 	private String getShowHideMenuText() {
@@ -700,10 +721,13 @@ public class MainWindow extends ExpandableListActivity {
 	}
 
 	private int getConnectDisconnectIcon() {
+		TypedValue tv = new TypedValue();
 		if (isConnected() || isConnecting()) {
-			return R.drawable.ic_action_unplug;
+			getTheme().resolveAttribute(R.attr.UnplugIcon, tv, true);
+			return tv.resourceId;
 		}
-		return R.drawable.ic_action_plug;
+		getTheme().resolveAttribute(R.attr.PlugIcon, tv, true);
+		return tv.resourceId;
 	}
 
 	private String getConnectDisconnectText() {
