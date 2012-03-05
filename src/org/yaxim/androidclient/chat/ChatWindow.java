@@ -10,9 +10,7 @@ import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.XMPPService;
 
-import com.markupartist.android.widget.ActionBar;
-import com.markupartist.android.widget.ActionBar.IntentAction;
-
+import android.app.ActionBar;
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
@@ -74,6 +72,10 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.mainchat);
+		
+		ActionBar actionBar = getActionBar();
+		actionBar.setHomeButtonEnabled(true);
+		actionBar.setIcon(R.drawable.ic_status_chat);
 
 		registerForContextMenu(getListView());
 		setContactFromUri();
@@ -88,10 +90,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			titleUserid = mWithJabberID;
 		}
 
-		ActionBar actionBar = (ActionBar) findViewById(R.id.actionbar);
-		actionBar.setTitle(titleUserid);
-		actionBar.setHomeAction(new IntentAction(this, MainWindow
-				.createIntent(this), R.drawable.ic_action_appicon));
+		setTitle(titleUserid);
 
 		setChatWindowAdapter();
 	}
@@ -319,7 +318,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			}
 			if (!has_been_read) {
 				ColorDrawable layers[] = new ColorDrawable[2];
-				layers[0] = new ColorDrawable(0xff404040);
+				layers[0] = new ColorDrawable(0xffc0c0c0);
 				if (from_me) {
 					layers[1] = new ColorDrawable(0x60404040);
 				} else {
@@ -329,7 +328,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 					TransitionDrawable(layers);
 				mRowView.setBackgroundDrawable(backgroundColorAnimation);
 				backgroundColorAnimation.setCrossFadeEnabled(true);
-				backgroundColorAnimation.startTransition(2000);
+				backgroundColorAnimation.startTransition(500);
 			}
 			getMessageView().setText(message);
 		}
@@ -392,4 +391,16 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		toastNotification.show();
 	}
 
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			Intent intent = new Intent(this, MainWindow.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
 }
