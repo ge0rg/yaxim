@@ -13,6 +13,8 @@
 			android:layout_width="fill_parent"
 			android:layout_height="wrap_content"
 			android:layout_alignParentBottom="true"
+			android:baselineAligned="false"
+			android:gravity="bottom"
 			android:stretchColumns="1">
 
 			<EditText
