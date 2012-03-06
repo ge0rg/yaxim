@@ -23,6 +23,7 @@ import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Handler;
@@ -39,6 +40,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnKeyListener;
+import android.view.Window;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -80,11 +82,14 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		}
 		super.onCreate(savedInstanceState);
 
+		requestWindowFeature(Window.FEATURE_ACTION_BAR);
 		setContentView(R.layout.mainchat);
 		
 		ActionBar actionBar = getActionBar();
-		actionBar.setHomeButtonEnabled(true);
-		actionBar.setIcon(R.drawable.ic_status_chat);
+		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
+			actionBar.setHomeButtonEnabled(true);
+			actionBar.setIcon(R.drawable.ic_status_chat);
+		}
 
 		registerForContextMenu(getListView());
 		setContactFromUri();

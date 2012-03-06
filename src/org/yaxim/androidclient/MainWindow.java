@@ -35,6 +35,7 @@ import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -105,8 +106,12 @@ public class MainWindow extends ExpandableListActivity {
 		}
 		super.onCreate(savedInstanceState);
 
+		requestWindowFeature(Window.FEATURE_ACTION_BAR);
 		actionBar = getActionBar();
-		actionBar.setHomeButtonEnabled(true);
+		actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_TITLE, ActionBar.DISPLAY_SHOW_TITLE);
+		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
+			actionBar.setHomeButtonEnabled(true);
+		}
 		mConfig = new YaximConfiguration(PreferenceManager
 				.getDefaultSharedPreferences(this));
 		registerCrashReporter();
@@ -120,8 +125,8 @@ public class MainWindow extends ExpandableListActivity {
 		registerListAdapter();
 
 		actionBar.setSubtitle(mStatusMessage);
-
 	}
+
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
@@ -455,7 +460,9 @@ public class MainWindow extends ExpandableListActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.roster_options, menu);
-		actionBar.setIcon(getStatusActionIcon());
+		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
+			actionBar.setIcon(getStatusActionIcon());
+		}
 		mOptionsMenu = menu;
 		return true;
 	}
@@ -544,7 +551,9 @@ public class MainWindow extends ExpandableListActivity {
 		mStatusMessage = message;
 
 		// This and many other things like it should be done with observer
-		actionBar.setIcon(getStatusActionIcon());
+		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
+			actionBar.setIcon(getStatusActionIcon());
+		}
 
 		if (mStatusMessage.equals("")) {
 			actionBar.setSubtitle(null);
@@ -752,7 +761,9 @@ public class MainWindow extends ExpandableListActivity {
 				Log.i(TAG, "getConnectionState(): "
 						+ serviceAdapter.getConnectionState());
 				invalidateOptionsMenu();	// to load the action bar contents on time for access to icons/progressbar
-				actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
+				if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
+					actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
+				}
 				setConnectingStatus(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 				_setProgressBarIndeterminateVisibility(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 			}
