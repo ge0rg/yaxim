@@ -140,9 +140,19 @@ public abstract class GenericService extends Service {
 		} else {
 			author = fromUserId;
 		}
+		final int maxLength = 50;
+		int newline = message.indexOf('\n');
+		int limit = 0;
+		String messageSummary = message;
+		if (newline >= 0)
+			limit = newline;
+		if (limit > maxLength || message.length() > maxLength)
+			limit = maxLength;
+		if (limit > 0)
+			messageSummary = message.substring(0, limit) + " [...]";
 		String title = getString(R.string.notification_message, author);
-		mNotification = new Notification(android.R.drawable.stat_notify_chat, title,
-				System.currentTimeMillis());
+		mNotification = new Notification(android.R.drawable.stat_notify_chat,
+				title + ":\n" + messageSummary, System.currentTimeMillis());
 		Uri userNameUri = Uri.parse(fromJid);
 		mNotificationIntent.setData(userNameUri);
 		mNotificationIntent.putExtra(ChatWindow.INTENT_EXTRA_USERNAME, fromUserId);
