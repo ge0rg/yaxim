@@ -19,6 +19,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
@@ -71,16 +72,21 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	private Intent mServiceIntent;
 	private ServiceConnection mServiceConnection;
 	private XMPPChatServiceAdapter mServiceAdapter;
+	private int mChatFontSize;
+	private SharedPreferences prefs;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		String theme = prefs.getString(PreferenceConstants.THEME, "dark");
 		if (theme.equals("light")) {
 			setTheme(R.style.YaximLightTheme);
 		} else {
 			setTheme(R.style.YaximDarkTheme);
 		}
 		super.onCreate(savedInstanceState);
+	
+		mChatFontSize = Integer.valueOf(prefs.getString("setSizeChat", "18"));
 
 		requestWindowFeature(Window.FEATURE_ACTION_BAR);
 		setContentView(R.layout.mainchat);
@@ -281,7 +287,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			if (row == null) {
 				LayoutInflater inflater = getLayoutInflater();
 				row = inflater.inflate(R.layout.chatrow, null);
-				wrapper = new ChatItemWrapper(row);
+				wrapper = new ChatItemWrapper(row, ChatWindow.this);
 				row.setTag(wrapper);
 			} else {
 				wrapper = (ChatItemWrapper) row.getTag();
@@ -312,9 +318,11 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		private TextView mMessageView = null;
 
 		private final View mRowView;
+		private ChatWindow chatWindow;
 
-		ChatItemWrapper(View row) {
+		ChatItemWrapper(View row, ChatWindow chatWindow) {
 			this.mRowView = row;
+			this.chatWindow = chatWindow;
 		}
 
 		void populateFrom(String date, boolean from_me, String from, String message,
@@ -348,6 +356,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				backgroundColorAnimation.startTransition(500);
 			}
 			getMessageView().setText(message);
+			getMessageView().setTextSize(TypedValue.COMPLEX_UNIT_SP, chatWindow.mChatFontSize);
 		}
         
 		
