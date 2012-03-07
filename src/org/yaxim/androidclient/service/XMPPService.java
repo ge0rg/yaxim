@@ -283,7 +283,7 @@ public class XMPPService extends GenericService {
 		if (!mConfig.foregroundService)
 			return;
 		String title = getString(R.string.conn_title, mConfig.jabberID);
-		Notification n = new Notification(R.drawable.ic_offline, title,
+		Notification n = new Notification(R.drawable.ic_statusbar_icon_offline, title,
 				System.currentTimeMillis());
 		n.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;
 
@@ -297,7 +297,7 @@ public class XMPPService extends GenericService {
 			message += mReconnectInfo;
 		if (mIsConnected.get()) {
 			message = MainWindow.getStatusTitle(this, mConfig.statusMode, mConfig.statusMessage);
-			n.icon = R.drawable.ic_online;
+			n.icon = R.drawable.ic_statusbar_icon;
 		}
 		n.setLatestEventInfo(this, title, message, n.contentIntent);
 

@@ -141,7 +141,7 @@ public abstract class GenericService extends Service {
 			author = fromUserId + " (" + fromJid + ")";
 		}
 		String title = getString(R.string.notification_message, author);
-		mNotification = new Notification(R.drawable.icon, title,
+		mNotification = new Notification(R.drawable.ic_statusbar_icon_new, title,
 				System.currentTimeMillis());
 		Uri userNameUri = Uri.parse(fromJid);
 		mNotificationIntent.setData(userNameUri);
