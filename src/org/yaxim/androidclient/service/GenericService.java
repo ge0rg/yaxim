@@ -141,7 +141,7 @@ public abstract class GenericService extends Service {
 			author = fromUserId;
 		}
 		String title = getString(R.string.notification_message, author);
-		mNotification = new Notification(R.drawable.icon, title,
+		mNotification = new Notification(android.R.drawable.stat_notify_chat, title,
 				System.currentTimeMillis());
 		Uri userNameUri = Uri.parse(fromJid);
 		mNotificationIntent.setData(userNameUri);
