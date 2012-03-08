@@ -54,6 +54,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		TextWatcher {
 
 	public static final String INTENT_EXTRA_USERNAME = ChatWindow.class.getName() + ".username";
+	public static final String INTENT_EXTRA_MESSAGE = ChatWindow.class.getName() + ".message";
 	
 	private static final String TAG = "yaxim.ChatWindow";
 	private static final int NOTIFY_ID = 0;
@@ -100,8 +101,8 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		registerForContextMenu(getListView());
 		setContactFromUri();
 		registerXMPPService();
-		setUserInput();
 		setSendButton();
+		setUserInput();
 		
 		String titleUserid;
 		if (mUserScreenName != null) {
@@ -183,8 +184,12 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	}
 
 	private void setUserInput() {
+		Intent i = getIntent();
 		mChatInput = (EditText) findViewById(R.id.Chat_UserInput);
 		mChatInput.addTextChangedListener(this);
+		if (i.hasExtra(INTENT_EXTRA_MESSAGE)) {
+			mChatInput.setText(i.getExtras().getString(INTENT_EXTRA_MESSAGE));
+		}
 	}
 
 	private void setContactFromUri() {
