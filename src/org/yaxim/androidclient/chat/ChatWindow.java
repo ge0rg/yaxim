@@ -45,6 +45,7 @@ import android.view.Window;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -321,6 +322,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		private TextView mDateView = null;
 		private TextView mFromView = null;
 		private TextView mMessageView = null;
+		private ImageView mIconView = null;
 
 		private final View mRowView;
 		private ChatWindow chatWindow;
@@ -359,6 +361,13 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				mRowView.setBackgroundDrawable(backgroundColorAnimation);
 				backgroundColorAnimation.setCrossFadeEnabled(true);
 				backgroundColorAnimation.startTransition(500);
+				if (from_me) {
+					getIconView().setImageResource(R.drawable.ic_chat_msg_status_queued);
+				} else {
+					getIconView().setImageResource(R.drawable.ic_chat_msg_status_unread);
+				}
+			} else {
+				getIconView().setImageResource(R.drawable.ic_chat_msg_status_ok);
 			}
 			getMessageView().setText(message);
 			getMessageView().setTextSize(TypedValue.COMPLEX_UNIT_SP, chatWindow.mChatFontSize);
@@ -385,6 +394,14 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 						.findViewById(R.id.chat_message);
 			}
 			return mMessageView;
+		}
+
+		ImageView getIconView() {
+			if (mIconView == null) {
+				mIconView = (ImageView) mRowView
+						.findViewById(R.id.iconView);
+			}
+			return mIconView;
 		}
 
 	}
