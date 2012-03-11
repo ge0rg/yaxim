@@ -56,7 +56,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 	public static final String INTENT_EXTRA_MESSAGE = ChatWindow.class.getName() + ".message";
 	
 	private static final String TAG = "yaxim.ChatWindow";
-	private static final int NOTIFY_ID = 0;
 	private static final String[] PROJECTION_FROM = new String[] {
 			ChatProvider.ChatConstants._ID, ChatProvider.ChatConstants.DATE,
 			ChatProvider.ChatConstants.FROM_ME, ChatProvider.ChatConstants.JID,
