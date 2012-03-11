@@ -19,7 +19,6 @@ import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 
-import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ExpandableListActivity;
@@ -45,12 +44,8 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ImageButton;
@@ -66,9 +61,14 @@ import org.yaxim.androidclient.IXMPPRosterCallback.Stub;
 import org.yaxim.androidclient.service.IXMPPRosterService;
 
 
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockExpandableListActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+import com.actionbarsherlock.view.Window;
 import com.nullwire.trace.ExceptionHandler;
 
-public class MainWindow extends ExpandableListActivity {
+public class MainWindow extends SherlockExpandableListActivity {
 
 	private static final String TAG = "yaxim.MainWindow";
 
@@ -107,11 +107,9 @@ public class MainWindow extends ExpandableListActivity {
 		super.onCreate(savedInstanceState);
 
 		requestWindowFeature(Window.FEATURE_ACTION_BAR);
-		actionBar = getActionBar();
+		actionBar = getSupportActionBar();
 		actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_TITLE, ActionBar.DISPLAY_SHOW_TITLE);
-		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
-			actionBar.setHomeButtonEnabled(true);
-		}
+		actionBar.setHomeButtonEnabled(true);
 		mConfig = new YaximConfiguration(PreferenceManager
 				.getDefaultSharedPreferences(this));
 		registerCrashReporter();
@@ -416,7 +414,6 @@ public class MainWindow extends ExpandableListActivity {
 			.create().show();
 	}
 
-	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		return applyMenuContextChoice(item);
 	}
@@ -503,10 +500,8 @@ public class MainWindow extends ExpandableListActivity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.roster_options, menu);
-		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
-			actionBar.setIcon(getStatusActionIcon());
-		}
+		getSupportMenuInflater().inflate(R.menu.roster_options, menu);
+		actionBar.setIcon(getStatusActionIcon());
 		mOptionsMenu = menu;
 		return true;
 	}
@@ -595,9 +590,7 @@ public class MainWindow extends ExpandableListActivity {
 		mStatusMessage = message;
 
 		// This and many other things like it should be done with observer
-		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
-			actionBar.setIcon(getStatusActionIcon());
-		}
+		actionBar.setIcon(getStatusActionIcon());
 
 		if (mStatusMessage.equals("")) {
 			actionBar.setSubtitle(null);
@@ -805,9 +798,7 @@ public class MainWindow extends ExpandableListActivity {
 				Log.i(TAG, "getConnectionState(): "
 						+ serviceAdapter.getConnectionState());
 				invalidateOptionsMenu();	// to load the action bar contents on time for access to icons/progressbar
-				if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
-					actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
-				}
+				actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
 				setConnectingStatus(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 				_setProgressBarIndeterminateVisibility(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 			}

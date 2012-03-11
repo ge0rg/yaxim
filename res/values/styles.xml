@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+<!--     the unprefixed ones (without android:) are for the Sherlock implementation -->
+
     <style name="RosterGroupName">
         <item name="android:textSize">22sp</item>
         <item name="android:textStyle">bold</item>
@@ -8,6 +10,7 @@
 
     <style name="RosterGroupName.Dark">
         <item name="android:background">@drawable/group_background</item>
+        <item name="background">@drawable/group_background</item>
     </style>
 
     <style name="RosterGroupName.Light">
@@ -17,10 +20,5 @@
     <style name="RosterGroupItem">
         <item name="android:textSize">20sp</item>
     </style>
-
-    <style name="RosterGroupItem.Light">
-    </style>
-
-    <style name="RosterGroupItem.Dark"></style>
 
 </resources>

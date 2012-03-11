@@ -3,12 +3,16 @@
 
     <!-- for emulator include bg -->
     <!-- <color name="holo_light_bg_color">#fff3f3f3</color> -->
+    
+<!--     the unprefixed ones (without android:) are for the Sherlock implementation -->
 
-    <style name="YaximLightTheme" parent="@android:style/Theme.Holo.Light">
+    <style name="YaximLightTheme" parent="Theme.Sherlock.Light">
         <item name="android:actionBarStyle">@style/MyActionBarLight</item>
+        <item name="actionBarStyle">@style/MyActionBarLight</item>
+        
         <!-- <item name="android:windowBackground">@color/holo_light_bg_color</item> -->
         <item name="MainGroup">@style/RosterGroupName.Light</item>
-        <item name="MainChild">@style/RosterGroupItem.Light</item>
+        <item name="MainChild">@style/RosterGroupItem</item>
         <item name="PlugIcon">@drawable/ic_action_plug_light</item>
         <item name="UnplugIcon">@drawable/ic_action_unplug_light</item>
         <item name="OnlineFriends">@drawable/ic_action_online_friends_light</item>
@@ -18,11 +22,12 @@
         <item name="ChatMsgHeaderYouColor">#ffcc5050</item>
     </style>
 
-    <style name="MyActionBarLight" parent="@android:style/Widget.Holo.Light.ActionBar">
+    <style name="MyActionBarLight" parent="Widget.Sherlock.Light.ActionBar">
         <item name="android:background">#3000</item>
+        <item name="background">#3000</item>
     </style>
 
-    <style name="YaximDarkTheme" parent="@android:style/Theme.Holo">
+    <style name="YaximDarkTheme" parent="Theme.Sherlock">
         <item name="MainGroup">@style/RosterGroupName.Dark</item>
         <item name="MainChild">@style/RosterGroupItem</item>
         <item name="PlugIcon">@drawable/ic_action_plug_dark</item>

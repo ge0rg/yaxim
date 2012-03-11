@@ -11,7 +11,11 @@ import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.PreferenceConstants;
 
-import android.app.ActionBar;
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockListActivity;
+import com.actionbarsherlock.view.MenuItem;
+import com.actionbarsherlock.view.Window;
+
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
@@ -37,11 +41,9 @@ import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnKeyListener;
-import android.view.Window;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -51,7 +53,7 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class ChatWindow extends ListActivity implements OnKeyListener,
+public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 		TextWatcher {
 
 	public static final String INTENT_EXTRA_USERNAME = ChatWindow.class.getName() + ".username";
@@ -93,7 +95,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		requestWindowFeature(Window.FEATURE_ACTION_BAR);
 		setContentView(R.layout.mainchat);
 		
-		ActionBar actionBar = getActionBar();
+		ActionBar actionBar = getSupportActionBar();
 		if (Integer.parseInt(Build.VERSION.SDK) >= 14) {
 			actionBar.setHomeButtonEnabled(true);
 			actionBar.setIcon(R.drawable.ic_status_chat);
@@ -210,7 +212,6 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 		getMenuInflater().inflate(R.menu.chat_contextmenu, menu);
 	}
 
-	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		View target = ((AdapterContextMenuInfo)item.getMenuInfo()).targetView;
 		switch (item.getItemId()) {
@@ -220,7 +221,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			cm.setText(message.getText());
 			return true;
 		default:
-			return super.onContextItemSelected(item);
+			return super.onContextItemSelected((android.view.MenuItem) item);
 		}
 	}
 	
