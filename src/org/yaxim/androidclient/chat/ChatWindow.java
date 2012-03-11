@@ -13,7 +13,6 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 
 import android.app.ActionBar;
 import android.app.ListActivity;
-import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
@@ -27,7 +26,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.text.ClipboardManager;
 import android.text.Editable;
