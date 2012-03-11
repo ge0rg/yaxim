@@ -10,7 +10,6 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:indeterminate="true"
-        android:scaleX="0.6"
-        android:scaleY="0.6" />
-
+        style="@android:style/Widget.ProgressBar.Small">
+    </ProgressBar>
 </RelativeLayout>
