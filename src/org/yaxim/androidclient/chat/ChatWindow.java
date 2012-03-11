@@ -364,6 +364,7 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 				}
 			} else {
 				getIconView().setImageResource(R.drawable.ic_chat_msg_status_ok);
+				mRowView.setBackgroundColor(0x00000000); // default is transparent
 			}
 			getMessageView().setText(message);
 			getMessageView().setTextSize(TypedValue.COMPLEX_UNIT_SP, chatWindow.mChatFontSize);
