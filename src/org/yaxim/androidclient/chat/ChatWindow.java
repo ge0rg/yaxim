@@ -133,6 +133,12 @@ public class ChatWindow extends ListActivity implements OnKeyListener,
 			unbindXMPPService();
 	}
 
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		if (hasWindowFocus()) unbindXMPPService();
+	}
+
 	private void registerXMPPService() {
 		Log.i(TAG, "called startXMPPService()");
 		mServiceIntent = new Intent(this, XMPPService.class);
