@@ -18,18 +18,16 @@
 			android:layout_height="wrap_content"
 			android:layout_alignParentBottom="true"
 			android:baselineAligned="false"
-			android:gravity="bottom"
-			android:stretchColumns="1">
+			android:gravity="bottom">
 
 			<EditText android:id="@+id/Chat_UserInput"
-				android:layout_width="fill_parent"
-				android:layout_marginRight="60sp"
+				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
+				android:layout_weight="1"
 				android:inputType="textShortMessage|textAutoCorrect|textCapSentences|textMultiLine" />
 
 			<Button android:id="@+id/Chat_SendButton"
-				android:layout_width="60sp"
-				android:layout_marginLeft="-60sp"
+				android:layout_width="60dp"
 				android:layout_height="wrap_content"
 				android:text="@android:string/ok"
 				/>
