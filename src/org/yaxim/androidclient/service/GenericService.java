@@ -156,7 +156,7 @@ public abstract class GenericService extends Service {
 			ticker = title + ":\n" + messageSummary;
 		} else
 			ticker = getString(R.string.notification_anonymous_message, author);
-		mNotification = new Notification(R.drawable.sb_message, ticker,
+		mNotification = new Notification(R.drawable.ic_statusbar_icon_new, title,
 				System.currentTimeMillis());
 		Uri userNameUri = Uri.parse(fromJid);
 		mNotificationIntent.setData(userNameUri);
