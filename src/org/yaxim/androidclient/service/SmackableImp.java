@@ -213,12 +213,12 @@ public class SmackableImp implements Smackable {
 				throw new YaximXMPPException("SMACK connect failed without exception!");
 			}
 			initServiceDiscovery();
-			mStreamHandler.notifyInitialLogin();
 			// SMACK auto-logins if we were authenticated before
 			if (!mXMPPConnection.isAuthenticated()) {
 				mXMPPConnection.login(mConfig.userName, mConfig.password,
 						mConfig.ressource);
 			}
+			mStreamHandler.notifyInitialLogin();
 			setStatusFromConfig();
 
 		} catch (XMPPException e) {
