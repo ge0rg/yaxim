@@ -1,5 +1,7 @@
 package org.yaxim.androidclient.service;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Date;
 import javax.net.ssl.SSLContext;
@@ -27,13 +29,16 @@ import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.provider.DelayInfoProvider;
 import org.jivesoftware.smackx.provider.DeliveryReceiptProvider;
 import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
+import org.jivesoftware.smackx.provider.VCardProvider;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.DelayInfo;
 import org.jivesoftware.smackx.packet.DeliveryReceipt;
 import org.jivesoftware.smackx.packet.DeliveryReceiptRequest;
+import org.jivesoftware.smackx.packet.VCard;
 import org.yaxim.androidclient.YaximApplication;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.RosterProvider;
+import org.yaxim.androidclient.data.VCardAvatarUpdateExtension;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
@@ -77,6 +82,9 @@ public class SmackableImp implements Smackable {
 		pm.addExtensionProvider("x","jabber:x:delay", new DelayInfoProvider());
 		// add delivery receipts
 		pm.addExtensionProvider("received", DeliveryReceipt.NAMESPACE, new DeliveryReceiptProvider());
+		// add vcard handling
+		pm.addIQProvider("vCard", "vcard-temp", new VCardProvider());
+		pm.addExtensionProvider("x", "vcard-temp:x:update", new VCardAvatarUpdateProvider());
 
 		ServiceDiscoveryManager.setIdentityName(YaximApplication.XMPP_IDENTITY_NAME);
 		ServiceDiscoveryManager.setIdentityType(YaximApplication.XMPP_IDENTITY_TYPE);
@@ -625,6 +633,42 @@ public class SmackableImp implements Smackable {
 		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
 	}
 
+	private String getAvatarHash(byte[] avatar) {
+		try {
+			if (avatar == null)
+				return "";
+			MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			digest.update(avatar);
+			return StringUtils.encodeHex(digest.digest());
+		} catch (NoSuchAlgorithmException e) {
+			return "";
+		}
+	}
+
+	private byte[] getUpdatedAvatar(final RosterEntry entry, String hash) {
+		String selection = RosterConstants.JID + " = '" + entry.getUser() + "'";
+		Cursor cursor = mContentResolver.query(RosterProvider.CONTENT_URI,
+				new String[] { RosterConstants.AVATAR_HASH, RosterConstants.AVATAR },
+				selection, null, null);
+		int hashIdx = cursor.getColumnIndex(RosterConstants.AVATAR_HASH);
+		int avatarIdx = cursor.getColumnIndex(RosterConstants.AVATAR);
+		if (cursor.moveToFirst()) {
+			String savedHash = cursor.getString(hashIdx);
+			if ((savedHash != null && savedHash.equals(hash)) ||
+					getAvatarHash(cursor.getBlob(avatarIdx)).equals(hash))
+				return null;
+		}
+		VCard vCard = new VCard();
+		try {
+			vCard.load(mXMPPConnection, entry.getUser());
+			if (vCard.getAvatar() != null)
+				return vCard.getAvatar();
+		} catch (XMPPException e) {
+			/* fall through */
+		}
+		return new byte[] { };
+	}
+
 	private ContentValues getContentValuesForRosterEntry(final RosterEntry entry) {
 		final ContentValues values = new ContentValues();
 
@@ -635,6 +679,25 @@ public class SmackableImp implements Smackable {
 		values.put(RosterConstants.STATUS_MODE, getStatusInt(presence));
 		values.put(RosterConstants.STATUS_MESSAGE, presence.getStatus());
 		values.put(RosterConstants.GROUP, getGroup(entry.getGroups()));
+
+		if (presence.getType() != Presence.Type.unavailable) {
+			String avatarHash = "";
+			byte[] avatar = null;
+			VCardAvatarUpdateExtension avatarExtension =
+					(VCardAvatarUpdateExtension)presence.getExtension("vcard-temp:x:update");
+
+			if (avatarExtension != null) {
+				avatarHash = avatarExtension.getAvatarHash();
+				if (!avatarHash.equals(""))
+					avatar = getUpdatedAvatar(entry, avatarHash);
+			}
+			debugLog("avatar hash for " + entry.getUser() + ": " + avatarHash);
+			values.put(RosterConstants.AVATAR_HASH, avatarHash);
+			if (avatar != null) {
+				debugLog("new avatar for " +  entry.getUser() + " loaded, size=" + avatar.length);
+				values.put(RosterConstants.AVATAR, avatar);
+			}
+		}
 
 		return values;
 	}
