@@ -12,22 +12,35 @@
 			android:paddingLeft="12sp" />
 	</RelativeLayout>
 
-	<LinearLayout android:layout_width="fill_parent"
-		android:layout_height="wrap_content" android:orientation="vertical"
-		android:minHeight="52dp" android:layout_gravity="center_vertical"
-		android:gravity="center_vertical">
+	<RelativeLayout
+		android:layout_width="fill_parent" android:layout_height="wrap_content" >
 
-		<TextView android:id="@+id/roster_screenname"
-			android:paddingLeft="10dp" android:longClickable="false"
-			android:textSize="20sp" android:layout_width="fill_parent"
-			android:layout_height="wrap_content" android:singleLine="true" />
+		<LinearLayout android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:orientation="vertical"
+			android:minHeight="52dp" android:layout_gravity="center_vertical"
+			android:gravity="center_vertical" android:layout_alignParentLeft="true"
+			android:layout_toLeftOf="@+id/roster_avatar" >
 
-		<TextView android:id="@+id/roster_statusmsg"
-			android:paddingLeft="10dp"
-			android:textSize="13sp" android:layout_width="fill_parent"
-			android:layout_height="wrap_content" android:singleLine="true"
-			android:ellipsize="end" android:visibility="gone" 
-			/>
+			<TextView android:id="@+id/roster_screenname"
+				android:paddingLeft="10dp" android:longClickable="false"
+				android:textSize="20sp" android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:singleLine="true" />
 
-	</LinearLayout>
+			<TextView android:id="@+id/roster_statusmsg"
+				android:paddingLeft="10dp"
+				android:textSize="13sp" android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:singleLine="true"
+				android:ellipsize="end" android:visibility="gone" 
+				/>
+
+		</LinearLayout>
+
+		<ImageView android:id="@+id/roster_avatar"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:paddingLeft="4dp" android:paddingRight="4dp"
+			android:layout_centerVertical="true" android:layout_alignParentRight="true"
+			android:visibility="gone" />
+
+	</RelativeLayout>
+
 </LinearLayout>

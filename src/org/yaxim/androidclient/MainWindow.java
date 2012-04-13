@@ -1,5 +1,6 @@
 package org.yaxim.androidclient;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -913,6 +915,21 @@ public class MainWindow extends SherlockExpandableListActivity {
 		return i;
 	}
 
+	public static void setAvatarImage(ImageView avatar, Cursor cursor) {
+		int visibility = View.GONE;
+		String hash = cursor.getString(cursor.getColumnIndex(RosterConstants.AVATAR_HASH));
+		if (hash != null && hash.length() > 0) {
+			byte[] img = cursor.getBlob(cursor.getColumnIndex(RosterConstants.AVATAR));
+			if (img != null && img.length > 0) {
+				ByteArrayInputStream imgStream = new ByteArrayInputStream(img);
+				Drawable avatarDrawable = Drawable.createFromStream(imgStream, null);
+				avatar.setImageDrawable(avatarDrawable);
+				visibility = View.VISIBLE;
+			}
+		}
+		avatar.setVisibility(visibility);
+	}
+
 	protected void showToastNotification(int message) {
 		Toast tmptoast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
 		tmptoast.show();
@@ -958,6 +975,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 		RosterConstants.ALIAS,
 		RosterConstants.STATUS_MODE,
 		RosterConstants.STATUS_MESSAGE,
+		RosterConstants.AVATAR_HASH,
+		RosterConstants.AVATAR,
 	};
 
 	public List<String> getRosterGroups() {
@@ -1065,6 +1084,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 			unreadmsg.setVisibility(msgcursor.getInt(0) > 0 ? View.VISIBLE : View.GONE);
 			unreadmsg.bringToFront();
 			msgcursor.close();
+
+			ImageView avatar = (ImageView)view.findViewById(R.id.roster_avatar);
+			setAvatarImage(avatar, cursor);
 		}
 
 		 protected void setViewImage(ImageView v, String value) {
