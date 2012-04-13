@@ -14,10 +14,10 @@
      limitations under the License.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_width="wrap_content"
+	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
 	android:orientation="horizontal"
-	android:paddingRight="16dip">
+	android:paddingRight="4dp">
 
 	<ImageView android:id="@+id/action_bar_status"
 		android:layout_gravity="center_vertical|left"
@@ -25,23 +25,39 @@
 		android:paddingRight="4dp"
 		android:layout_height="wrap_content" />
 
-	<LinearLayout android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
+	<RelativeLayout
 		android:layout_gravity="center_vertical|left"
-		android:orientation="vertical" >
+		android:layout_width="fill_parent" android:layout_height="wrap_content" >
 
-		<TextView android:id="@+id/action_bar_title"
-			android:layout_width="wrap_content"
+		<LinearLayout android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:singleLine="true"
-			android:ellipsize="end" />
-		<TextView android:id="@+id/action_bar_subtitle"
+			android:layout_centerVertical="true"
+			android:layout_alignParentLeft="true"
+			android:layout_toLeftOf="@+id/action_bar_avatar"
+			android:orientation="vertical" >
+
+			<TextView android:id="@+id/action_bar_title"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:singleLine="true"
+				android:ellipsize="end" />
+			<TextView android:id="@+id/action_bar_subtitle"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="-3dp"
+				android:layout_marginBottom="5dip"
+				android:singleLine="true"
+				android:ellipsize="end"
+				android:visibility="gone" />
+		</LinearLayout>
+
+		<ImageView android:id="@+id/action_bar_avatar"
+			android:layout_centerVertical="true"
+			android:layout_alignParentRight="true"
 			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:layout_marginTop="-3dp"
-			android:layout_marginBottom="5dip"
-			android:singleLine="true"
-			android:ellipsize="end"
+			android:layout_height="fill_parent"
+			android:paddingLeft="4dp"
 			android:visibility="gone" />
-	</LinearLayout>
+	</RelativeLayout>
+
 </LinearLayout>
