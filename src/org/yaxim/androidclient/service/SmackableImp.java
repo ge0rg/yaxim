@@ -1,5 +1,7 @@
 package org.yaxim.androidclient.service;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Date;
 import javax.net.ssl.SSLContext;
@@ -26,13 +28,16 @@ import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.provider.DelayInfoProvider;
 import org.jivesoftware.smackx.provider.DeliveryReceiptProvider;
 import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
+import org.jivesoftware.smackx.provider.VCardProvider;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.DelayInfo;
 import org.jivesoftware.smackx.packet.DeliveryReceipt;
 import org.jivesoftware.smackx.packet.DeliveryReceiptRequest;
+import org.jivesoftware.smackx.packet.VCard;
 import org.yaxim.androidclient.YaximApplication;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.RosterProvider;
+import org.yaxim.androidclient.data.VCardAvatarUpdateExtension;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
@@ -59,7 +64,9 @@ public class SmackableImp implements Smackable {
 	final static private String[] SEND_OFFLINE_PROJECTION = new String[] {
 			ChatConstants._ID, ChatConstants.JID,
 			ChatConstants.MESSAGE, ChatConstants.DATE, ChatConstants.PACKET_ID };
-	final static private String SEND_OFFLINE_SELECTION = "from_me = 1 AND read = 0";
+	final static private String SEND_OFFLINE_SELECTION =
+			ChatConstants.DIRECTION + " = " + ChatConstants.OUTGOING + " AND " +
+			ChatConstants.DELIVERY_STATUS + " = " + ChatConstants.DS_NEW;
 
 	static {
 		registerSmackProviders();
@@ -74,6 +81,9 @@ public class SmackableImp implements Smackable {
 		pm.addExtensionProvider("x","jabber:x:delay", new DelayInfoProvider());
 		// add delivery receipts
 		pm.addExtensionProvider("received", DeliveryReceipt.NAMESPACE, new DeliveryReceiptProvider());
+		// add vcard handling
+		pm.addIQProvider("vCard", "vcard-temp", new VCardProvider());
+		pm.addExtensionProvider("x", "vcard-temp:x:update", new VCardAvatarUpdateProvider());
 
 		ServiceDiscoveryManager.setIdentityName(YaximApplication.XMPP_IDENTITY_NAME);
 		ServiceDiscoveryManager.setIdentityType(YaximApplication.XMPP_IDENTITY_TYPE);
@@ -316,9 +326,18 @@ public class SmackableImp implements Smackable {
 	private void setRosterEntries() {
 		mRoster = mXMPPConnection.getRoster();
 		Collection<RosterEntry> rosterEntries = mRoster.getEntries();
+		StringBuilder exclusion = new StringBuilder(RosterConstants.JID + " NOT IN (");
+		boolean first = true;
 		for (RosterEntry rosterEntry : rosterEntries) {
-			addRosterEntryToDB(rosterEntry);
+			updateRosterEntryInDB(rosterEntry);
+			if (first)
+				first = false;
+			else
+				exclusion.append(",");
+			exclusion.append("'").append(rosterEntry.getUser()).append("'");
 		}
+		exclusion.append(")");
+		mContentResolver.delete(RosterProvider.CONTENT_URI, exclusion.toString(), null);
 	}
 
 
@@ -372,7 +391,7 @@ public class SmackableImp implements Smackable {
 
 	public static void sendOfflineMessage(ContentResolver cr, String toJID, String message) {
 		ContentValues values = new ContentValues();
-		values.put(ChatConstants.FROM_ME, true);
+		values.put(ChatConstants.DIRECTION, ChatConstants.OUTGOING);
 		values.put(ChatConstants.JID, toJID);
 		values.put(ChatConstants.MESSAGE, message);
 		values.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_NEW);
@@ -455,8 +474,6 @@ public class SmackableImp implements Smackable {
 
 	private void registerRosterListener() {
 		// flush roster on connecting.
-		mContentResolver.delete(RosterProvider.GROUPS_URI, "", null);
-		mContentResolver.delete(RosterProvider.CONTENT_URI, "", null);
 		mRoster = mXMPPConnection.getRoster();
 
 		mRosterListener = new RosterListener() {
@@ -495,7 +512,7 @@ public class SmackableImp implements Smackable {
 
 				String jabberID = getJabberID(presence.getFrom());
 				RosterEntry rosterEntry = mRoster.getEntry(jabberID);
-				updateOrInsertRosterEntryToDB(rosterEntry);
+				updateRosterEntryInDB(rosterEntry);
 				mServiceCallBack.rosterChanged();
 			}
 		};
@@ -513,7 +530,9 @@ public class SmackableImp implements Smackable {
 		Uri rowuri = Uri.parse("content://" + ChatProvider.AUTHORITY + "/"
 				+ ChatProvider.TABLE_NAME);
 		mContentResolver.update(rowuri, cv,
-				ChatConstants.PACKET_ID + " = ? AND " + ChatConstants.FROM_ME + " = 1", new String[] { packetID });
+				ChatConstants.PACKET_ID + " = ? AND " +
+				ChatConstants.DIRECTION + " = " + ChatConstants.OUTGOING,
+				new String[] { packetID });
 	}
 
 	private void registerMessageSendFailureListener() {
@@ -600,11 +619,11 @@ public class SmackableImp implements Smackable {
 		mXMPPConnection.addPacketListener(mPacketListener, filter);
 	}
 
-	private void addChatMessageToDB(boolean from_me, String JID,
+	private void addChatMessageToDB(int direction, String JID,
 			String message, int delivery_status, long ts, String packetID) {
 		ContentValues values = new ContentValues();
 
-		values.put(ChatConstants.FROM_ME, from_me);
+		values.put(ChatConstants.DIRECTION, direction);
 		values.put(ChatConstants.JID, JID);
 		values.put(ChatConstants.MESSAGE, message);
 		values.put(ChatConstants.DELIVERY_STATUS, delivery_status);
@@ -614,10 +633,40 @@ public class SmackableImp implements Smackable {
 		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
 	}
 
-	private void addRosterEntryToDB(final RosterEntry entry) {
-		ContentValues values = getContentValuesForRosterEntry(entry);
-		Uri uri = mContentResolver.insert(RosterProvider.CONTENT_URI, values);
-		debugLog("addRosterEntryToDB: Inserted " + uri);
+	private String getAvatarHash(byte[] avatar) {
+		try {
+			if (avatar == null)
+				return "";
+			MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			digest.update(avatar);
+			return StringUtils.encodeHex(digest.digest());
+		} catch (NoSuchAlgorithmException e) {
+			return "";
+		}
+	}
+
+	private byte[] getUpdatedAvatar(final RosterEntry entry, String hash) {
+		String selection = RosterConstants.JID + " = '" + entry.getUser() + "'";
+		Cursor cursor = mContentResolver.query(RosterProvider.CONTENT_URI,
+				new String[] { RosterConstants.AVATAR_HASH, RosterConstants.AVATAR },
+				selection, null, null);
+		int hashIdx = cursor.getColumnIndex(RosterConstants.AVATAR_HASH);
+		int avatarIdx = cursor.getColumnIndex(RosterConstants.AVATAR);
+		if (cursor.moveToFirst()) {
+			String savedHash = cursor.getString(hashIdx);
+			if (savedHash.equals(hash) ||
+					getAvatarHash(cursor.getBlob(avatarIdx)).equals(hash))
+				return null;
+		}
+		VCard vCard = new VCard();
+		try {
+			vCard.load(mXMPPConnection, entry.getUser());
+			if (vCard.getAvatar() != null)
+				return vCard.getAvatar();
+		} catch (XMPPException e) {
+			/* fall through */
+		}
+		return new byte[] { };
 	}
 
 	private ContentValues getContentValuesForRosterEntry(final RosterEntry entry) {
@@ -631,7 +680,32 @@ public class SmackableImp implements Smackable {
 		values.put(RosterConstants.STATUS_MESSAGE, presence.getStatus());
 		values.put(RosterConstants.GROUP, getGroup(entry.getGroups()));
 
+		if (presence.getType() != Presence.Type.unavailable) {
+			String avatarHash = "";
+			byte[] avatar = null;
+			VCardAvatarUpdateExtension avatarExtension =
+					(VCardAvatarUpdateExtension)presence.getExtension("vcard-temp:x:update");
+
+			if (avatarExtension != null) {
+				avatarHash = avatarExtension.getAvatarHash();
+				if (!avatarHash.equals(""))
+					avatar = getUpdatedAvatar(entry, avatarHash);
+			}
+			debugLog("avatar hash for " + entry.getUser() + ": " + avatarHash);
+			values.put(RosterConstants.AVATAR_HASH, avatarHash);
+			if (avatar != null) {
+				debugLog("new avatar for " +  entry.getUser() + " loaded, size=" + avatar.length);
+				values.put(RosterConstants.AVATAR, avatar);
+			}
+		}
+
 		return values;
+	}
+
+	private void addRosterEntryToDB(final RosterEntry entry) {
+		ContentValues values = getContentValuesForRosterEntry(entry);
+		Uri uri = mContentResolver.insert(RosterProvider.CONTENT_URI, values);
+		debugLog("addRosterEntryToDB: Inserted " + uri);
 	}
 
 	private void deleteRosterEntryFromDB(final String jabberID) {
@@ -643,17 +717,9 @@ public class SmackableImp implements Smackable {
 	private void updateRosterEntryInDB(final RosterEntry entry) {
 		final ContentValues values = getContentValuesForRosterEntry(entry);
 
-		mContentResolver.update(RosterProvider.CONTENT_URI, values,
-				RosterConstants.JID + " = ?", new String[] { entry.getUser() });
-	}
-
-	private void updateOrInsertRosterEntryToDB(final RosterEntry entry) {
-		try {
-			//deleteRosterEntryFromDB(entry.getUser());
+		if (mContentResolver.update(RosterProvider.CONTENT_URI, values,
+				RosterConstants.JID + " = ?", new String[] { entry.getUser() }) == 0)
 			addRosterEntryToDB(entry);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	private String getGroup(Collection<RosterGroup> groups) {
@@ -665,11 +731,11 @@ public class SmackableImp implements Smackable {
 
 	private String getName(RosterEntry rosterEntry) {
 		String name = rosterEntry.getName();
-		if (name != null && name != "") {
+		if (name != null && name.length() > 0) {
 			return name;
 		}
 		name = StringUtils.parseName(rosterEntry.getUser());
-		if (name != "") {
+		if (name.length() > 0) {
 			return name;
 		}
 		return rosterEntry.getUser();

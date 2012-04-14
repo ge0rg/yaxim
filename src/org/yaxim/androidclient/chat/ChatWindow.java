@@ -8,6 +8,7 @@ import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.YaximApplication;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
+import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.service.IXMPPChatService;
 import org.yaxim.androidclient.service.XMPPService;
@@ -51,6 +52,7 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+@SuppressWarnings("deprecation") /* recent ClipboardManager only available since API 11 */
 public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 		TextWatcher {
 
@@ -60,7 +62,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	private static final String TAG = "yaxim.ChatWindow";
 	private static final String[] PROJECTION_FROM = new String[] {
 			ChatProvider.ChatConstants._ID, ChatProvider.ChatConstants.DATE,
-			ChatProvider.ChatConstants.FROM_ME, ChatProvider.ChatConstants.JID,
+			ChatProvider.ChatConstants.DIRECTION, ChatProvider.ChatConstants.JID,
 			ChatProvider.ChatConstants.MESSAGE, ChatProvider.ChatConstants.DELIVERY_STATUS };
 
 	private static final int[] PROJECTION_TO = new int[] { R.id.chat_date,
@@ -121,6 +123,14 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 		mTitle = (TextView)layout.findViewById(R.id.action_bar_title);
 		mSubTitle = (TextView)layout.findViewById(R.id.action_bar_subtitle);
 		mTitle.setText(title);
+
+		ImageView avatar = (ImageView)layout.findViewById(R.id.action_bar_avatar);
+		Cursor cursor = getContentResolver().query(RosterProvider.CONTENT_URI,
+				new String[] { RosterConstants.AVATAR_HASH, RosterConstants.AVATAR },
+				RosterConstants.JID + " = '" + mWithJabberID + "'", null, null);
+		cursor.moveToFirst();
+		MainWindow.setAvatarImage(avatar, cursor);
+		cursor.close();
 
 		setTitle(null);
 		getSupportActionBar().setCustomView(layout);
@@ -302,7 +312,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			String message = cursor.getString(cursor
 					.getColumnIndex(ChatProvider.ChatConstants.MESSAGE));
 			int from_me = cursor.getInt(cursor
-					.getColumnIndex(ChatProvider.ChatConstants.FROM_ME));
+					.getColumnIndex(ChatProvider.ChatConstants.DIRECTION));
 			String jid = cursor.getString(cursor
 					.getColumnIndex(ChatProvider.ChatConstants.JID));
 			int delivery_status = cursor.getInt(cursor

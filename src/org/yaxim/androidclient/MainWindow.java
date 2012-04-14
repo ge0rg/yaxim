@@ -1,13 +1,16 @@
 package org.yaxim.androidclient;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import org.yaxim.androidclient.data.ChatProvider;
-import org.yaxim.androidclient.data.RosterProvider;
-import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
+import org.yaxim.androidclient.data.RosterProvider;
+import org.yaxim.androidclient.data.RosterProvider.GroupsConstants;
+import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
+import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.dialogs.AddRosterItemDialog;
 import org.yaxim.androidclient.dialogs.ChangeStatusDialog;
 import org.yaxim.androidclient.dialogs.FirstStartDialog;
@@ -31,6 +34,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -328,8 +332,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		// get the entry name for the item
 		String menuName = getPackedItemRow(packedPosition,
-				isChild ? RosterProvider.RosterConstants.ALIAS
-					: RosterProvider.RosterConstants.GROUP);
+				isChild ? RosterConstants.ALIAS : RosterConstants.GROUP);
 
 		// display contact menu for contacts
 		menu.setGroupVisible(R.id.roster_contextmenu_contact_menu, isChild);
@@ -454,10 +457,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		if (isChild(packedPosition)) {
 
-			String userJid = getPackedItemRow(packedPosition,
-					RosterProvider.RosterConstants.JID);
-			String userName = getPackedItemRow(packedPosition,
-					RosterProvider.RosterConstants.ALIAS);
+			String userJid = getPackedItemRow(packedPosition, RosterConstants.JID);
+			String userName = getPackedItemRow(packedPosition, RosterConstants.ALIAS);
 			Log.d(TAG, "action for contact " + userName + "/" + userJid);
 
 			int itemID = item.getItemId();
@@ -494,8 +495,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		} else {
 
 			int itemID = item.getItemId();
-			String seletedGroup = getPackedItemRow(packedPosition,
-					RosterProvider.RosterConstants.GROUP);
+			String seletedGroup = getPackedItemRow(packedPosition, RosterConstants.GROUP);
 			Log.d(TAG, "action for group " + seletedGroup);
 
 			switch (itemID) {
@@ -602,7 +602,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		if (statusMode != StatusMode.offline)
 			prefedit.putString(PreferenceConstants.STATUS_MODE, statusMode.name());
 		prefedit.putString(PreferenceConstants.STATUS_MESSAGE, message);
-		prefedit.putString("account_prio", "" + priority);
+		prefedit.putString(PreferenceConstants.PRIORITY, String.valueOf(priority));
 		prefedit.commit();
 
 		// check if we are connected and want to go offline
@@ -712,10 +712,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 			int groupPosition, int childPosition, long id) {
 
 		long packedPosition = ExpandableListView.getPackedPositionForChild(groupPosition, childPosition);
-		String userJid = getPackedItemRow(packedPosition,
-				RosterProvider.RosterConstants.JID);
-		String userName = getPackedItemRow(packedPosition,
-				RosterProvider.RosterConstants.ALIAS);
+		String userJid = getPackedItemRow(packedPosition, RosterConstants.JID);
+		String userName = getPackedItemRow(packedPosition, RosterConstants.ALIAS);
 		startChatActivity(userJid, userName, null);
 
 		return true;
@@ -852,7 +850,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 	// get the name of a roster group from the cursor
 	public String getGroupName(int groupId) {
 		return getPackedItemRow(ExpandableListView.getPackedPositionForGroup(groupId),
-				RosterProvider.RosterConstants.GROUP);
+				RosterConstants.GROUP);
 	}
 
 	public void restoreGroupsExpanded() {
@@ -903,6 +901,21 @@ public class MainWindow extends SherlockExpandableListActivity {
 		return i;
 	}
 
+	public static void setAvatarImage(ImageView avatar, Cursor cursor) {
+		int visibility = View.GONE;
+		String hash = cursor.getString(cursor.getColumnIndex(RosterConstants.AVATAR_HASH));
+		if (hash != null && hash.length() > 0) {
+			byte[] img = cursor.getBlob(cursor.getColumnIndex(RosterConstants.AVATAR));
+			if (img != null && img.length > 0) {
+				ByteArrayInputStream imgStream = new ByteArrayInputStream(img);
+				Drawable avatarDrawable = Drawable.createFromStream(imgStream, null);
+				avatar.setImageDrawable(avatarDrawable);
+				visibility = View.VISIBLE;
+			}
+		}
+		avatar.setVisibility(visibility);
+	}
+
 	protected void showToastNotification(int message) {
 		Toast tmptoast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
 		tmptoast.show();
@@ -915,8 +928,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 	}
 
 	private static final String[] GROUPS_QUERY = new String[] {
-		RosterProvider.GroupsConstants._ID,
-		RosterProvider.GroupsConstants.GROUP,
+		GroupsConstants._ID,
+		GroupsConstants.GROUP,
 	};
 	private static final String[] GROUPS_FROM = new String[] {
 		RosterProvider.GroupsConstants.GROUP
@@ -925,19 +938,21 @@ public class MainWindow extends SherlockExpandableListActivity {
 		R.id.groupname
 	};
 	private static final String[] ROSTER_QUERY = new String[] {
-		RosterProvider.RosterConstants._ID,
-		RosterProvider.RosterConstants.JID,
-		RosterProvider.RosterConstants.ALIAS,
-		RosterProvider.RosterConstants.STATUS_MODE,
-		RosterProvider.RosterConstants.STATUS_MESSAGE,
+		RosterConstants._ID,
+		RosterConstants.JID,
+		RosterConstants.ALIAS,
+		RosterConstants.STATUS_MODE,
+		RosterConstants.STATUS_MESSAGE,
+		RosterConstants.AVATAR_HASH,
+		RosterConstants.AVATAR,
 	};
 
 	public List<String> getRosterGroups() {
 		// we want all, online and offline
 		List<String> list = new ArrayList<String>();
 		Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI, GROUPS_QUERY,
-					null, null, "roster_group");
-		int idx = cursor.getColumnIndex(RosterProvider.GroupsConstants.GROUP);
+					null, null, GroupsConstants.GROUP);
+		int idx = cursor.getColumnIndex(GroupsConstants.GROUP);
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast()) {
 			list.add(cursor.getString(idx));
@@ -951,9 +966,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 		// we want all, online and offline
 		List<String[]> list = new ArrayList<String[]>();
 		Cursor cursor = getContentResolver().query(RosterProvider.CONTENT_URI, ROSTER_QUERY,
-					null, null, RosterProvider.RosterConstants.ALIAS);
-		int JIDIdx = cursor.getColumnIndex(RosterProvider.RosterConstants.JID);
-		int aliasIdx = cursor.getColumnIndex(RosterProvider.RosterConstants.ALIAS);
+					null, null, RosterConstants.ALIAS);
+		int JIDIdx = cursor.getColumnIndex(RosterConstants.JID);
+		int aliasIdx = cursor.getColumnIndex(RosterConstants.ALIAS);
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast()) {
 			String jid = cursor.getString(JIDIdx);
@@ -972,21 +987,22 @@ public class MainWindow extends SherlockExpandableListActivity {
 			super(context, /* cursor = */ null, 
 					R.layout.maingroup_row, GROUPS_FROM, GROUPS_TO,
 					R.layout.mainchild_row,
-					new String[] { RosterProvider.RosterConstants.ALIAS,
-						RosterProvider.RosterConstants.STATUS_MESSAGE,
-						RosterProvider.RosterConstants.STATUS_MODE },
-					new int[] { R.id.roster_screenname, R.id.roster_statusmsg,
-						R.id.roster_icon });
+					new String[] {
+						RosterConstants.ALIAS,
+						RosterConstants.STATUS_MESSAGE,
+						RosterConstants.STATUS_MODE
+					},
+					new int[] {
+						R.id.roster_screenname,
+						R.id.roster_statusmsg,
+						R.id.roster_icon
+					});
 		}
 
 		public void requery() {
-			String selectWhere = null;
-			/* show all groups, including offline
-			if (!showOffline)
-				selectWhere = "status_mode > 0";
-			*/
+			// show all groups, including offline
 			Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI, GROUPS_QUERY,
-					selectWhere, null, "roster_group");
+					null, null, GroupsConstants.GROUP);
 			Cursor oldCursor = getCursor();
 			changeCursor(cursor);
 			stopManagingCursor(oldCursor);
@@ -997,9 +1013,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 			// Given the group, we return a cursor for all the children within that group 
 			String groupname = groupCursor.getString(1);
 
-			String selectWhere = "roster_group = ?";
+			String selectWhere = RosterConstants.GROUP + " = ?";
 			if (!showOffline)
-				selectWhere += "AND status_mode > 0";
+				selectWhere += " AND " + RosterConstants.STATUS_MODE + " > 0";
 			return getContentResolver().query(RosterProvider.CONTENT_URI, ROSTER_QUERY,
 				selectWhere, new String[] { groupname }, null);
 		}
@@ -1011,17 +1027,22 @@ public class MainWindow extends SherlockExpandableListActivity {
 			boolean hasStatus = statusmsg.getText() != null && statusmsg.getText().length() > 0;
 			statusmsg.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
 
-			int JIDIdx = cursor.getColumnIndex(RosterProvider.RosterConstants.JID);
+			int JIDIdx = cursor.getColumnIndex(RosterConstants.JID);
 			String selection = ChatConstants.JID + " = '" + cursor.getString(JIDIdx) + "' AND " +
-					ChatConstants.FROM_ME + " = 0 AND " +
+					ChatConstants.DIRECTION + " = " + ChatConstants.INCOMING + " AND " +
 					ChatConstants.DELIVERY_STATUS + " = " + ChatConstants.DS_NEW;
 			Cursor msgcursor = getContentResolver().query(ChatProvider.CONTENT_URI,
-					new String[] { ChatConstants.PACKET_ID }, selection, null, null);
+					new String[] { "count(" + ChatConstants.PACKET_ID + ")" },
+					selection, null, null);
+			msgcursor.moveToFirst();
 			TextView unreadmsg = (TextView)view.findViewById(R.id.roster_unreadmsg_cnt);
-			unreadmsg.setText(String.valueOf(msgcursor.getCount()));
-			unreadmsg.setVisibility(msgcursor.getCount() > 0 ? View.VISIBLE : View.GONE);
+			unreadmsg.setText(msgcursor.getString(0));
+			unreadmsg.setVisibility(msgcursor.getInt(0) > 0 ? View.VISIBLE : View.GONE);
 			unreadmsg.bringToFront();
 			msgcursor.close();
+
+			ImageView avatar = (ImageView)view.findViewById(R.id.roster_avatar);
+			setAvatarImage(avatar, cursor);
 		}
 
 		 protected void setViewImage(ImageView v, String value) {

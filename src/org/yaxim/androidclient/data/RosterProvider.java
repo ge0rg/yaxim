@@ -70,10 +70,7 @@ public class RosterProvider extends ContentProvider {
 		case GROUPS:
 			count = db.delete(TABLE_GROUPS, where, whereArgs);
 			mGroups = new java.util.HashSet<String>();
-			break;
-
-		case CONTACTS:
-			count = db.delete(TABLE_ROSTER, where, whereArgs);
+			getContext().getContentResolver().notifyChange(GROUPS_URI, null);
 			break;
 
 		case CONTACT_ID:
@@ -84,15 +81,16 @@ public class RosterProvider extends ContentProvider {
 			} else {
 				where = "_id=" + segment + " AND (" + where + ")";
 			}
-
+			/* fall through */
+		case CONTACTS:
 			count = db.delete(TABLE_ROSTER, where, whereArgs);
+			dropUnusedGroups(db);
 			break;
 
 		default:
 			throw new IllegalArgumentException("Cannot delete from URL: " + url);
 		}
 
-		getContext().getContentResolver().notifyChange(GROUPS_URI, null);
 		notifyChange();
 
 		return count;
@@ -111,7 +109,7 @@ public class RosterProvider extends ContentProvider {
 		}
 	}
 
-	public Uri insertGroup(ContentValues initialValues) {
+	private Uri insertGroup(ContentValues initialValues) {
 		String groupName = initialValues.getAsString(RosterConstants.GROUP);
 		if (mGroups.contains(groupName))
 			return null;
@@ -132,11 +130,18 @@ public class RosterProvider extends ContentProvider {
 		}
 		return noteUri;
 	}
-	public Uri insertGroupForContact(ContentValues contact) {
+	private Uri insertGroupForContact(ContentValues contact) {
 		ContentValues cv = new ContentValues();
 		String groupName = contact.getAsString(RosterConstants.GROUP);
 		cv.put(GroupsConstants.GROUP, groupName);
 		return insertGroup(cv);
+	}
+
+	private void dropUnusedGroups(SQLiteDatabase db) {
+		int rows = db.delete(TABLE_GROUPS, GroupsConstants.GROUP + " NOT IN (SELECT " +
+				RosterConstants.GROUP + " FROM " + TABLE_ROSTER + ")", null);
+		if (rows > 0)
+			getContext().getContentResolver().notifyChange(GROUPS_URI, null);
 	}
 
 	@Override
@@ -259,6 +264,7 @@ public class RosterProvider extends ContentProvider {
 		notifyChange();
 		// we also need to notify groups change
 		insertGroupForContact(values);
+		dropUnusedGroups(db);
 		return count;
 
 	}
@@ -286,7 +292,7 @@ public class RosterProvider extends ContentProvider {
 	private static class RosterDatabaseHelper extends SQLiteOpenHelper {
 
 		private static final String DATABASE_NAME = "roster.db";
-		private static final int DATABASE_VERSION = 3;
+		private static final int DATABASE_VERSION = 4;
 
 		public RosterDatabaseHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -308,7 +314,9 @@ public class RosterProvider extends ContentProvider {
 					+ RosterConstants.ALIAS
 					+ " TEXT, " + RosterConstants.STATUS_MODE + " INTEGER, "
 					+ RosterConstants.STATUS_MESSAGE + " TEXT, "
-					+ RosterConstants.GROUP + " TEXT);");
+					+ RosterConstants.GROUP + " TEXT, "
+					+ RosterConstants.AVATAR_HASH + " TEXT, "
+					+ RosterConstants.AVATAR + " BLOB);");
 			db.execSQL("CREATE INDEX idx_roster_group ON " + TABLE_ROSTER
 				        + " (" + RosterConstants.GROUP + ")");
 			db.execSQL("CREATE INDEX idx_roster_alias ON " + TABLE_ROSTER
@@ -342,6 +350,8 @@ public class RosterProvider extends ContentProvider {
 		public static final String STATUS_MODE = "status_mode";
 		public static final String STATUS_MESSAGE = "status_message";
 		public static final String GROUP = "roster_group";
+		public static final String AVATAR_HASH = "avatar_hash";
+		public static final String AVATAR = "avatar";
 
 		public static final String DEFAULT_SORT_ORDER = STATUS_MODE + " DESC, " + ALIAS;
 
