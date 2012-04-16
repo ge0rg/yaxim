@@ -911,12 +911,27 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 	private static final String OFFLINE_EXCLUSION =
 			RosterConstants.STATUS_MODE + " != " + StatusMode.offline.ordinal();
+	private static final String countAvailableMembers =
+			"SELECT COUNT() FROM " + RosterProvider.TABLE_ROSTER + " inner_query" +
+					" WHERE inner_query." + RosterConstants.GROUP + " = " +
+					RosterProvider.QUERY_ALIAS + "." + RosterConstants.GROUP +
+					" AND inner_query." + OFFLINE_EXCLUSION;
+	private static final String countMembers =
+			"SELECT COUNT() FROM " + RosterProvider.TABLE_ROSTER + " inner_query" +
+					" WHERE inner_query." + RosterConstants.GROUP + " = " +
+					RosterProvider.QUERY_ALIAS + "." + RosterConstants.GROUP;
 	private static final String[] GROUPS_QUERY = new String[] {
 		RosterConstants._ID,
 		RosterConstants.GROUP,
 	};
+	private static final String[] GROUPS_QUERY_COUNTED = new String[] {
+		RosterConstants._ID,
+		RosterConstants.GROUP,
+		"(" + RosterConstants.GROUP + " || ' (' || (" + countAvailableMembers +
+				") || '/' || (" + countMembers + ") || ')') AS groupname"
+	};
 	private static final String[] GROUPS_FROM = new String[] {
-		RosterConstants.GROUP
+		"groupname"
 	};
 	private static final int[] GROUPS_TO = new int[] {
 		R.id.groupname
@@ -985,8 +1000,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 			String selectWhere = null;
 			if (!showOffline)
 				selectWhere = OFFLINE_EXCLUSION;
-			Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI, GROUPS_QUERY,
-					selectWhere, null, RosterConstants.GROUP);
+			Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI,
+					GROUPS_QUERY_COUNTED, selectWhere, null, RosterConstants.GROUP);
 			Cursor oldCursor = getCursor();
 			changeCursor(cursor);
 			stopManagingCursor(oldCursor);
@@ -994,8 +1009,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		@Override
 		protected Cursor getChildrenCursor(Cursor groupCursor) {
-			// Given the group, we return a cursor for all the children within that group 
-			String groupname = groupCursor.getString(1);
+			// Given the group, we return a cursor for all the children within that group
+			int idx = groupCursor.getColumnIndex(RosterConstants.GROUP);
+			String groupname = groupCursor.getString(idx);
 
 			String selectWhere = RosterConstants.GROUP + " = ?";
 			if (!showOffline)
