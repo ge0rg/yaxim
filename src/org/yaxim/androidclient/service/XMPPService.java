@@ -20,6 +20,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
 
 public class XMPPService extends GenericService {
 
@@ -190,7 +192,7 @@ public class XMPPService extends GenericService {
 			public int getConnectionState() throws RemoteException {
 				if (mSmackable != null && mSmackable.isAuthenticated()) {
 					return ConnectionState.AUTHENTICATED;
-				} else if (mConnectionDemanded.get()) {
+				} else if (mConnectionDemanded.get() && !isAirplaneMode()) {
 					return ConnectionState.CONNECTING;
 				} else {
 					return ConnectionState.OFFLINE;
@@ -379,12 +381,28 @@ public class XMPPService extends GenericService {
 		mRosterCallbacks.finishBroadcast();
 	}
 
+	private boolean isAirplaneMode() {
+		try {
+			return Settings.System.getInt(getContentResolver(), Settings.System.AIRPLANE_MODE_ON) == 1;
+		} catch (SettingNotFoundException e) {
+			return false;
+		}
+	}
+
 	private void connectionFailed(String reason) {
 		logInfo("connectionFailed: " + reason);
 		mLastConnectionError = reason;
 		mIsConnected.set(false);
-		broadcastConnectionStatus(false, mConnectionDemanded.get());
-		if (mConnectionDemanded.get()) {
+		broadcastConnectionStatus(false, mConnectionDemanded.get() && false);
+		if (isAirplaneMode()) {
+			mLastConnectionError = null;
+			mReconnectInfo = "";
+			updateServiceNotification();
+			if (mSmackable != null) {
+				mSmackable.unRegisterCallback();
+				mSmackable = null;
+			}
+		} else if (mConnectionDemanded.get()) {
 			mReconnectInfo = getString(R.string.conn_reconnect, mReconnectTimeout);
 			updateServiceNotification();
 			logInfo("connectionFailed(): registering reconnect in " + mReconnectTimeout + "s");
