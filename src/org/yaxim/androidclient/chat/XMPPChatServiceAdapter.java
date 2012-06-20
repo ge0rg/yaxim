@@ -42,4 +42,12 @@ public class XMPPChatServiceAdapter {
 			e.printStackTrace();
 		}
 	}
+
+	public void flushDelayedNotifications() {
+		try {
+			xmppServiceStub.flushDelayedNotifications();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
 }

@@ -148,16 +148,23 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
-		if (hasFocus)
+		if (hasFocus) {
 			bindXMPPService();
-		else
+		} else {
+			if (mServiceAdapter != null)
+				mServiceAdapter.flushDelayedNotifications();
 			unbindXMPPService();
+		}
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		if (hasWindowFocus()) unbindXMPPService();
+		if (hasWindowFocus()) {
+			if (mServiceAdapter != null)
+				mServiceAdapter.clearNotifications(mWithJabberID);
+			unbindXMPPService();
+		}
 		getContentResolver().unregisterContentObserver(mContactObserver);
 	}
 

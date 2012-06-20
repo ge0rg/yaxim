@@ -176,6 +176,10 @@ public class XMPPService extends GenericService {
 			public void clearNotifications(String Jid) throws RemoteException {
 				clearNotification(Jid);
 			}
+
+			public void flushDelayedNotifications() throws RemoteException {
+				flushNotifications();
+			}
 		};
 	}
 
@@ -498,7 +502,8 @@ public class XMPPService extends GenericService {
 		mSmackable.registerCallback(new XMPPServiceCallback() {
 			public void newMessage(String from, String message) {
 				logInfo("notification: " + from);
-				notifyClient(from, mSmackable.getNameForJID(from), message, !mIsBoundTo.contains(from));
+				notifyClient(from, mSmackable.getNameForJID(from), message,
+						!mIsBoundTo.contains(from), true);
 			}
 
 			public void rosterChanged() {
