@@ -82,6 +82,10 @@ public class XMPPService extends GenericService {
 		return true;
 	}
 
+	public boolean isBoundToChat(String jabberID) {
+		return mIsBoundTo.contains(jabberID);
+	}
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -496,7 +500,8 @@ public class XMPPService extends GenericService {
 
 			public void newMessage(String from, String message) {
 				logInfo("notification: " + from);
-				notifyClient(from, mSmackable.getNameForJID(from), message, !mIsBoundTo.contains(from));
+				notifyClient(from, mSmackable.getNameForJID(from), message,
+						XMPPService.this, true);
 			}
 
 			public void rosterChanged() {
@@ -509,7 +514,7 @@ public class XMPPService extends GenericService {
 			}
 
 			public boolean isBoundTo(String jabberID) {
-				return mIsBoundTo.contains(jabberID);
+				return isBoundToChat(jabberID);
 			}
 		});
 	}

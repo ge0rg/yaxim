@@ -7,12 +7,15 @@ import org.yaxim.androidclient.chat.ChatWindow;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.util.LogConstants;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -30,9 +33,11 @@ public abstract class GenericService extends Service {
 	private static final String TAG = "yaxim.Service";
 	private static final String APP_NAME = "yaxim";
 	private static final int MAX_TICKER_MSG_LEN = 50;
+	private static final int DELAYED_NOTIFICATION_TIMEOUT = 10000;
 
 	private NotificationManager mNotificationMGR;
 	private Notification mNotification;
+	private DelayedNotification mPendingNotification = null;
 	private Vibrator mVibrator;
 	private Intent mNotificationIntent;
 	protected WakeLock mWakeLock;
@@ -93,10 +98,17 @@ public abstract class GenericService extends Service {
 	}
 
 	protected void notifyClient(String fromJid, String fromUserName, String message,
-			boolean showNotification) {
-		if (!showNotification) {
-			// only play sound and return
-			RingtoneManager.getRingtone(getApplicationContext(), mConfig.notifySound).play();
+			XMPPService xmppService, boolean deferrable) {
+		if (xmppService.isBoundToChat(fromJid)) {
+			if (mPendingNotification != null)
+				mPendingNotification.cancel();
+			if (deferrable) {
+				mPendingNotification = new DelayedNotification(this, fromJid, fromUserName,
+						message, xmppService, DELAYED_NOTIFICATION_TIMEOUT);
+			} else {
+				// only play sound and return
+				RingtoneManager.getRingtone(getApplicationContext(), mConfig.notifySound).play();
+			}
 			return;
 		}
 		mWakeLock.acquire();
@@ -209,6 +221,48 @@ public abstract class GenericService extends Service {
 			notifyId = notificationId.get(Jid);
 			mNotificationMGR.cancel(notifyId);
 		}
+		if (mPendingNotification != null)
+			mPendingNotification.cancel();
 	}
 
+	private class DelayedNotification extends BroadcastReceiver {
+		private static final String DELAYED_NOTIFICATION_ALARM =
+				"org.yaxim.androidclient.DELAYED_NOTIFICATION_ALARM";
+
+		private String mFromJid;
+		private String mFromUserName;
+		private String mMessage;
+		private XMPPService mXMPPService;
+		private Intent mAlarmIntent = new Intent(DELAYED_NOTIFICATION_ALARM);
+		private PendingIntent mPAlarmIntent;
+
+		public DelayedNotification(Context ctx, String fromJid, String fromUserName,
+				String message, XMPPService xmppService, int delay) {
+			mFromJid = fromJid;
+			mFromUserName = fromUserName;
+			mMessage = message;
+			mXMPPService = xmppService;
+
+			mPAlarmIntent = PendingIntent.getBroadcast(ctx, 0, mAlarmIntent,
+					PendingIntent.FLAG_UPDATE_CURRENT);
+			registerReceiver(this, new IntentFilter(DELAYED_NOTIFICATION_ALARM));
+
+			((AlarmManager)getSystemService(Context.ALARM_SERVICE)).set(AlarmManager.RTC_WAKEUP,
+					System.currentTimeMillis() + delay, mPAlarmIntent);
+		}
+
+		public void cancel() {
+			logInfo("Cancel delayed notification.");
+			((AlarmManager)getSystemService(Context.ALARM_SERVICE)).cancel(mPAlarmIntent);
+			unregisterReceiver(this);
+			mPendingNotification = null;
+		}
+
+		public void onReceive(Context ctx, Intent i) {
+			logInfo("Delayed notification.");
+			unregisterReceiver(this);
+			mPendingNotification = null;
+			notifyClient(mFromJid, mFromUserName, mMessage, mXMPPService, false);
+		}
+	}
 }

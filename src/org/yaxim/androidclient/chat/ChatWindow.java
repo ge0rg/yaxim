@@ -444,7 +444,11 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			return true;
 		}
 		return false;
+	}
 
+	public void onUserInteraction() {
+		if (mWithJabberID != null && mServiceAdapter != null)
+			mServiceAdapter.clearNotifications(mWithJabberID);
 	}
 
 	public void afterTextChanged(Editable s) {
@@ -461,7 +465,8 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	}
 
 	public void onTextChanged(CharSequence s, int start, int before, int count) {
-
+		if (mWithJabberID != null && mServiceAdapter != null)
+			mServiceAdapter.clearNotifications(mWithJabberID);
 	}
 
 	private void showToastNotification(int message) {
