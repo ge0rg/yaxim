@@ -37,6 +37,15 @@ svg2sbar() {
 	svg2png $basename 24 38 drawable-hdpi
 }
 
+svg2msgstatus() {
+	basename=$1
+
+	svg2png $basename 12 7 drawable-ldpi
+	svg2png $basename 16 9 drawable
+	svg2png $basename 25 14 drawable-hdpi
+	svg2png $basename 34 19 drawable-xhdpi
+}
+
 # convert icon
 svg2icon icon
 
@@ -45,8 +54,15 @@ svg2sbar sb_message
 
 # convert status
 # convert paw status
-for file in `ls asset-graphics/ic_*.svg`
+for file in `ls asset-graphics/ic_{status,action}_*.svg`
 do
 	basename=`basename $file .svg`
 	svg2status $basename
+done
+
+# convert chat message status
+for file in `ls asset-graphics/ic_chat_*.svg`
+do
+	basename=`basename $file .svg`
+	svg2msgstatus $basename
 done
