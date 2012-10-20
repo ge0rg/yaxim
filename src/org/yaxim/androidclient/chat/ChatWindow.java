@@ -398,12 +398,15 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				ColorDrawable layers[] = new ColorDrawable[2];
 				getTheme().resolveAttribute(R.attr.ChatNewMessageColor, tv, true);
 				layers[0] = new ColorDrawable(tv.data);
+				int imageId;
 				if (from_me) {
 					// message stored for later transmission
 					getTheme().resolveAttribute(R.attr.ChatStoredMessageColor, tv, true);
 					layers[1] = new ColorDrawable(tv.data);
+					imageId = R.drawable.ic_chat_msg_status_queued;
 				} else {
 					layers[1] = new ColorDrawable(0x00000000);
+					imageId = R.drawable.ic_chat_msg_status_new;
 				}
 				TransitionDrawable backgroundColorAnimation = new
 					TransitionDrawable(layers);
@@ -415,7 +418,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				mRowView.setPadding(l, t, r, b);
 				backgroundColorAnimation.setCrossFadeEnabled(true);
 				backgroundColorAnimation.startTransition(DELAY_NEWMSG);
-				getIconView().setImageResource(R.drawable.ic_chat_msg_status_queued);
+				getIconView().setImageResource(imageId);
 				break;
 			case ChatConstants.DS_SENT_OR_READ:
 				getIconView().setImageResource(R.drawable.ic_chat_msg_status_unread);
