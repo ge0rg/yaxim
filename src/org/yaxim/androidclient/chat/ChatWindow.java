@@ -47,6 +47,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -81,6 +82,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	private ServiceConnection mServiceConnection;
 	private XMPPChatServiceAdapter mServiceAdapter;
 	private int mChatFontSize;
+	private Cursor mListCursor;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -101,6 +103,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 
 		registerForContextMenu(getListView());
 		setContactFromUri();
+		setListCursor();
 		registerXMPPService();
 		setSendButton();
 		setUserInput();
@@ -131,12 +134,8 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	}
 
 	private void setChatWindowAdapter() {
-		String selection = ChatConstants.JID + "='" + mWithJabberID + "'";
-		Cursor cursor = managedQuery(ChatProvider.CONTENT_URI, PROJECTION_FROM,
-				selection, null, null);
-		ListAdapter adapter = new ChatWindowAdapter(cursor, PROJECTION_FROM,
+		ListAdapter adapter = new ChatWindowAdapter(mListCursor, PROJECTION_FROM,
 				PROJECTION_TO, mWithJabberID, mUserScreenName);
-
 		setListAdapter(adapter);
 	}
 
@@ -162,6 +161,22 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 		getContentResolver().unregisterContentObserver(mContactObserver);
 	}
 
+	private void markMessagesRead(int delay) {
+		if (mServiceAdapter == null || mWithJabberID == null || mListCursor == null)
+			return;
+		mServiceAdapter.clearNotifications(mWithJabberID);
+		ListView list = getListView();
+		int i;
+		for (i = list.getFirstVisiblePosition(); i <= list.getLastVisiblePosition(); i++) {
+			mListCursor.moveToPosition(i);
+			int delivery_status = mListCursor.getInt(
+					mListCursor.getColumnIndex(ChatProvider.ChatConstants.DELIVERY_STATUS));
+			if (delivery_status == ChatConstants.DS_NEW)
+				markAsReadDelayed(mListCursor.getInt(
+						mListCursor.getColumnIndex(ChatProvider.ChatConstants._ID)), delay);
+		}
+	}
+
 	private void registerXMPPService() {
 		Log.i(TAG, "called startXMPPService()");
 		mServiceIntent = new Intent(this, XMPPService.class);
@@ -176,8 +191,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				mServiceAdapter = new XMPPChatServiceAdapter(
 						IXMPPChatService.Stub.asInterface(service),
 						mWithJabberID);
-				
-				mServiceAdapter.clearNotifications(mWithJabberID);
+				markMessagesRead(DELAY_NEWMSG);
 			}
 
 			public void onServiceDisconnected(ComponentName name) {
@@ -223,6 +237,12 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 		} else {
 			mUserScreenName = mWithJabberID;
 		}
+	}
+
+	private void setListCursor() {
+		String selection = ChatConstants.JID + "='" + mWithJabberID + "'";
+		mListCursor = managedQuery(ChatProvider.CONTENT_URI, PROJECTION_FROM,
+				selection, null, null);
 	}
 
 	@Override
@@ -291,7 +311,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			}
 		}, delay);
 	}
-	
+
 	private void markAsRead(int id) {
 		Uri rowuri = Uri.parse("content://" + ChatProvider.AUTHORITY
 			+ "/" + ChatProvider.TABLE_NAME + "/" + id);
@@ -322,8 +342,6 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			long dateMilliseconds = cursor.getLong(cursor
 					.getColumnIndex(ChatProvider.ChatConstants.DATE));
 
-			int _id = cursor.getInt(cursor
-					.getColumnIndex(ChatProvider.ChatConstants._ID));
 			String date = getDateString(dateMilliseconds);
 			String message = cursor.getString(cursor
 					.getColumnIndex(ChatProvider.ChatConstants.MESSAGE));
@@ -342,10 +360,6 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				row.setTag(wrapper);
 			} else {
 				wrapper = (ChatItemWrapper) row.getTag();
-			}
-
-			if (!from_me && delivery_status == ChatConstants.DS_NEW) {
-				markAsReadDelayed(_id, DELAY_NEWMSG);
 			}
 
 			String from = jid;
@@ -472,7 +486,10 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			return true;
 		}
 		return false;
+	}
 
+	public void onUserInteraction() {
+		markMessagesRead(0);
 	}
 
 	public void afterTextChanged(Editable s) {
@@ -489,7 +506,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	}
 
 	public void onTextChanged(CharSequence s, int start, int before, int count) {
-
+		markMessagesRead(0);
 	}
 
 	private void showToastNotification(int message) {
