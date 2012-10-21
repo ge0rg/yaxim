@@ -140,6 +140,7 @@ public class XMPPService extends GenericService {
 				org.xbill.DNS.Lookup.refreshDefault();
 				// reset reconnection timeout
 				mReconnectTimeout = RECONNECT_AFTER;
+				logInfo("mConnectionDemanded: " + mConnectionDemanded.get());
 				if (mConnectionDemanded.get())
 					doConnect();
 				else

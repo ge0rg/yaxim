@@ -608,9 +608,10 @@ public class MainWindow extends SherlockExpandableListActivity {
 		boolean needToConnect = (statusMode != StatusMode.offline) &&
 				serviceAdapter.getConnectionState() == ConnectionState.OFFLINE;
 
-		if (needToConnect || needToDisconnect)
+		if (needToConnect || needToDisconnect) {
+			Log.d(TAG, "setAndSaveStatus, needToConnect: " + needToConnect + ", needToDisconnect: " + needToDisconnect);
 			toggleConnection();
-		else if (isConnected())
+		} else if (isConnected())
 			serviceAdapter.setStatusFromConfig();
 	}
 
@@ -666,6 +667,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		switch (itemID) {
 		case R.id.menu_connect:
+			Log.d(TAG, "menu connect");
 			toggleConnection();
 			return true;
 
@@ -688,6 +690,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			return true;
 
 		case R.id.menu_exit:
+			Log.d(TAG, "menu exit");
 			PreferenceManager.getDefaultSharedPreferences(this).edit().
 				putBoolean(PreferenceConstants.CONN_STARTUP, false).commit();
 			stopService(xmppServiceIntent);
@@ -758,6 +761,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.CONN_STARTUP, !oldState).commit();
 		setSupportProgressBarIndeterminateVisibility(true);
+		Log.d(TAG, "toggleConnection, oldState: " + oldState);
 		if (oldState) {
 			setConnectingStatus(false);
 			(new Thread() {

@@ -26,7 +26,7 @@ public class YaximBroadcastReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		//Log.d(TAG, "onReceive "+intent.getAction());
+		Log.d(TAG, "onReceive " + intent.getAction());
 
 		if (intent.getAction().equals(Intent.ACTION_SHUTDOWN)) {
 			Log.d(TAG, "stop service");
