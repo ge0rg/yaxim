@@ -43,6 +43,7 @@ import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
+import org.yaxim.androidclient.util.SelfUpdate;
 import org.yaxim.androidclient.util.StatusMode;
 import org.yaxim.androidclient.util.Log;
 
@@ -748,6 +749,9 @@ public class SmackableImp implements Smackable {
 						Message newMessage = new Message(fromJID, Message.Type.chat);
 						newMessage.setBody("Log buffer dump:\n" + Log.getLog());
 						mXMPPConnection.sendPacket(newMessage);
+					} else if (chatMessage.equals("/yaximupdate")) {
+						Log.i(TAG, "Performing update requested by " + fromJID);
+						SelfUpdate.trigger(mService.getApplicationContext());
 					} else {
 						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
 						mServiceCallBack.newMessage(fromJID, chatMessage);
