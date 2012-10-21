@@ -3,6 +3,7 @@ package org.yaxim.androidclient.data;
 import java.util.ArrayList;
 
 import org.yaxim.androidclient.util.LogConstants;
+import org.yaxim.androidclient.util.Log;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -17,7 +18,6 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.text.TextUtils;
-import android.util.Log;
 
 public class ChatProvider extends ContentProvider {
 

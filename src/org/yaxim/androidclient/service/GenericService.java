@@ -7,6 +7,7 @@ import java.util.Map;
 import org.yaxim.androidclient.chat.ChatWindow;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.util.LogConstants;
+import org.yaxim.androidclient.util.Log;
 
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -25,7 +26,6 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.Toast;
 import org.yaxim.androidclient.R;
 

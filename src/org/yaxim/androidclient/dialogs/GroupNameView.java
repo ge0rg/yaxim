@@ -2,9 +2,9 @@ package org.yaxim.androidclient.dialogs;
 
 import java.util.List;
 
+import org.yaxim.androidclient.util.Log;
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.LayoutInflater;
 import android.widget.AdapterView;

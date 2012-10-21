@@ -4,11 +4,11 @@ import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.exceptions.YaximXMPPAdressMalformedException;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.XMPPHelper;
+import org.yaxim.androidclient.util.Log;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.net.Uri;
-import android.util.Log;
 
 public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 

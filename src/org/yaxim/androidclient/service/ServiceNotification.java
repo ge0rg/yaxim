@@ -1,6 +1,6 @@
 package org.yaxim.androidclient.service;
 
-import android.util.Log;
+import org.yaxim.androidclient.util.Log;
 import android.app.Notification;
 import android.app.Service;
 

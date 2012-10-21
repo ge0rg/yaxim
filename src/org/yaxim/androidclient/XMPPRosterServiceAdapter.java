@@ -1,9 +1,9 @@
 package org.yaxim.androidclient;
 
 import org.yaxim.androidclient.util.ConnectionState;
+import org.yaxim.androidclient.util.Log;
 
 import android.os.RemoteException;
-import android.util.Log;
 import org.yaxim.androidclient.IXMPPRosterCallback;
 import org.yaxim.androidclient.service.IXMPPRosterService;
 

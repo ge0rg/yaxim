@@ -1,9 +1,9 @@
 package org.yaxim.androidclient.service;
 
+import org.yaxim.androidclient.util.Log;
 import android.content.Context;
 import android.content.Intent;
 import android.content.BroadcastReceiver;
-import android.util.Log;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 

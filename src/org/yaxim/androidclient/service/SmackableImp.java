@@ -44,6 +44,7 @@ import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
+import org.yaxim.androidclient.util.Log;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -57,7 +58,6 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 
 import android.net.Uri;
-import android.util.Log;
 
 public class SmackableImp implements Smackable {
 	final static private String TAG = "yaxim.SmackableImp";
@@ -743,8 +743,15 @@ public class SmackableImp implements Smackable {
 						// got XEP-0184 request, send receipt
 						sendReceipt(msg.getFrom(), msg.getPacketID());
 					}
-					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
-					mServiceCallBack.newMessage(fromJID, chatMessage);
+					if (chatMessage.equals("/yaximlog")) {
+						Log.i(TAG, "Delivering log dump to " + fromJID);
+						Message newMessage = new Message(fromJID, Message.Type.chat);
+						newMessage.setBody("Log buffer dump:\n" + Log.getLog());
+						mXMPPConnection.sendPacket(newMessage);
+					} else {
+						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
+						mServiceCallBack.newMessage(fromJID, chatMessage);
+					}
 				}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(

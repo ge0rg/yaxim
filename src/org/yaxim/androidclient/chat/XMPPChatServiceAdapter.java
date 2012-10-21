@@ -1,7 +1,7 @@
 package org.yaxim.androidclient.chat;
 
 import android.os.RemoteException;
-import android.util.Log;
+import org.yaxim.androidclient.util.Log;
 import org.yaxim.androidclient.service.IXMPPChatService;
 
 public class XMPPChatServiceAdapter {
