@@ -229,16 +229,30 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenu.ContextMenuInfo menuInfo) {
 		super.onCreateContextMenu(menu, v, menuInfo);
+
+		View target = ((AdapterContextMenuInfo)menuInfo).targetView;
+		TextView from = (TextView)target.findViewById(R.id.chat_from);
 		getMenuInflater().inflate(R.menu.chat_contextmenu, menu);
+		if (!from.getText().equals(getString(R.string.chat_from_me))) {
+			menu.findItem(R.id.chat_contextmenu_resend).setEnabled(false);
+		}
+	}
+
+	private CharSequence getMessageFromContextMenu(MenuItem item) {
+		View target = ((AdapterContextMenuInfo)item.getMenuInfo()).targetView;
+		TextView message = (TextView)target.findViewById(R.id.chat_message);
+		return message.getText();
 	}
 
 	public boolean onContextItemSelected(MenuItem item) {
-		View target = ((AdapterContextMenuInfo)item.getMenuInfo()).targetView;
 		switch (item.getItemId()) {
 		case R.id.chat_contextmenu_copy_text:
-			TextView message = (TextView)target.findViewById(R.id.chat_message);
 			ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-			cm.setText(message.getText());
+			cm.setText(getMessageFromContextMenu(item));
+			return true;
+		case R.id.chat_contextmenu_resend:
+			sendMessage(getMessageFromContextMenu(item).toString());
+			Log.d(TAG, "resend!");
 			return true;
 		default:
 			return super.onContextItemSelected((android.view.MenuItem) item);
@@ -258,8 +272,6 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	private void sendMessageIfNotNull() {
 		if (mChatInput.getText().length() >= 1) {
 			sendMessage(mChatInput.getText().toString());
-			if (!mServiceAdapter.isServiceAuthenticated())
-				showToastNotification(R.string.toast_stored_offline);
 		}
 	}
 
@@ -267,6 +279,8 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 		mChatInput.setText(null);
 		mSendButton.setEnabled(false);
 		mServiceAdapter.sendMessage(mWithJabberID, message);
+		if (!mServiceAdapter.isServiceAuthenticated())
+			showToastNotification(R.string.toast_stored_offline);
 	}
 
 	private void markAsReadDelayed(final int id, int delay) {
@@ -283,7 +297,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			+ "/" + ChatProvider.TABLE_NAME + "/" + id);
 		Log.d(TAG, "markAsRead: " + rowuri);
 		ContentValues values = new ContentValues();
-		values.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT);
+		values.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
 		getContentResolver().update(rowuri, values, null, null);
 	}
 
@@ -313,8 +327,9 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			String date = getDateString(dateMilliseconds);
 			String message = cursor.getString(cursor
 					.getColumnIndex(ChatProvider.ChatConstants.MESSAGE));
-			int from_me = cursor.getInt(cursor
-					.getColumnIndex(ChatProvider.ChatConstants.DIRECTION));
+			boolean from_me = (cursor.getInt(cursor
+					.getColumnIndex(ChatProvider.ChatConstants.DIRECTION)) ==
+					ChatConstants.OUTGOING);
 			String jid = cursor.getString(cursor
 					.getColumnIndex(ChatProvider.ChatConstants.JID));
 			int delivery_status = cursor.getInt(cursor
@@ -329,14 +344,14 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				wrapper = (ChatItemWrapper) row.getTag();
 			}
 
-			if (from_me == 0 && delivery_status == 0) {
+			if (!from_me && delivery_status == ChatConstants.DS_NEW) {
 				markAsReadDelayed(_id, DELAY_NEWMSG);
 			}
 
 			String from = jid;
 			if (jid.equals(mJID))
 				from = mScreenName;
-			wrapper.populateFrom(date, from_me != 0, from, message, delivery_status);
+			wrapper.populateFrom(date, from_me, from, message, delivery_status);
 
 			return row;
 		}
@@ -379,7 +394,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				getFromView().setTextColor(tv.data);
 			}
 			switch (delivery_status) {
-			case 0:
+			case ChatConstants.DS_NEW:
 				ColorDrawable layers[] = new ColorDrawable[2];
 				getTheme().resolveAttribute(R.attr.ChatNewMessageColor, tv, true);
 				layers[0] = new ColorDrawable(tv.data);
@@ -402,11 +417,11 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 				backgroundColorAnimation.startTransition(DELAY_NEWMSG);
 				getIconView().setImageResource(R.drawable.ic_chat_msg_status_queued);
 				break;
-			case 1:
+			case ChatConstants.DS_SENT_OR_READ:
 				getIconView().setImageResource(R.drawable.ic_chat_msg_status_unread);
 				mRowView.setBackgroundColor(0x00000000); // default is transparent
 				break;
-			case 2:
+			case ChatConstants.DS_ACKED:
 				getIconView().setImageResource(R.drawable.ic_chat_msg_status_ok);
 				mRowView.setBackgroundColor(0x00000000); // default is transparent
 				break;
@@ -414,7 +429,6 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			getMessageView().setText(message);
 			getMessageView().setTextSize(TypedValue.COMPLEX_UNIT_SP, chatWindow.mChatFontSize);
 		}
-        
 		
 		TextView getDateView() {
 			if (mDateView == null) {

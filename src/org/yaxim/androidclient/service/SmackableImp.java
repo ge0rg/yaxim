@@ -41,7 +41,6 @@ import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
-import org.yaxim.androidclient.util.AdapterConstants;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
@@ -381,7 +380,7 @@ public class SmackableImp implements Smackable {
 		final int       TS_COL = cursor.getColumnIndexOrThrow(ChatConstants.DATE);
 		final int PACKETID_COL = cursor.getColumnIndexOrThrow(ChatConstants.PACKET_ID);
 		ContentValues mark_sent = new ContentValues();
-		mark_sent.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT);
+		mark_sent.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
 		while (cursor.moveToNext()) {
 			int _id = cursor.getInt(_ID_COL);
 			String toJID = cursor.getString(JID_COL);
@@ -433,7 +432,7 @@ public class SmackableImp implements Smackable {
 		newMessage.setBody(message);
 		newMessage.addExtension(new DeliveryReceiptRequest());
 		if (isAuthenticated()) {
-			addChatMessageToDB(ChatConstants.OUTGOING, toJID, message, ChatConstants.DS_SENT,
+			addChatMessageToDB(ChatConstants.OUTGOING, toJID, message, ChatConstants.DS_SENT_OR_READ,
 					System.currentTimeMillis(), newMessage.getPacketID());
 			mXMPPConnection.sendPacket(newMessage);
 		} else {
@@ -722,7 +721,7 @@ public class SmackableImp implements Smackable {
 					DeliveryReceipt dr = (DeliveryReceipt)msg.getExtension("received", DeliveryReceipt.NAMESPACE);
 					if (dr != null) {
 						Log.d(TAG, "got delivery receipt for " + dr.getId());
-						changeMessageDeliveryStatus(dr.getId(), ChatConstants.DS_DELIVERED);
+						changeMessageDeliveryStatus(dr.getId(), ChatConstants.DS_ACKED);
 					}
 
 					if (chatMessage == null) {
