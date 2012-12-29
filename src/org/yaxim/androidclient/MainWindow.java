@@ -15,11 +15,11 @@ import org.yaxim.androidclient.dialogs.FirstStartDialog;
 import org.yaxim.androidclient.dialogs.GroupNameView;
 import org.yaxim.androidclient.preferences.MainPrefs;
 import org.yaxim.androidclient.service.XMPPService;
-import org.yaxim.androidclient.util.AdapterConstants;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.ComponentName;
@@ -33,6 +33,7 @@ import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -710,9 +711,11 @@ public class MainWindow extends SherlockExpandableListActivity {
 	}
 
 	/** Sets if all contacts are shown in the roster or online contacts only. */
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void setOfflinceContactsVisibility(boolean showOffline) {
 		this.showOffline = showOffline;
-		invalidateOptionsMenu();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+			invalidateOptionsMenu();
 
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.SHOW_OFFLINE, showOffline).commit();
@@ -793,6 +796,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		xmppServiceConnection = new ServiceConnection() {
 
+			@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 			public void onServiceConnected(ComponentName name, IBinder service) {
 				Log.i(TAG, "called onServiceConnected()");
 				serviceAdapter = new XMPPRosterServiceAdapter(
@@ -800,7 +804,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 				serviceAdapter.registerUICallback(rosterCallback);
 				Log.i(TAG, "getConnectionState(): "
 						+ serviceAdapter.getConnectionState());
-				invalidateOptionsMenu();	// to load the action bar contents on time for access to icons/progressbar
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+					invalidateOptionsMenu();	// to load the action bar contents on time for access to icons/progressbar
 				actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
 				setConnectingStatus(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
 				setSupportProgressBarIndeterminateVisibility(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
@@ -837,11 +842,13 @@ public class MainWindow extends SherlockExpandableListActivity {
 						final boolean willReconnect)
 						throws RemoteException {
 				mainHandler.post(new Runnable() {
+					@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 					public void run() {
 						Log.d(TAG, "connectionStatusChanged: " + isConnected + "/" + willReconnect);
 						setConnectingStatus(!isConnected && willReconnect);
 						setSupportProgressBarIndeterminateVisibility(false);
-						invalidateOptionsMenu();
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+							invalidateOptionsMenu();
 					}
 				});
 			}
