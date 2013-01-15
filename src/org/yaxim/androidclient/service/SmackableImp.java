@@ -1,6 +1,5 @@
 package org.yaxim.androidclient.service;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Date;
 import javax.net.ssl.SSLContext;
