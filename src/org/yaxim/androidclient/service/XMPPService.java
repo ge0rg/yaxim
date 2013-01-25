@@ -45,6 +45,7 @@ public class XMPPService extends GenericService {
 	private boolean create_account = false;
 	private IXMPPRosterService.Stub mService2RosterConnection;
 	private IXMPPChatService.Stub mServiceChatConnection;
+	private IXMPPMucService.Stub mServiceMucConnection;
 
 	private RemoteCallbackList<IXMPPRosterCallback> mRosterCallbacks = new RemoteCallbackList<IXMPPRosterCallback>();
 	private HashSet<String> mIsBoundTo = new HashSet<String>();
@@ -54,7 +55,9 @@ public class XMPPService extends GenericService {
 	public IBinder onBind(Intent intent) {
 		super.onBind(intent);
 		String chatPartner = intent.getDataString();
-		if ((chatPartner != null)) {
+		if(chatPartner != null && chatPartner.endsWith("?chat")) {
+			return mServiceMucConnection;
+		} else if (chatPartner != null) {
 			resetNotificationCounter(chatPartner);
 			mIsBoundTo.add(chatPartner);
 			return mServiceChatConnection;
@@ -88,6 +91,7 @@ public class XMPPService extends GenericService {
 
 		createServiceRosterStub();
 		createServiceChatStub();
+		createServiceMucStub();
 
 		mPAlarmIntent = PendingIntent.getBroadcast(this, 0, mAlarmIntent,
 					PendingIntent.FLAG_UPDATE_CURRENT);
@@ -175,6 +179,16 @@ public class XMPPService extends GenericService {
 			
 			public void clearNotifications(String Jid) throws RemoteException {
 				clearNotification(Jid);
+			}
+		};
+	}
+	
+	private void createServiceMucStub() {
+		mServiceMucConnection = new IXMPPMucService.Stub() {
+			@Override
+			public void mucTest() throws RemoteException {
+				logInfo("mucTest IXMPPMucService Stub Called!");
+				mSmackable.mucTest();
 			}
 		};
 	}

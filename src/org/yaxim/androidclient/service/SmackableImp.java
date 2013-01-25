@@ -27,6 +27,7 @@ import org.jivesoftware.smack.packet.Presence.Mode;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.provider.DelayInfoProvider;
 import org.jivesoftware.smackx.provider.DeliveryReceiptProvider;
 import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
@@ -879,6 +880,23 @@ public class SmackableImp implements Smackable {
 	private void debugLog(String data) {
 		if (LogConstants.LOG_DEBUG) {
 			Log.d(TAG, data);
+		}
+	}
+
+	@Override
+	public void mucTest() {
+		Log.i(TAG, "starting muctest");
+		MultiUserChat muc = new MultiUserChat(mXMPPConnection, "test@conference.kanojo.de");
+		try {
+			muc.join("test01");
+		} catch (XMPPException e) {
+			e.printStackTrace();
+		}
+		Log.i(TAG, "muc obj is now: "+muc);
+		try {
+			muc.sendMessage("woah, i'm joined!");
+		} catch (XMPPException e) {
+			e.printStackTrace();
 		}
 	}
 }

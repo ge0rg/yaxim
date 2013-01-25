@@ -21,5 +21,7 @@ public interface Smackable {
 	void registerCallback(XMPPServiceCallback callBack);
 	void unRegisterCallback();
 	
+	void mucTest();
+	
 	String getNameForJID(String jid);
 }
