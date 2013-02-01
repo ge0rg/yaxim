@@ -202,6 +202,17 @@ public class XMPPService extends GenericService {
 				return mSmackable.createRoom(room, nickname, password);
 			}
 
+			@Override
+			public void sendMessage(String room, String message)
+					throws RemoteException {
+				mSmackable.sendMucMessage(room, message);
+			}
+
+			@Override
+			public void quitRoom(String room) throws RemoteException {
+				mSmackable.quitRoom(room);
+			}
+
 		};
 	}
 
