@@ -2,6 +2,10 @@ package org.yaxim.androidclient.service;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
@@ -26,7 +30,10 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Presence.Mode;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.Form;
+import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.carbons.Carbon;
 import org.jivesoftware.smackx.carbons.CarbonManager;
@@ -51,9 +58,6 @@ import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
-
-import org.yaxim.androidclient.packet.*;
-
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -129,6 +133,8 @@ public class SmackableImp implements Smackable {
 
 	private PongTimeoutAlarmReceiver mPongTimeoutAlarmReceiver = new PongTimeoutAlarmReceiver();
 	private BroadcastReceiver mPingAlarmReceiver = new PingAlarmReceiver();
+	
+	private List<MultiUserChat> multiUserChats;
 
 
 	public SmackableImp(YaximConfiguration config,
@@ -161,6 +167,8 @@ public class SmackableImp implements Smackable {
 		this.mXMPPConnection = new XMPPConnection(mXMPPConfig);
 		this.mContentResolver = contentResolver;
 		this.mService = service;
+		
+		this.multiUserChats = new ArrayList<MultiUserChat>();
 	}
 
 	public boolean doConnect(boolean create_account) throws YaximXMPPException {
@@ -864,6 +872,7 @@ public class SmackableImp implements Smackable {
 	public void mucTest() {
 		Log.i(TAG, "starting muctest");
 		MultiUserChat muc = new MultiUserChat(mXMPPConnection, "test@conference.kanojo.de");
+		Log.i(TAG, "muc joined: "+muc.getJoinedRooms(mXMPPConnection, mXMPPConnection.getUser()));
 		try {
 			muc.join("test01");
 		} catch (XMPPException e) {
@@ -875,5 +884,86 @@ public class SmackableImp implements Smackable {
 		} catch (XMPPException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public boolean joinRoom(String room, String nickname, String password,
+			int historyLen) {
+		MultiUserChat muc = new MultiUserChat(mXMPPConnection, room);
+		DiscussionHistory history = new DiscussionHistory();
+		history.setMaxStanzas(historyLen);
+		
+		try {
+			muc.join("testbot2", password, history, SmackConfiguration.getPacketReplyTimeout());
+		} catch (XMPPException e) {
+			Log.e(TAG, "Could not join MUC-room "+room);
+			e.printStackTrace();
+			return false;
+		}
+
+		if(muc.isJoined()) {
+			return true;
+		}
+		
+		return false;
+	}
+
+	@Override
+	public String[] getJoinedRooms() {
+		List<String> rooms = new ArrayList<String>();
+		for(MultiUserChat muc : multiUserChats) {
+			rooms.add(muc.getRoom());
+		}
+		return (String[]) rooms.toArray();
+	}
+
+	@Override
+	public boolean createRoom(String room, String nickname, String password) {
+		// Create a MultiUserChat using a Connection for a room
+		MultiUserChat muc = new MultiUserChat(mXMPPConnection, room);
+		Form form = null; // TODO: maybe not good style?
+
+		// Create the room
+		try {
+			muc.create(nickname);
+		} catch (XMPPException e) {
+			Log.e(TAG, "could not create MUC room "+room);
+			e.printStackTrace();
+			return false;
+		}
+
+
+		try {
+			form = muc.getConfigurationForm();
+		} catch (XMPPException e) {
+			Log.e(TAG, "could not get configuration for MUC room "+room);
+			e.printStackTrace();
+			return false;
+		}
+
+		Form submitForm = form.createAnswerForm();
+		for (Iterator fields = form.getFields(); fields.hasNext();) {
+			FormField field = (FormField) fields.next();
+			if (!FormField.TYPE_HIDDEN.equals(field.getType()) && field.getVariable() != null) {
+				Log.d(TAG, "found MUC configuration form field: "+field.getLabel()); // TODO: until i know which fields to change
+				submitForm.setDefaultAnswer(field.getVariable());
+			}	
+		}	
+
+		List owners = new ArrayList();
+		//submitForm.setAnswer("",...); // TODO: adapt this to the fields found above 
+		// Send the completed form (with default values) to the server to configure the room
+		try {
+			muc.sendConfigurationForm(submitForm);
+		} catch (XMPPException e) {
+			Log.e(TAG, "could not send MUC configuration for room "+room);
+			e.printStackTrace();
+			return false;
+		}
+
+		if(muc.isJoined()) {
+			return true;
+		}
+		return false;
 	}
 }
