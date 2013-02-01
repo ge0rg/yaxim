@@ -2,9 +2,11 @@ package org.yaxim.androidclient.service;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
@@ -134,7 +136,7 @@ public class SmackableImp implements Smackable {
 	private PongTimeoutAlarmReceiver mPongTimeoutAlarmReceiver = new PongTimeoutAlarmReceiver();
 	private BroadcastReceiver mPingAlarmReceiver = new PingAlarmReceiver();
 	
-	private List<MultiUserChat> multiUserChats;
+	private Map<String, MultiUserChat> multiUserChats;
 
 
 	public SmackableImp(YaximConfiguration config,
@@ -168,7 +170,7 @@ public class SmackableImp implements Smackable {
 		this.mContentResolver = contentResolver;
 		this.mService = service;
 		
-		this.multiUserChats = new ArrayList<MultiUserChat>();
+		this.multiUserChats = new HashMap<String, MultiUserChat>();
 	}
 
 	public boolean doConnect(boolean create_account) throws YaximXMPPException {
@@ -871,19 +873,20 @@ public class SmackableImp implements Smackable {
 	@Override
 	public void mucTest() {
 		Log.i(TAG, "starting muctest");
-		MultiUserChat muc = new MultiUserChat(mXMPPConnection, "test@conference.kanojo.de");
-		Log.i(TAG, "muc joined: "+muc.getJoinedRooms(mXMPPConnection, mXMPPConnection.getUser()));
-		try {
-			muc.join("test01");
-		} catch (XMPPException e) {
-			e.printStackTrace();
-		}
-		Log.i(TAG, "muc obj is now: "+muc);
-		try {
-			muc.sendMessage("woah, i'm joined!");
-		} catch (XMPPException e) {
-			e.printStackTrace();
-		}
+		Log.i(TAG, "joining existing room");
+		boolean ret;
+		ret = joinRoom("chat@conference.kanojo.de", "le testing me", null, 15);
+		Log.i(TAG, "status of join: "+ret);
+		Log.i(TAG, "writing message");
+		sendMucMessage("chat@conference.kanojo.de", "le test");
+		//Log.i(TAG, "creating room");
+		//createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
+		
+		//String rooms = "";
+		//for(String room : getJoinedRooms()) {
+		//	rooms = rooms + ", "+room;
+		//}
+		//Log.i(TAG, "joined rooms: "+rooms);
 	}
 
 	@Override
@@ -894,7 +897,7 @@ public class SmackableImp implements Smackable {
 		history.setMaxStanzas(historyLen);
 		
 		try {
-			muc.join("testbot2", password, history, SmackConfiguration.getPacketReplyTimeout());
+			muc.join(nickname, password, history, SmackConfiguration.getPacketReplyTimeout());
 		} catch (XMPPException e) {
 			Log.e(TAG, "Could not join MUC-room "+room);
 			e.printStackTrace();
@@ -902,6 +905,7 @@ public class SmackableImp implements Smackable {
 		}
 
 		if(muc.isJoined()) {
+			multiUserChats.put(room, muc);
 			return true;
 		}
 		
@@ -910,11 +914,7 @@ public class SmackableImp implements Smackable {
 
 	@Override
 	public String[] getJoinedRooms() {
-		List<String> rooms = new ArrayList<String>();
-		for(MultiUserChat muc : multiUserChats) {
-			rooms.add(muc.getRoom());
-		}
-		return (String[]) rooms.toArray();
+		return (String[]) multiUserChats.keySet().toArray();
 	}
 
 	@Override
@@ -950,7 +950,7 @@ public class SmackableImp implements Smackable {
 			}	
 		}	
 
-		List owners = new ArrayList();
+		//List owners = new ArrayList();
 		//submitForm.setAnswer("",...); // TODO: adapt this to the fields found above 
 		// Send the completed form (with default values) to the server to configure the room
 		try {
@@ -962,8 +962,26 @@ public class SmackableImp implements Smackable {
 		}
 
 		if(muc.isJoined()) {
+			multiUserChats.put(room, muc);
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void sendMucMessage(String room, String message) {
+		try {
+			multiUserChats.get("room").sendMessage(message);
+		} catch (XMPPException e) {
+			Log.e(TAG, "error while sending message to muc room "+room);
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void quitRoom(String room) {
+		MultiUserChat muc = multiUserChats.get(room); 
+		muc.leave();
+		multiUserChats.remove(room);
 	}
 }
