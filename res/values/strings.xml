@@ -256,6 +256,13 @@
 	<string name="status_xa">Not available</string>
 	<string name="status_offline">Offline</string>
 
+	<string name="signed_not">no encryption</string>
+	<string name="signed_nokey">encryption key missing</string>
+	<string name="signed_valid">encryption available, untrusted</string>
+	<string name="signed_trusted">encryption available, trusted</string>
+	<string name="signed_invalid">encryption available, invalid signature</string>
+		
+	
 	<string name="translator_credits">translator-credits</string>
 
 	<!-- default roster group with no name -->

@@ -18,6 +18,7 @@ import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
+import org.yaxim.androidclient.util.StatusSigned;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
@@ -951,7 +952,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 		RosterConstants.JID,
 		RosterConstants.ALIAS,
 		RosterConstants.STATUS_MODE,
-		RosterConstants.STATUS_MESSAGE,
+		RosterConstants.STATUS_SIGNED,
+		RosterConstants.STATUS_MESSAGE
 	};
 
 	public List<String> getRosterGroups() {
@@ -997,11 +999,13 @@ public class MainWindow extends SherlockExpandableListActivity {
 					new String[] {
 						RosterConstants.ALIAS,
 						RosterConstants.STATUS_MESSAGE,
+						RosterConstants.STATUS_SIGNED,
 						RosterConstants.STATUS_MODE
 					},
 					new int[] {
 						R.id.roster_screenname,
 						R.id.roster_statusmsg,
+						R.id.roster_signed_icon,
 						R.id.roster_icon
 					});
 		}
@@ -1058,14 +1062,25 @@ public class MainWindow extends SherlockExpandableListActivity {
 			unreadmsg.setText(msgcursor.getString(0));
 			unreadmsg.setVisibility(msgcursor.getInt(0) > 0 ? View.VISIBLE : View.GONE);
 			unreadmsg.bringToFront();
+
 			msgcursor.close();
 		}
 
 		 protected void setViewImage(ImageView v, String value) {
-			int presenceMode = Integer.parseInt(value);
-			v.setImageResource(getIconForPresenceMode(presenceMode));
+			int intValue = Integer.parseInt(value);
+			Object tag = v.getTag();
+			int drawableId;
+			if (tag != null && tag.equals( "signed_icon" ))
+				drawableId = getIconForStatusSigned(intValue);
+			else 
+				drawableId = getIconForPresenceMode(intValue);
+			v.setImageResource(drawableId);
 		 }
 
+		private int getIconForStatusSigned(int status) {
+			return StatusSigned.values()[status].getDrawableId();
+		}
+		
 		private int getIconForPresenceMode(int presenceMode) {
 			return StatusMode.values()[presenceMode].getDrawableId();
 		}

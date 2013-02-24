@@ -262,8 +262,9 @@ public class RosterProvider extends ContentProvider {
 					+ RosterConstants._ID
 					+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
 					+ RosterConstants.JID + " TEXT UNIQUE ON CONFLICT REPLACE, "
-					+ RosterConstants.ALIAS
-					+ " TEXT, " + RosterConstants.STATUS_MODE + " INTEGER, "
+					+ RosterConstants.ALIAS	+ " TEXT, "
+					+ RosterConstants.STATUS_MODE + " INTEGER, "
+					+ RosterConstants.STATUS_SIGNED + " INTEGER, "
 					+ RosterConstants.STATUS_MESSAGE + " TEXT, "
 					+ RosterConstants.GROUP + " TEXT);");
 			db.execSQL("CREATE INDEX idx_roster_group ON " + TABLE_ROSTER
@@ -297,6 +298,7 @@ public class RosterProvider extends ContentProvider {
 		public static final String JID = "jid";
 		public static final String ALIAS = "alias";
 		public static final String STATUS_MODE = "status_mode";
+		public static final String STATUS_SIGNED = "status_signed";
 		public static final String STATUS_MESSAGE = "status_message";
 		public static final String GROUP = "roster_group";
 
@@ -307,6 +309,7 @@ public class RosterProvider extends ContentProvider {
 			tmpList.add(JID);
 			tmpList.add(ALIAS);
 			tmpList.add(STATUS_MODE);
+			tmpList.add(STATUS_SIGNED);
 			tmpList.add(STATUS_MESSAGE);
 			tmpList.add(GROUP);
 			return tmpList;
