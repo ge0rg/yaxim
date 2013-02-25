@@ -1074,7 +1074,11 @@ public class MainWindow extends SherlockExpandableListActivity {
 				drawableId = getIconForStatusSigned(intValue);
 			else 
 				drawableId = getIconForPresenceMode(intValue);
-			v.setImageResource(drawableId);
+			if (drawableId!=0) {
+				v.setImageResource(drawableId);
+				v.setVisibility(View.VISIBLE);
+			}
+			else v.setVisibility(View.GONE);
 		 }
 
 		private int getIconForStatusSigned(int status) {
