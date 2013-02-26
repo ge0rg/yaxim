@@ -570,7 +570,7 @@ public class SmackableImp implements Smackable {
 			public void presenceChanged(Presence presence) {
 				debugLog("presenceChanged(" + presence.getFrom() + "): " + presence);
 
-				String jabberID = getJabberID(presence.getFrom());
+				String jabberID = getJabberID(presence.getFrom())[0];
 				RosterEntry rosterEntry = mRoster.getEntry(jabberID);
 				updateRosterEntryInDB(rosterEntry);
 				mServiceCallBack.rosterChanged();
@@ -579,9 +579,9 @@ public class SmackableImp implements Smackable {
 		mRoster.addRosterListener(mRosterListener);
 	}
 
-	private String getJabberID(String from) {
+	private String[] getJabberID(String from) {
 		String[] res = from.split("/");
-		return res[0].toLowerCase();
+		return new String[] { res[0].toLowerCase(), res[1].toLowerCase() };
 	}
 
 	public void changeMessageDeliveryStatus(String packetID, int new_status) {
@@ -743,7 +743,7 @@ public class SmackableImp implements Smackable {
 						msg = (Message)cc.getForwarded().getForwardedPacket();
 						chatMessage = msg.getBody();
 						if (chatMessage == null) return;
-						String fromJID = getJabberID(msg.getTo());
+						String[] fromJID = getJabberID(msg.getTo());
 
 						addChatMessageToDB(ChatConstants.OUTGOING, fromJID, chatMessage, ChatConstants.DS_SENT_OR_READ, System.currentTimeMillis(), msg.getPacketID());
 						// always return after adding
@@ -767,10 +767,10 @@ public class SmackableImp implements Smackable {
 					else
 						ts = System.currentTimeMillis();
 
-					String fromJID = getJabberID(msg.getFrom());
+					String[] fromJID = getJabberID(msg.getFrom());
 
 					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
-					mServiceCallBack.newMessage(fromJID, chatMessage);
+					mServiceCallBack.newMessage(fromJID[0], chatMessage);
 				}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(
@@ -783,18 +783,25 @@ public class SmackableImp implements Smackable {
 		mXMPPConnection.addPacketListener(mPacketListener, filter);
 	}
 
-	private void addChatMessageToDB(int direction, String JID,
+	private void addChatMessageToDB(int direction, String[] JID,
 			String message, int delivery_status, long ts, String packetID) {
 		ContentValues values = new ContentValues();
-
+		
 		values.put(ChatConstants.DIRECTION, direction);
-		values.put(ChatConstants.JID, JID);
+		values.put(ChatConstants.JID, JID[0]);
+		values.put(ChatConstants.RESOURCE, JID[1]);
 		values.put(ChatConstants.MESSAGE, message);
 		values.put(ChatConstants.DELIVERY_STATUS, delivery_status);
 		values.put(ChatConstants.DATE, ts);
 		values.put(ChatConstants.PACKET_ID, packetID);
 
 		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
+	}
+
+	private void addChatMessageToDB(int direction, String JID,
+			String message, int delivery_status, long ts, String packetID) {
+		String[] tJID = {JID, ""};
+		addChatMessageToDB(direction, tJID, message, delivery_status, ts, packetID);
 	}
 
 	private ContentValues getContentValuesForRosterEntry(final RosterEntry entry) {
@@ -875,18 +882,21 @@ public class SmackableImp implements Smackable {
 		Log.i(TAG, "starting muctest");
 		Log.i(TAG, "joining existing room");
 		boolean ret;
-		ret = joinRoom("chat@conference.kanojo.de", "le testing me", null, 15);
+		ret = joinRoom("yaximtest@conference.kanojo.de", "le testing me", null, 15);
 		Log.i(TAG, "status of join: "+ret);
 		Log.i(TAG, "writing message");
-		sendMucMessage("chat@conference.kanojo.de", "le test");
-		Log.i(TAG, "creating room");
-		createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
-		
-		String rooms = "";
-		for(String room : getJoinedRooms()) {
-			rooms = rooms + ", "+room;
-		}
-		Log.i(TAG, "joined rooms: "+rooms);
+		sendMucMessage("yaximtest@conference.kanojo.de", "le test");
+//		Log.i(TAG, "creating room");
+//		createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
+//		
+//		String rooms = "";
+//		for(String room : getJoinedRooms()) {
+//			rooms = rooms + ", "+room;
+//		}
+//		Log.i(TAG, "joined rooms: "+rooms);
+		//createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
+		//joinRoom("yaximtest@conference.kanojo.de", "le testing me", null, 15);
+		//sendMucMessage("yaximtest@conference.kanojo.de", "le test");
 	}
 
 	@Override
