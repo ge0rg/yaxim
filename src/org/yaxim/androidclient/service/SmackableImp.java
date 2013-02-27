@@ -880,12 +880,14 @@ public class SmackableImp implements Smackable {
 	@Override
 	public void mucTest() {
 		Log.i(TAG, "starting muctest");
-		Log.i(TAG, "joining existing room");
-		boolean ret;
-		ret = joinRoom("yaximtest@conference.kanojo.de", "le testing me", null, 15);
-		Log.i(TAG, "status of join: "+ret);
-		Log.i(TAG, "writing message");
-		sendMucMessage("yaximtest@conference.kanojo.de", "le test");
+		addRoom("yaximtest@conference.kanojo.de", "", "le dai testing yaxim");
+		syncDbRooms();
+//		Log.i(TAG, "joining existing room");
+//		boolean ret;
+//		ret = joinRoom("yaximtest@conference.kanojo.de", "le testing me", null, 15);
+//		Log.i(TAG, "status of join: "+ret);
+//		Log.i(TAG, "writing message");
+//		sendMucMessage("yaximtest@conference.kanojo.de", "le test");
 //		Log.i(TAG, "creating room");
 //		createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
 //		
@@ -899,6 +901,43 @@ public class SmackableImp implements Smackable {
 		//sendMucMessage("yaximtest@conference.kanojo.de", "le test");
 	}
 
+	public void syncDbRooms() {
+		String[] joinedRooms = getJoinedRooms();
+		Cursor cursor = mContentResolver.query(RosterProvider.MUCS_URI, 
+				new String[] {RosterProvider.RosterConstants._ID,
+					RosterProvider.RosterConstants.JID, 
+					RosterProvider.RosterConstants.PASSWORD, 
+					RosterProvider.RosterConstants.NICKNAME}, 
+				null, null, null);
+		final int ID = cursor.getColumnIndexOrThrow(RosterProvider.RosterConstants._ID);
+		final int JID_ID = cursor.getColumnIndexOrThrow(RosterProvider.RosterConstants.JID);
+		final int PASSWORD_ID = cursor.getColumnIndexOrThrow(RosterProvider.RosterConstants.PASSWORD);
+		final int NICKNAME_ID = cursor.getColumnIndexOrThrow(RosterProvider.RosterConstants.NICKNAME);
+		
+		while(cursor.moveToNext()) {
+			int id = cursor.getInt(ID);
+			String jid = cursor.getString(JID_ID);
+			String password = cursor.getString(PASSWORD_ID);
+			String nickname = cursor.getString(NICKNAME_ID);
+			
+			debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
+		}
+	}
+	
+	public boolean addRoom(String jid, String password, String nickname) {
+		ContentValues cv = new ContentValues();
+		cv.put(RosterProvider.RosterConstants.JID, jid);
+		cv.put(RosterProvider.RosterConstants.NICKNAME, password);
+		cv.put(RosterProvider.RosterConstants.PASSWORD, nickname);
+		Uri ret = mContentResolver.insert(RosterProvider.MUCS_URI, cv);
+		return (ret != null);
+	}
+	
+	public boolean removeRoom() {
+		return false;
+	}
+	
+	
 	@Override
 	public boolean joinRoom(String room, String nickname, String password,
 			int historyLen) {
