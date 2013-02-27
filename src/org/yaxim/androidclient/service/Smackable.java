@@ -28,4 +28,5 @@ public interface Smackable {
 	public boolean addRoom(String jid, String password, String nickname);
 	public boolean removeRoom(String jid);
 	String getNameForJID(String jid);
+	public boolean createAndJoinRoom(String jid, String password, String nickname);
 }
