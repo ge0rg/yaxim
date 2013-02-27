@@ -1082,7 +1082,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		 }
 
 		private int getIconForStatusSigned(int status) {
-			return StatusSigned.values()[status].getDrawableId();
+			return StatusSigned.values()[status].drawableId;
 		}
 		
 		private int getIconForPresenceMode(int presenceMode) {

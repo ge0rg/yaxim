@@ -261,7 +261,11 @@
 	<string name="signed_valid">encryption available, untrusted</string>
 	<string name="signed_trusted">encryption available, trusted</string>
 	<string name="signed_invalid">encryption available, invalid signature</string>
-		
+	<string name="error_activity_not_found">Activity not found</string>
+	<string name="error_apg_version_not_supported">APG version not supported</string>
+	<string name="insufficient_apg_permissions">insufficient APG permissions</string>
+	<string name="unknown_crypto_signature_user_id">unknown Crypto Signature UserID</string>
+																					
 	
 	<string name="translator_credits">translator-credits</string>
 
