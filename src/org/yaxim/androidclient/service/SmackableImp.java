@@ -1,5 +1,6 @@
 package org.yaxim.androidclient.service;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -902,7 +903,7 @@ public class SmackableImp implements Smackable {
 	}
 
 	public void syncDbRooms() {
-		String[] joinedRooms = getJoinedRooms();
+		ArrayList<String> joinedRooms = new ArrayList<String>(Arrays.asList(getJoinedRooms()));
 		Cursor cursor = mContentResolver.query(RosterProvider.MUCS_URI, 
 				new String[] {RosterProvider.RosterConstants._ID,
 					RosterProvider.RosterConstants.JID, 
@@ -914,29 +915,43 @@ public class SmackableImp implements Smackable {
 		final int PASSWORD_ID = cursor.getColumnIndexOrThrow(RosterProvider.RosterConstants.PASSWORD);
 		final int NICKNAME_ID = cursor.getColumnIndexOrThrow(RosterProvider.RosterConstants.NICKNAME);
 		
+		ArrayList<String> dbRooms = new ArrayList<String>();
 		while(cursor.moveToNext()) {
 			int id = cursor.getInt(ID);
 			String jid = cursor.getString(JID_ID);
 			String password = cursor.getString(PASSWORD_ID);
 			String nickname = cursor.getString(NICKNAME_ID);
-			
+			dbRooms.add(jid);
+			debugLog("Found MUC Room: "+jid+" with nick "+nickname+" and pw "+password);
+			if(!joinedRooms.contains(jid)) {
+				debugLog("room isn't joined yet, i wanna join...");
+				joinRoom(jid, nickname, password, 50); // TODO: make historyLen configurable
+			}
 			debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
+		}
+		
+		for(String room : joinedRooms) {
+			if(!dbRooms.contains(room)) {
+				quitRoom(room);
+			}
 		}
 	}
 	
 	public boolean addRoom(String jid, String password, String nickname) {
 		ContentValues cv = new ContentValues();
 		cv.put(RosterProvider.RosterConstants.JID, jid);
-		cv.put(RosterProvider.RosterConstants.NICKNAME, password);
-		cv.put(RosterProvider.RosterConstants.PASSWORD, nickname);
+		cv.put(RosterProvider.RosterConstants.NICKNAME, nickname);
+		cv.put(RosterProvider.RosterConstants.PASSWORD, password);
 		Uri ret = mContentResolver.insert(RosterProvider.MUCS_URI, cv);
+		syncDbRooms();
 		return (ret != null);
 	}
 	
-	public boolean removeRoom() {
-		return false;
+	public boolean removeRoom(String jid) {
+		int deleted = mContentResolver.delete(RosterProvider.MUCS_URI, RosterProvider.RosterConstants.JID+" LIKE ?", new String[] {jid});
+		syncDbRooms();
+		return (deleted > 0);
 	}
-	
 	
 	@Override
 	public boolean joinRoom(String room, String nickname, String password,
@@ -963,7 +978,11 @@ public class SmackableImp implements Smackable {
 
 	@Override
 	public String[] getJoinedRooms() {
-		return (String[]) multiUserChats.keySet().toArray();
+		if (multiUserChats.keySet().size() != 0) {
+			return (String[]) multiUserChats.keySet().toArray();
+		} else {
+			return new String[] {};
+		}
 	}
 
 	@Override
