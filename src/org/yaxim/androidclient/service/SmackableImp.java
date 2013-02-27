@@ -859,6 +859,11 @@ public class SmackableImp implements Smackable {
 		return res[0].toLowerCase();
 	}
 
+	private String[] getJabberID(String from) {
+		String[] res = from.split("/");
+		return new String[] { res[0].toLowerCase(), res[1] };
+	}
+
 	public boolean changeMessageDeliveryStatus(String packetID, int new_status) {
 		ContentValues cv = new ContentValues();
 		cv.put(ChatConstants.DELIVERY_STATUS, new_status);
@@ -1091,13 +1096,20 @@ public class SmackableImp implements Smackable {
 		ContentValues values = new ContentValues();
 
 		values.put(ChatConstants.DIRECTION, direction);
-		values.put(ChatConstants.JID, JID);
+		values.put(ChatConstants.JID, JID[0]);
+		values.put(ChatConstants.RESOURCE, JID[1]);
 		values.put(ChatConstants.MESSAGE, message);
 		values.put(ChatConstants.DELIVERY_STATUS, delivery_status);
 		values.put(ChatConstants.DATE, ts);
 		values.put(ChatConstants.PACKET_ID, packetID);
 
 		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
+	}
+
+	private void addChatMessageToDB(int direction, String JID,
+			String message, int delivery_status, long ts, String packetID) {
+		String[] tJID = {JID, ""};
+		addChatMessageToDB(direction, tJID, message, delivery_status, ts, packetID);
 	}
 
 	private ContentValues getContentValuesForRosterEntry(final RosterEntry entry) {
