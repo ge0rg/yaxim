@@ -1223,12 +1223,12 @@ public class SmackableImp implements Smackable {
 			String password = cursor.getString(PASSWORD_ID);
 			String nickname = cursor.getString(NICKNAME_ID);
 			dbRooms.add(jid);
-			debugLog("Found MUC Room: "+jid+" with nick "+nickname+" and pw "+password);
+			//debugLog("Found MUC Room: "+jid+" with nick "+nickname+" and pw "+password);
 			if(!joinedRooms.contains(jid)) {
 				debugLog("room isn't joined yet, i wanna join...");
 				joinRoom(jid, nickname, password, 50); // TODO: make historyLen configurable
 			}
-			debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
+			//debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
 		}
 		
 		for(String room : joinedRooms) {
@@ -1374,7 +1374,6 @@ public class SmackableImp implements Smackable {
 	@Override
 	public boolean isRoom(String jid) {
 		syncDbRooms();
-		debugLog("checking whether "+jid+" is a MUC room, checking in "+new ArrayList<String>(Arrays.asList(getJoinedRooms())));
 		return new ArrayList<String>(Arrays.asList(getJoinedRooms())).contains(jid);
 	}
 }
