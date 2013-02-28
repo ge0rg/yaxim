@@ -1070,7 +1070,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			int intValue = Integer.parseInt(value);
 			Object tag = v.getTag();
 			int drawableId;
-			if (tag != null && tag.equals( "signed_icon" ))
+			if ("signed_icon".equals(tag))
 				drawableId = getIconForStatusSigned(intValue);
 			else 
 				drawableId = getIconForPresenceMode(intValue);
