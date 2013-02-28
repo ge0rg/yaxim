@@ -932,6 +932,7 @@ public class SmackableImp implements Smackable {
 		cv.put(RosterProvider.RosterConstants.PASSWORD, password);
 		Uri ret = mContentResolver.insert(RosterProvider.MUCS_URI, cv);
 		syncDbRooms();
+		
 		return (ret != null);
 	}
 	
@@ -959,6 +960,13 @@ public class SmackableImp implements Smackable {
 
 		if(muc.isJoined()) {
 			multiUserChats.put(room, muc);
+			ContentValues cvR = new ContentValues();
+			cvR.put(RosterProvider.RosterConstants.JID,room);
+			cvR.put(RosterProvider.RosterConstants.ALIAS,room);
+			cvR.put(RosterProvider.RosterConstants.STATUS_MESSAGE,"");
+			cvR.put(RosterProvider.RosterConstants.STATUS_MODE,4);
+			cvR.put(RosterProvider.RosterConstants.GROUP,"MUCs");
+			Uri ret2 = mContentResolver.insert(RosterProvider.CONTENT_URI, cvR);
 			return true;
 		}
 		
@@ -1050,6 +1058,7 @@ public class SmackableImp implements Smackable {
 		MultiUserChat muc = multiUserChats.get(room); 
 		muc.leave();
 		multiUserChats.remove(room);
+		mContentResolver.delete(RosterProvider.CONTENT_URI, "jid LIKE ?", new String[] {room});
 	}
 
 	@Override
