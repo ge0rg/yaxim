@@ -1,4 +1,4 @@
-package org.yaxim.androidclient.util;
+package org.yaxim.androidclient.util.crypto;
 
 import org.yaxim.androidclient.R;
 

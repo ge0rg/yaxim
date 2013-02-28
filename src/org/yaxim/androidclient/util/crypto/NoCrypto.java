@@ -1,4 +1,4 @@
-package org.yaxim.androidclient.util;
+package org.yaxim.androidclient.util.crypto;
 
 import android.app.Activity;
 import android.content.Context;

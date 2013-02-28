@@ -18,7 +18,6 @@ import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
-import org.yaxim.androidclient.util.StatusSigned;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
@@ -51,6 +50,8 @@ import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import org.yaxim.androidclient.util.SimpleCursorTreeAdapter;
+import org.yaxim.androidclient.util.crypto.StatusSigned;
+
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;

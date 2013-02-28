@@ -1,4 +1,4 @@
-package org.yaxim.androidclient.util;
+package org.yaxim.androidclient.util.crypto;
 /*
  * Inspired by k9
  * https://github.com/k9mail/

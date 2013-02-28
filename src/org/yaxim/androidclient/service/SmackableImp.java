@@ -51,7 +51,7 @@ import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
-import org.yaxim.androidclient.util.StatusSigned;
+import org.yaxim.androidclient.util.crypto.StatusSigned;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
