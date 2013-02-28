@@ -182,7 +182,8 @@ public class SmackableImp implements Smackable {
 			registerMessageListener();
 			registerMessageSendFailureListener();
 			registerPongListener();
-			sendOfflineMessages();
+			sendOfflineMessages(); // TODO: before or after the mServiceCallBack==null block?
+			syncDbRooms();
 			if (mServiceCallBack == null) {
 				// sometimes we get disconnected while not yet quite connected.
 				// bail out if this is the case
@@ -516,6 +517,7 @@ public class SmackableImp implements Smackable {
 			}.start();
 		}
 		setStatusOffline();
+//		multiUserChats.clear(); // TODO: right place
 		this.mServiceCallBack = null;
 	}
 	
@@ -881,24 +883,8 @@ public class SmackableImp implements Smackable {
 	@Override
 	public void mucTest() {
 		Log.i(TAG, "starting muctest");
-		addRoom("yaximtest@conference.kanojo.de", "", "le dai testing yaxim");
-//		Log.i(TAG, "joining existing room");
-//		boolean ret;
-//		ret = joinRoom("yaximtest@conference.kanojo.de", "le testing me", null, 15);
-//		Log.i(TAG, "status of join: "+ret);
-//		Log.i(TAG, "writing message");
-//		sendMucMessage("yaximtest@conference.kanojo.de", "le test");
-//		Log.i(TAG, "creating room");
-//		createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
-//		
-//		String rooms = "";
-//		for(String room : getJoinedRooms()) {
-//			rooms = rooms + ", "+room;
-//		}
-//		Log.i(TAG, "joined rooms: "+rooms);
-		//createRoom("yaximtest@conference.kanojo.de", "le testing me", null);
-		//joinRoom("yaximtest@conference.kanojo.de", "le testing me", null, 15);
-		//sendMucMessage("yaximtest@conference.kanojo.de", "le test");
+		syncDbRooms();
+		Log.i(TAG, "joined rooms: "+Arrays.toString(getJoinedRooms()));
 	}
 
 	public void syncDbRooms() {
@@ -947,7 +933,9 @@ public class SmackableImp implements Smackable {
 	}
 	
 	public boolean removeRoom(String jid) {
-		int deleted = mContentResolver.delete(RosterProvider.MUCS_URI, RosterProvider.RosterConstants.JID+" LIKE ?", new String[] {jid});
+		int deleted = mContentResolver.delete(RosterProvider.MUCS_URI, 
+				RosterProvider.RosterConstants.JID+" LIKE ?", 
+				new String[] {jid});
 		syncDbRooms();
 		return (deleted > 0);
 	}
@@ -974,17 +962,16 @@ public class SmackableImp implements Smackable {
 		return false;
 	}
 
-	@Override
-	public String[] getJoinedRooms() {
+	private String[] getJoinedRooms() {
 		if (multiUserChats.keySet().size() != 0) {
-			return (String[]) multiUserChats.keySet().toArray();
+			return (String[]) multiUserChats.keySet().toArray(new String[]{});
 		} else {
 			return new String[] {};
 		}
 	}
 
 	@Override
-	public boolean createAndJoinRoom(String jid, String password, String nickname) { // TODO: ugly!
+	public boolean createAndJoinRoom(String jid, String password, String nickname) { // TODO: ugly and not working!
 		createRoom(jid, nickname, password);
 		if(new ArrayList<String>(Arrays.asList(getJoinedRooms())).contains(jid)) {
 			ContentValues cv = new ContentValues();
