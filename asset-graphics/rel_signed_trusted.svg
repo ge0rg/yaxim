@@ -11,16 +11,16 @@
    version="1.1"
    x="0px"
    y="0px"
-   width="100"
-   height="100"
-   viewBox="0 0 100 100"
+   width="5"
+   height="5"
+   viewBox="0 0 5 5"
    xml:space="preserve"
    id="svg2"
    inkscape:version="0.48.3.1 r9886"
-   sodipodi:docname="ic_signed_valid.svg"><metadata
+   sodipodi:docname="rel_signed_trusted.svg"><metadata
    id="metadata11"><rdf:RDF><cc:Work
        rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title /></cc:Work></rdf:RDF></metadata><defs
    id="defs9"><linearGradient
      id="linearGradient5475"><stop
        style="stop-color:#ff4c2f;stop-opacity:1;"
@@ -304,7 +304,7 @@
   
 <g
    id="all_friends"
-   transform="translate(-0.007,-379.998)">
+   transform="translate(-0.007,-474.998)">
   	
   	
   	
@@ -315,11 +315,11 @@
    inkscape:export-ydpi="38.889999"
    inkscape:export-filename="/home/dd/src/android/yaxim/res/drawable-hdpi/available.png"><path
      sodipodi:type="arc"
-     style="fill:#a0ffa0;fill-opacity:1;stroke:#64ff64;stroke-width:13.27778625000000012;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;opacity:0.50000000000000000"
+     style="opacity:0.5;fill:#a0ffa0;fill-opacity:1;stroke:#64ff64;stroke-width:13.27778625;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
      id="path3061"
      sodipodi:cx="-126.51745"
      sodipodi:cy="-43.843082"
      sodipodi:rx="36.262962"
      sodipodi:ry="41.500946"
      d="m -90.254486,-43.843082 a 36.262962,41.500946 0 1 1 -72.525924,0 36.262962,41.500946 0 1 1 72.525924,0 z"
-     transform="matrix(0.36324538,0,0,0.31739893,222.87156,189.0061)" /></g></g></svg>
+     transform="matrix(0.01816227,0,0,0.01586995,164.55727,190.4414)" /></g></g></svg>
