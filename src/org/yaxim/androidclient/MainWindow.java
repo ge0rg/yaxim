@@ -1014,6 +1014,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			cursor.moveToNext();
 		}
 		cursor.close();
+		list.remove("MUCs");
 		return list;
 	}
 
@@ -1070,7 +1071,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			// Given the group, we return a cursor for all the children within that group
 			int idx = groupCursor.getColumnIndex(RosterConstants.GROUP);
 			String groupname = groupCursor.getString(idx);
-
+			
 			String selectWhere = RosterConstants.GROUP + " = ?";
 			if (!mConfig.showOffline)
 				selectWhere += " AND " + OFFLINE_EXCLUSION;
