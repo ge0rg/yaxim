@@ -873,7 +873,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 	}
 
 	private void registerListAdapter() {
-
 		rosterListAdapter = new RosterExpListAdapter(this);
 		setListAdapter(rosterListAdapter);
 	}
@@ -910,8 +909,19 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 	// get the name of a roster group from the cursor
 	public String getGroupName(int groupId) {
-		return getPackedItemRow(ExpandableListView.getPackedPositionForGroup(groupId),
-				RosterConstants.GROUP);
+		Log.d(TAG, "getting GroupName for id "+groupId);
+		String ret;
+		try {
+		ret = getPackedItemRow(ExpandableListView.getPackedPositionForGroup(groupId),
+					RosterConstants.GROUP);
+		} catch (Exception e) {  // TODO: uhm ... no?!
+			ret = null;
+		}
+		if(ret == null) {
+			Log.d(TAG, "got null while trying to get groupname, returning foo");
+			ret = "Foo";
+		}
+		return ret;
 	}
 
 	public void restoreGroupsExpanded() {
@@ -1060,8 +1070,104 @@ public class MainWindow extends SherlockExpandableListActivity {
 						R.id.roster_statusmsg,
 						R.id.roster_icon
 					});
+			mContext = context;
 		}
 
+		// Begin Dirty Hack
+	    private Cursor mExtraChildCursor;   
+	    private Context mContext;
+
+	    @Override
+	    public int getGroupCount() {
+	        // 1 more
+	        return super.getGroupCount() + 1;
+	    }
+
+	    @Override
+	    public View getGroupView(int groupPosition, boolean isExpanded,
+	            View convertView, ViewGroup parent) {
+	        if (groupPosition == 0) {
+	            if (getCursor() == null) {
+	                throw new IllegalStateException(
+	                        "this should only be called when the cursor is valid");
+	            }
+	            View v;
+	            if (convertView == null) {
+	                v = newGroupView(mContext, getCursor(), isExpanded, parent);
+	            } else {
+	                v = convertView;
+	            }
+	            // if it's position 0 move the group Cursor to position -1 to
+	            // let the bindGroupView method that is deals with our fake row
+	            getCursor().moveToPosition(-1);
+	            bindGroupView(v, mContext, getCursor(), isExpanded);
+	            return v;
+	        } else {
+	            return super.getGroupView(groupPosition - 1, isExpanded,
+	                    convertView, parent);
+	        }
+	    }
+
+	    @Override
+	    public View getChildView(int groupPosition, int childPosition,
+	            boolean isLastChild, View convertView, ViewGroup parent) {
+	        if (groupPosition == 0) {
+	            // replicate what the CursorTreeAdapter does for our fake group
+	            // position 0
+	            if (getCursor() == null) {
+	                throw new IllegalStateException(
+	                        "this should only be called when the cursor is valid");
+	            }
+	            View v;
+	            getCursor().moveToPosition(-1);
+	            mExtraChildCursor.moveToPosition(childPosition);
+	            if (convertView == null) {
+	                v = newChildView(mContext, mExtraChildCursor, isLastChild,
+	                        parent);
+	            } else {
+	                v = convertView;
+	            }
+	            bindChildView(v, mContext, mExtraChildCursor, isLastChild);
+	            return v;
+	        } else {
+	            // use the default implementation but offset the Cursor's
+	            // current position
+	            return super.getChildView(groupPosition - 1, childPosition,
+	                    isLastChild, convertView, parent);
+	        }
+	    }
+
+	    @Override
+	    public int getChildrenCount(int groupPosition) {
+	        if (groupPosition == 0) {
+	            // implement the trick
+	            if (mExtraChildCursor == null) {
+	                getCursor().moveToPosition(-1); // in the getChildrenCursor
+	                                                // a Cursor position of -1
+	                                                // means it is the fake row
+	                mExtraChildCursor = getChildrenCursor(getCursor());
+	                return 0;
+	            } else {
+	                return mExtraChildCursor.getCount();
+	            }
+	        }
+	        return super.getChildrenCount(groupPosition);
+	    }
+
+	    @Override
+	    public void setChildrenCursor(int groupPosition, Cursor childrenCursor) {
+	        if (groupPosition == 0) {
+	            // hold a reference to the extra Cursor
+	            mExtraChildCursor = childrenCursor;
+	            notifyDataSetChanged();
+	        } else {
+	            super.setChildrenCursor(groupPosition, childrenCursor);
+	        }
+	    }
+
+		// End Dirty Hack
+		
+		
 		public void requery() {
 			String selectWhere = null;
 			if (!showOffline)
@@ -1076,23 +1182,40 @@ public class MainWindow extends SherlockExpandableListActivity {
 		@Override
 		protected Cursor getChildrenCursor(Cursor groupCursor) {
 			// Given the group, we return a cursor for all the children within that group
+			if( groupCursor.getPosition() == -1 ) {
+				Log.d(TAG, "Got asked for cursor position -1, yay!");
+				return getContentResolver().query(RosterProvider.MUCS_URI,
+						new String[] {RosterConstants._ID,
+									  RosterConstants.JID,
+									  RosterConstants.NICKNAME,
+									  RosterConstants.PASSWORD}, 
+						"",
+						new String[] {}, 
+						null);
+			} else {
 			int idx = groupCursor.getColumnIndex(RosterConstants.GROUP);
 			String groupname = groupCursor.getString(idx);
-			
+			Log.d(TAG, "getChildrenCursor calledfor group "+groupname+" with idx "+idx);
 			String selectWhere = RosterConstants.GROUP + " = ?";
 			if (!showOffline)
 				selectWhere += " AND " + OFFLINE_EXCLUSION;
 			return getContentResolver().query(RosterProvider.CONTENT_URI, ROSTER_QUERY,
 				selectWhere, new String[] { groupname }, null);
+			}
 		}
 
 		@Override
 		protected void bindGroupView(View view, Context context, Cursor cursor, boolean isExpanded) {
+	        if (cursor.getPosition() == -1) {
+	            // bind our fake row, unfortunately this must be done manually
+	        	Log.d(TAG, "We would have to bind our row manually here...");
+	        } else {
 			super.bindGroupView(view, context, cursor, isExpanded);
 			if (cursor.getString(cursor.getColumnIndexOrThrow(RosterConstants.GROUP)).length() == 0) {
 				TextView groupname = (TextView)view.findViewById(R.id.groupname);
 				groupname.setText(R.string.default_group);
 			}
+	        }
 		}
 
 		@Override
