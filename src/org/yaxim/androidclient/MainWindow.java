@@ -1208,19 +1208,23 @@ public class MainWindow extends SherlockExpandableListActivity {
 		protected void bindGroupView(View view, Context context, Cursor cursor, boolean isExpanded) {
 	        if (cursor.getPosition() == -1) {
 	            // bind our fake row, unfortunately this must be done manually
-	        	Log.d(TAG, "We would have to bind our row manually here...");
+	        	super.bindGroupView(view, context, cursor, isExpanded);
+	        	TextView groupname = (TextView)view.findViewById(R.id.groupname);
+	        	groupname.setText("MUCs");
+	        	Log.d(TAG, "bound groupview with name MUCs... i think");
 	        } else {
-			super.bindGroupView(view, context, cursor, isExpanded);
-			if (cursor.getString(cursor.getColumnIndexOrThrow(RosterConstants.GROUP)).length() == 0) {
-				TextView groupname = (TextView)view.findViewById(R.id.groupname);
-				groupname.setText(R.string.default_group);
-			}
+	        	super.bindGroupView(view, context, cursor, isExpanded);
+	        	if (cursor.getString(cursor.getColumnIndexOrThrow(RosterConstants.GROUP)).length() == 0) {
+	        		TextView groupname = (TextView)view.findViewById(R.id.groupname);
+	        		groupname.setText(R.string.default_group);
+	        	}
 	        }
 		}
 
 		@Override
 		protected void bindChildView(View view, Context context, Cursor cursor, boolean isLastChild) {
 			super.bindChildView(view, context, cursor, isLastChild);
+			Log.d(TAG, "bindChildView, after super.bindChildView");
 			TextView statusmsg = (TextView)view.findViewById(R.id.roster_statusmsg);
 			boolean hasStatus = statusmsg.getText() != null && statusmsg.getText().length() > 0;
 			statusmsg.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
