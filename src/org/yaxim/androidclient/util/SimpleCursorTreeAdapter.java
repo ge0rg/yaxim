@@ -16,9 +16,12 @@
 
 package org.yaxim.androidclient.util;
 
+import java.util.Arrays;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 
@@ -67,6 +70,8 @@ public abstract class SimpleCursorTreeAdapter extends ResourceCursorTreeAdapter 
      */
     private ViewBinder mViewBinder;
 
+	private static final String TAG = "yaxim.SimpleCursorTreeAdapter";
+    
     /**
      * Constructor.
      * 

@@ -1,6 +1,7 @@
 package org.yaxim.androidclient;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -1208,7 +1209,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		protected void bindGroupView(View view, Context context, Cursor cursor, boolean isExpanded) {
 	        if (cursor.getPosition() == -1) {
 	            // bind our fake row, unfortunately this must be done manually
-	        	super.bindGroupView(view, context, cursor, isExpanded);
+	        	//super.bindGroupView(view, context, cursor, isExpanded);
 	        	TextView groupname = (TextView)view.findViewById(R.id.groupname);
 	        	groupname.setText("MUCs");
 	        	Log.d(TAG, "bound groupview with name MUCs... i think");
@@ -1223,8 +1224,17 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		@Override
 		protected void bindChildView(View view, Context context, Cursor cursor, boolean isLastChild) {
+			Log.d(TAG, "bindChildView, before super.bindChildView, cursorcount "+cursor.getCount()+" cursor colcount "+cursor.getColumnCount()+" cursor columns "+Arrays.asList(cursor.getColumnNames()).toString());
+			try {
+				cursor.getColumnIndexOrThrow("status_to") ;
+			} catch (Exception e) {
+				Log.d(TAG, "got exception "+e+" while trying to access status_to column, must be mucs cursor!");
+				return;
+			}
+			
 			super.bindChildView(view, context, cursor, isLastChild);
 			Log.d(TAG, "bindChildView, after super.bindChildView");
+			
 			TextView statusmsg = (TextView)view.findViewById(R.id.roster_statusmsg);
 			boolean hasStatus = statusmsg.getText() != null && statusmsg.getText().length() > 0;
 			statusmsg.setVisibility(hasStatus ? View.VISIBLE : View.GONE);
