@@ -54,6 +54,7 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 import org.yaxim.androidclient.util.crypto.PGPProvider;
 import org.yaxim.androidclient.util.crypto.PGPSignature;
+import org.yaxim.androidclient.util.crypto.StatusSigned;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -805,7 +806,13 @@ public class SmackableImp implements Smackable {
 
 		Presence presence = mRoster.getPresence(entry.getUser());
 		values.put(RosterConstants.STATUS_MODE, getStatusInt(presence));
-		values.put(RosterConstants.STATUS_PGPSIGNATURE, getPGPSignature(presence));
+		
+		String sig = getPGPSignature(presence);
+		values.put(RosterConstants.STATUS_X_SIGNATURE, sig);
+		
+		StatusSigned ssig = (sig.length()>0) ? StatusSigned.unknown : StatusSigned.not;
+		values.put(RosterConstants.PGPSIGNATURE, ssig.name());
+		
 		values.put(RosterConstants.STATUS_MESSAGE, presence.getStatus());
 		values.put(RosterConstants.GROUP, getGroup(entry.getGroups()));
 
@@ -863,15 +870,7 @@ public class SmackableImp implements Smackable {
 
 	private String getPGPSignature(Presence presence) {
 		PacketExtension xs = presence.getExtension("x", PGPSignature.NAMESPACE);
-		if (xs instanceof PGPSignature) {
-			String s = presence.getStatus();
-			if (s==null) s = "";
-			return "-----BEGIN PGP SIGNED MESSAGE-----\n" + "Hash: SHA256\n\n"
-					+ s + "\n-----BEGIN PGP SIGNATURE-----\n"
-					+ "Version: APG v1.0.8\n\n" + ((PGPSignature) xs).signature
-					+ "\n-----END PGP SIGNATURE-----";
-		}
-		return null;
+		return ((PGPSignature)xs).signature;
 	}
 
 	private int getStatusInt(final Presence presence) {

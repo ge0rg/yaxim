@@ -22,6 +22,7 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.SimpleCursorTreeAdapter;
 import org.yaxim.androidclient.util.StatusMode;
 import org.yaxim.androidclient.util.crypto.Apg;
+import org.yaxim.androidclient.util.crypto.PGPSignature;
 import org.yaxim.androidclient.util.crypto.PgpData;
 import org.yaxim.androidclient.util.crypto.StatusSigned;
 
@@ -970,7 +971,7 @@ public class MainWindow extends SherlockExpandableListActivity
 		RosterConstants.JID,
 		RosterConstants.ALIAS,
 		RosterConstants.STATUS_MODE,
-		RosterConstants.STATUS_PGPSIGNATURE,
+		RosterConstants.PGPSIGNATURE,
 		RosterConstants.STATUS_MESSAGE
 	};
 
@@ -1017,7 +1018,7 @@ public class MainWindow extends SherlockExpandableListActivity
 					new String[] {
 						RosterConstants.ALIAS,
 						RosterConstants.STATUS_MESSAGE,
-						RosterConstants.STATUS_PGPSIGNATURE,
+						RosterConstants.PGPSIGNATURE,
 						RosterConstants.STATUS_MODE
 					},
 					new int[] {
@@ -1063,6 +1064,13 @@ public class MainWindow extends SherlockExpandableListActivity
 
 		@Override
 		protected void bindChildView(View view, Context context, Cursor cursor, boolean isLastChild) {
+//			return "-----BEGIN PGP SIGNED MESSAGE-----\n" + "Hash: SHA256\n\n"
+//					+ s + "\n-----BEGIN PGP SIGNATURE-----\n"
+//					+ "Version: APG v1.0.8\n\n" + ((PGPSignature) xs).signature
+//					+ "\n-----END PGP SIGNATURE-----";			
+//			if (apgAvailable) {
+//				mPgpData = new PgpData();
+//				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
 			super.bindChildView(view, context, cursor, isLastChild);
 			TextView statusmsg = (TextView)view.findViewById(R.id.roster_statusmsg);
 			boolean hasStatus = statusmsg.getText() != null && statusmsg.getText().length() > 0;
@@ -1105,28 +1113,8 @@ public class MainWindow extends SherlockExpandableListActivity
 			else v.setVisibility(View.GONE);
 		 }
 
-		private int getIconForStatusSigned(String statusString) {
-			if (apgAvailable) {
-				mPgpData = new PgpData();
-				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
-//				Apg.getInstance().decrypt(MainWindow.this, "-----BEGIN PGP SIGNED MESSAGE-----\n" + 
-//						"Hash: SHA256\n" + 
-//						"\n" + 
-//						"T\n" + 
-//						"- --\n" + 
-//						"Diese Nachricht wurde von meinem Android-Mobiltelefon mit K-9 Mail gesendet.\n" + 
-//						"-----BEGIN PGP SIGNATURE-----\n" + 
-//						"Version: APG v1.0.8\n" + 
-//						"\n" + 
-//						"iLsEAQEIACUFAlFKFn0eHEhlbm5pbmcgTWV5ZXIgPGhtZXllckBnbXguZXU+AAoJ\n" + 
-//						"EKjzVE6wGreHIVsD/A9Br3IQYMcOryoKn+Vt9ga/iFiZP6sCz/RHR+BW5zMhguvw\n" + 
-//						"4VfL3DaH3H9PswUN5XI37LW7l/TZd/gM7uMSdeItAsGC2wNk9oQa0Qy16tT0JG/B\n" + 
-//						"noDSaLmIegYjKh4tFjyA77pDbSGyQMh3RqJ+QsG4lOrn+hJdZX9JVCBh+kvL\n" + 
-//						"=or/Y\n" + 
-//						"-----END PGP SIGNATURE-----", mPgpData);
-//				Toast.makeText( getApplicationContext(), "decrypt: " + statusString, Toast.LENGTH_SHORT).show();
-				return StatusSigned.signed_not.drawableId;
-			} return StatusSigned.signed_not.drawableId;
+		private int getIconForStatusSigned(String pgpSig) {
+			return StatusSigned.valueOf(pgpSig).drawableId;
 		}
 		
 		private int getIconForPresenceMode(int presenceMode) {

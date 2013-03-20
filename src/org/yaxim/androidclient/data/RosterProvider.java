@@ -248,7 +248,7 @@ public class RosterProvider extends ContentProvider {
 	private static class RosterDatabaseHelper extends SQLiteOpenHelper {
 
 		private static final String DATABASE_NAME = "roster.db";
-		private static final int DATABASE_VERSION = 7;
+		private static final int DATABASE_VERSION = 8;
 
 		public RosterDatabaseHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -264,7 +264,8 @@ public class RosterProvider extends ContentProvider {
 					+ RosterConstants.JID + " TEXT UNIQUE ON CONFLICT REPLACE, "
 					+ RosterConstants.ALIAS	+ " TEXT, "
 					+ RosterConstants.STATUS_MODE + " INTEGER, "
-					+ RosterConstants.STATUS_PGPSIGNATURE + " TEXT, "
+					+ RosterConstants.STATUS_X_SIGNATURE + " TEXT, "
+					+ RosterConstants.PGPSIGNATURE + " TEXT, "
 					+ RosterConstants.STATUS_MESSAGE + " TEXT, "
 					+ RosterConstants.GROUP + " TEXT);");
 			db.execSQL("CREATE INDEX idx_roster_group ON " + TABLE_ROSTER
@@ -272,7 +273,9 @@ public class RosterProvider extends ContentProvider {
 			db.execSQL("CREATE INDEX idx_roster_alias ON " + TABLE_ROSTER
 				        + " (" + RosterConstants.ALIAS + ")");
 			db.execSQL("CREATE INDEX idx_roster_status ON " + TABLE_ROSTER
-				        + " (" + RosterConstants.STATUS_MODE + ")");
+			        + " (" + RosterConstants.STATUS_MODE + ")");
+			db.execSQL("CREATE INDEX idx_roster_sig ON " + TABLE_ROSTER
+			        + " (" + RosterConstants.PGPSIGNATURE + ")");
 		}
 
 		@Override
@@ -298,7 +301,8 @@ public class RosterProvider extends ContentProvider {
 		public static final String JID = "jid";
 		public static final String ALIAS = "alias";
 		public static final String STATUS_MODE = "status_mode";
-		public static final String STATUS_PGPSIGNATURE = "status_pgpsignature";
+		public static final String STATUS_X_SIGNATURE = "status_x_signature";
+		public static final String PGPSIGNATURE = "pgpsignature";
 		public static final String STATUS_MESSAGE = "status_message";
 		public static final String GROUP = "roster_group";
 
@@ -309,7 +313,8 @@ public class RosterProvider extends ContentProvider {
 			tmpList.add(JID);
 			tmpList.add(ALIAS);
 			tmpList.add(STATUS_MODE);
-			tmpList.add(STATUS_PGPSIGNATURE);
+			tmpList.add(STATUS_X_SIGNATURE);
+			tmpList.add(PGPSIGNATURE);
 			tmpList.add(STATUS_MESSAGE);
 			tmpList.add(GROUP);
 			return tmpList;

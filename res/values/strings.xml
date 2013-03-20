@@ -256,6 +256,7 @@
 	<string name="status_xa">Not available</string>
 	<string name="status_offline">Offline</string>
 
+	<string name="signed_unknown">unknown</string>
 	<string name="signed_not">no encryption</string>
 	<string name="signed_nokey">encryption key missing</string>
 	<string name="signed_valid">encryption available, untrusted</string>
