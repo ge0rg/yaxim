@@ -1104,11 +1104,13 @@ public class MainWindow extends SherlockExpandableListActivity
 		 }
 
 		private int getIconForStatusSigned(String statusString) {
-			mPgpData = new PgpData();
-			mPgpData.setEncryptedData(statusString);
-			Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
-//			Toast.makeText( getApplicationContext(), "decrypt: " + statusString, Toast.LENGTH_SHORT).show();
-			return StatusSigned.signed_not.drawableId;
+			if (Apg.getInstance().isAvailable(getApplicationContext())) {
+				mPgpData = new PgpData();
+				mPgpData.setEncryptedData(statusString);
+				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
+	//			Toast.makeText( getApplicationContext(), "decrypt: " + statusString, Toast.LENGTH_SHORT).show();
+				return StatusSigned.signed_not.drawableId;
+			} return StatusSigned.signed_not.drawableId;
 		}
 		
 		private int getIconForPresenceMode(int presenceMode) {
