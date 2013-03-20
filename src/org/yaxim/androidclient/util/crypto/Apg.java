@@ -14,20 +14,28 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.net.Uri;
-import android.support.v4.app.Fragment;
 import android.widget.Toast;
 
 
 /**
  * APG integration.
  */
-public class Apg extends CryptoProvider {
-    public static final String NAME = "apg";
-
+public class Apg  {
+    public interface CryptoDecryptCallback {
+        void onDecryptDone(PgpData pgpData);
+    }
+	static private Apg m_singleton;
+	public static Apg getInstance() {
+		if (m_singleton == null)
+			m_singleton = new Apg();
+		return m_singleton;
+	}
+	private Apg() {}
     private static final String mApgPackageName = "org.thialfihar.android.apg";
     private static final int mMinRequiredVersion = 16;
 
@@ -42,7 +50,7 @@ public class Apg extends CryptoProvider {
     public static final Uri CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS =
         Uri.parse("content://" + AUTHORITY + "/key_rings/public/emails/");
 
-    public static class Intent {
+    public static class IntentNames {
         public static final String DECRYPT = "org.thialfihar.android.apg.intent.DECRYPT";
         public static final String ENCRYPT = "org.thialfihar.android.apg.intent.ENCRYPT";
         public static final String DECRYPT_FILE = "org.thialfihar.android.apg.intent.DECRYPT_FILE";
@@ -86,17 +94,12 @@ public class Apg extends CryptoProvider {
         Pattern.compile(".*?(-----BEGIN PGP SIGNED MESSAGE-----.*?-----BEGIN PGP SIGNATURE-----.*?-----END PGP SIGNATURE-----).*",
                         Pattern.DOTALL);
 
-    public static Apg createInstance() {
-        return new Apg();
-    }
-
     /**
      * Check whether APG is installed and at a high enough version.
      *
      * @param context
      * @return whether a suitable version of APG was found
      */
-    @Override
     public boolean isAvailable(Context context) {
         try {
             PackageInfo pi = context.getPackageManager().getPackageInfo(mApgPackageName, 0);
@@ -120,9 +123,8 @@ public class Apg extends CryptoProvider {
      * @param pgpData
      * @return success or failure
      */
-    @Override
     public boolean selectSecretKey(Activity activity, PgpData pgpData) {
-        android.content.Intent intent = new android.content.Intent(Intent.SELECT_SECRET_KEY);
+        Intent intent = new Intent(IntentNames.SELECT_SECRET_KEY);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         try {
             activity.startActivityForResult(intent, Apg.SELECT_SECRET_KEY);
@@ -143,9 +145,8 @@ public class Apg extends CryptoProvider {
      * @param pgpData
      * @return success or failure
      */
-    @Override
     public boolean selectEncryptionKeys(Activity activity, String emails, PgpData pgpData) {
-        android.content.Intent intent = new android.content.Intent(Apg.Intent.SELECT_PUBLIC_KEYS);
+        Intent intent = new Intent(IntentNames.SELECT_PUBLIC_KEYS);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         long[] initialKeyIds = null;
         if (!pgpData.hasEncryptionKeys()) {
@@ -203,7 +204,6 @@ public class Apg extends CryptoProvider {
      * @param email The email in question.
      * @return key ids
      */
-    @Override
     public long[] getSecretKeyIdsFromEmail(Context context, String email) {
         long ids[] = null;
         try {
@@ -238,7 +238,6 @@ public class Apg extends CryptoProvider {
      * @param email The email in question.
      * @return key ids
      */
-    @Override
     public long[] getPublicKeyIdsFromEmail(Context context, String email) {
         long ids[] = null;
         try {
@@ -271,7 +270,6 @@ public class Apg extends CryptoProvider {
      * @param email The email in question.
      * @return true if there is a secret key for this email.
      */
-    @Override
     public boolean hasSecretKeyForEmail(Context context, String email) {
         try {
             Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS, email);
@@ -299,7 +297,6 @@ public class Apg extends CryptoProvider {
      * @param email The email in question.
      * @return true if there is a public key for this email.
      */
-    @Override
     public boolean hasPublicKeyForEmail(Context context, String email) {
         try {
             Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
@@ -327,7 +324,6 @@ public class Apg extends CryptoProvider {
      * @param keyId
      * @return user id
      */
-    @Override
     public String getUserId(Context context, long keyId) {
         String userId = null;
         try {
@@ -365,9 +361,8 @@ public class Apg extends CryptoProvider {
      * @param data
      * @return handled or not
      */
-    @Override
     public boolean onActivityResult(Activity activity, int requestCode, int resultCode,
-                                    android.content.Intent data, PgpData pgpData) {
+                                    Intent data, PgpData pgpData) {
         switch (requestCode) {
         case Apg.SELECT_SECRET_KEY:
             if (resultCode != Activity.RESULT_OK || data == null) {
@@ -411,9 +406,8 @@ public class Apg extends CryptoProvider {
         return true;
     }
 
-    @Override
     public boolean onDecryptActivityResult(CryptoDecryptCallback callback, int requestCode,
-            int resultCode, android.content.Intent data, PgpData pgpData) {
+            int resultCode, Intent data, PgpData pgpData) {
 
         switch (requestCode) {
             case Apg.DECRYPT_MESSAGE: {
@@ -452,9 +446,8 @@ public class Apg extends CryptoProvider {
      * @param pgpData
      * @return success or failure
      */
-    @Override
     public boolean encrypt(Activity activity, String data, PgpData pgpData) {
-        android.content.Intent intent = new android.content.Intent(Intent.ENCRYPT_AND_RETURN);
+        Intent intent = new Intent(IntentNames.ENCRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
         intent.putExtra(Apg.EXTRA_TEXT, data);
@@ -479,9 +472,8 @@ public class Apg extends CryptoProvider {
      * @param pgpData
      * @return success or failure
      */
-    @Override
-    public boolean decrypt(Fragment fragment, String data, PgpData pgpData) {
-        android.content.Intent intent = new android.content.Intent(Apg.Intent.DECRYPT_AND_RETURN);
+    public boolean decrypt(Activity activity, String data, PgpData pgpData) {
+        Intent intent = new Intent(Apg.IntentNames.DECRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
         if (data == null) {
@@ -489,34 +481,22 @@ public class Apg extends CryptoProvider {
         }
         try {
             intent.putExtra(EXTRA_TEXT, data);
-            fragment.startActivityForResult(intent, Apg.DECRYPT_MESSAGE);
+            activity.startActivityForResult(intent, Apg.DECRYPT_MESSAGE);
             return true;
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(fragment.getActivity(), R.string.error_activity_not_found, Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, R.string.error_activity_not_found, Toast.LENGTH_SHORT).show();
             return false;
         }
     }
 
-    @Override
     public boolean isEncrypted(String message) {
         Matcher matcher = PGP_MESSAGE.matcher(message);
         return matcher.matches();
     }
 
-    @Override
     public boolean isSigned(String message) {
         Matcher matcher = PGP_SIGNED_MESSAGE.matcher(message);
         return matcher.matches();
-    }
-
-    /**
-     * Get the name of the provider.
-     *
-     * @return provider name
-     */
-    @Override
-    public String getName() {
-        return NAME;
     }
 
     /**
@@ -524,7 +504,6 @@ public class Apg extends CryptoProvider {
      *
      * @return success or failure
      */
-    @Override
     public boolean test(Context context) {
         if (!isAvailable(context)) {
             return false;
@@ -542,7 +521,7 @@ public class Apg extends CryptoProvider {
                 c.close();
             }
         } catch (SecurityException e) {
-            // if there was a problem, then let the user know, this will not stop K9/APG from
+            // if there was a problem, then let the user know, this will not stop Yaxim/APG from
             // working, but some features won't be available, so we can still return "true"
             Toast.makeText(context,
                            context.getResources().getString(R.string.insufficient_apg_permissions),

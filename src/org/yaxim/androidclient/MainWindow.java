@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.yaxim.androidclient.IXMPPRosterCallback.Stub;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider;
@@ -14,19 +15,25 @@ import org.yaxim.androidclient.dialogs.ChangeStatusDialog;
 import org.yaxim.androidclient.dialogs.FirstStartDialog;
 import org.yaxim.androidclient.dialogs.GroupNameView;
 import org.yaxim.androidclient.preferences.MainPrefs;
+import org.yaxim.androidclient.service.IXMPPRosterService;
 import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
+import org.yaxim.androidclient.util.SimpleCursorTreeAdapter;
 import org.yaxim.androidclient.util.StatusMode;
+import org.yaxim.androidclient.util.crypto.Apg;
+import org.yaxim.androidclient.util.crypto.PGPSignature;
+import org.yaxim.androidclient.util.crypto.PgpData;
+import org.yaxim.androidclient.util.crypto.StatusSigned;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.content.DialogInterface;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
@@ -43,23 +50,15 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
-import org.yaxim.androidclient.util.SimpleCursorTreeAdapter;
-import org.yaxim.androidclient.util.crypto.StatusSigned;
-
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
-import org.yaxim.androidclient.IXMPPRosterCallback;
-import org.yaxim.androidclient.R;
-import org.yaxim.androidclient.IXMPPRosterCallback.Stub;
-import org.yaxim.androidclient.service.IXMPPRosterService;
-
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockExpandableListActivity;
@@ -67,8 +66,8 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.Window;
 import com.nullwire.trace.ExceptionHandler;
 
-public class MainWindow extends SherlockExpandableListActivity {
-
+public class MainWindow extends SherlockExpandableListActivity 
+	implements Apg.CryptoDecryptCallback {
 	private static final String TAG = "yaxim.MainWindow";
 
 	private YaximConfiguration mConfig;
@@ -92,6 +91,24 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 	private ActionBar actionBar;
 	private String mTheme;
+	
+	private PgpData mPgpData;
+	
+	private boolean apgAvailable;  
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	    if (Apg.getInstance().onDecryptActivityResult(this, requestCode, resultCode, data, mPgpData)) {
+	            return;
+	    } else {
+			Toast.makeText( getApplicationContext(), "back from unhandled Intent: " + data.getDataString(), Toast.LENGTH_SHORT).show();
+	    }
+	}
+	
+	@Override
+	public void onDecryptDone(PgpData pgpData) {
+		Toast.makeText( getApplicationContext(), "Decrypt Done, signed by: " + pgpData.getSignatureUserId(), Toast.LENGTH_SHORT).show();
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -121,6 +138,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		registerListAdapter();
 
 		actionBar.setSubtitle(mStatusMessage);
+		apgAvailable = Apg.getInstance().isAvailable(getApplicationContext());
 	}
 
 	@Override
@@ -953,7 +971,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		RosterConstants.JID,
 		RosterConstants.ALIAS,
 		RosterConstants.STATUS_MODE,
-		RosterConstants.STATUS_SIGNED,
+		RosterConstants.PGPSIGNATURE,
 		RosterConstants.STATUS_MESSAGE
 	};
 
@@ -1000,7 +1018,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 					new String[] {
 						RosterConstants.ALIAS,
 						RosterConstants.STATUS_MESSAGE,
-						RosterConstants.STATUS_SIGNED,
+						RosterConstants.PGPSIGNATURE,
 						RosterConstants.STATUS_MODE
 					},
 					new int[] {
@@ -1046,6 +1064,13 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		@Override
 		protected void bindChildView(View view, Context context, Cursor cursor, boolean isLastChild) {
+//			return "-----BEGIN PGP SIGNED MESSAGE-----\n" + "Hash: SHA256\n\n"
+//					+ s + "\n-----BEGIN PGP SIGNATURE-----\n"
+//					+ "Version: APG v1.0.8\n\n" + ((PGPSignature) xs).signature
+//					+ "\n-----END PGP SIGNATURE-----";			
+//			if (apgAvailable) {
+//				mPgpData = new PgpData();
+//				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
 			super.bindChildView(view, context, cursor, isLastChild);
 			TextView statusmsg = (TextView)view.findViewById(R.id.roster_statusmsg);
 			boolean hasStatus = statusmsg.getText() != null && statusmsg.getText().length() > 0;
@@ -1068,13 +1093,19 @@ public class MainWindow extends SherlockExpandableListActivity {
 		}
 
 		 protected void setViewImage(ImageView v, String value) {
-			int intValue = Integer.parseInt(value);
 			Object tag = v.getTag();
 			int drawableId;
 			if ("signed_icon".equals(tag))
-				drawableId = getIconForStatusSigned(intValue);
-			else 
+				drawableId = getIconForStatusSigned(value);
+			else {
+				int intValue = 0;
+				try {
+					intValue = Integer.parseInt(value);
+				} catch(NumberFormatException e) {
+					Log.d(TAG, "RosterExpListAdapter.setViewImage: " + e.getMessage());
+				}
 				drawableId = getIconForPresenceMode(intValue);
+			}
 			if (drawableId!=0) {
 				v.setImageResource(drawableId);
 				v.setVisibility(View.VISIBLE);
@@ -1082,8 +1113,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 			else v.setVisibility(View.GONE);
 		 }
 
-		private int getIconForStatusSigned(int status) {
-			return StatusSigned.values()[status].drawableId;
+		private int getIconForStatusSigned(String pgpSig) {
+			return StatusSigned.valueOf(pgpSig).drawableId;
 		}
 		
 		private int getIconForPresenceMode(int presenceMode) {
