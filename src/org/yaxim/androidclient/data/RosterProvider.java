@@ -248,7 +248,7 @@ public class RosterProvider extends ContentProvider {
 	private static class RosterDatabaseHelper extends SQLiteOpenHelper {
 
 		private static final String DATABASE_NAME = "roster.db";
-		private static final int DATABASE_VERSION = 4;
+		private static final int DATABASE_VERSION = 7;
 
 		public RosterDatabaseHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -264,7 +264,7 @@ public class RosterProvider extends ContentProvider {
 					+ RosterConstants.JID + " TEXT UNIQUE ON CONFLICT REPLACE, "
 					+ RosterConstants.ALIAS	+ " TEXT, "
 					+ RosterConstants.STATUS_MODE + " INTEGER, "
-					+ RosterConstants.STATUS_SIGNED + " INTEGER, "
+					+ RosterConstants.STATUS_PGPSIGNATURE + " TEXT, "
 					+ RosterConstants.STATUS_MESSAGE + " TEXT, "
 					+ RosterConstants.GROUP + " TEXT);");
 			db.execSQL("CREATE INDEX idx_roster_group ON " + TABLE_ROSTER
@@ -298,18 +298,18 @@ public class RosterProvider extends ContentProvider {
 		public static final String JID = "jid";
 		public static final String ALIAS = "alias";
 		public static final String STATUS_MODE = "status_mode";
-		public static final String STATUS_SIGNED = "status_signed";
+		public static final String STATUS_PGPSIGNATURE = "status_pgpsignature";
 		public static final String STATUS_MESSAGE = "status_message";
 		public static final String GROUP = "roster_group";
 
 		public static final String DEFAULT_SORT_ORDER = STATUS_MODE + " DESC, " + ALIAS + " COLLATE NOCASE";
 
 		public static ArrayList<String> getRequiredColumns() {
-			ArrayList<String> tmpList = new ArrayList<String>();
+			ArrayList<String> tmpList = new ArrayList<String>(6);
 			tmpList.add(JID);
 			tmpList.add(ALIAS);
 			tmpList.add(STATUS_MODE);
-			tmpList.add(STATUS_SIGNED);
+			tmpList.add(STATUS_PGPSIGNATURE);
 			tmpList.add(STATUS_MESSAGE);
 			tmpList.add(GROUP);
 			return tmpList;

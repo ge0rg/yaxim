@@ -23,6 +23,7 @@ import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.IQ.Type;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Presence.Mode;
 import org.jivesoftware.smack.provider.ProviderManager;
@@ -51,7 +52,8 @@ import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
-import org.yaxim.androidclient.util.crypto.StatusSigned;
+import org.yaxim.androidclient.util.crypto.PGPProvider;
+import org.yaxim.androidclient.util.crypto.PGPSignature;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -99,6 +101,9 @@ public class SmackableImp implements Smackable {
 		// add XMPP Ping (XEP-0199)
 		pm.addIQProvider("ping","urn:xmpp:ping", new PingProvider());
 
+		// add PGP (XEP-0027)
+		pm.addExtensionProvider("x", PGPSignature.NAMESPACE, new PGPProvider());
+
 		ServiceDiscoveryManager.setIdentityName(YaximApplication.XMPP_IDENTITY_NAME);
 		ServiceDiscoveryManager.setIdentityType(YaximApplication.XMPP_IDENTITY_TYPE);
 	}
@@ -129,8 +134,7 @@ public class SmackableImp implements Smackable {
 
 	private PongTimeoutAlarmReceiver mPongTimeoutAlarmReceiver = new PongTimeoutAlarmReceiver();
 	private BroadcastReceiver mPingAlarmReceiver = new PingAlarmReceiver();
-
-
+	
 	public SmackableImp(YaximConfiguration config,
 			ContentResolver contentResolver,
 			Service service) {
@@ -801,7 +805,7 @@ public class SmackableImp implements Smackable {
 
 		Presence presence = mRoster.getPresence(entry.getUser());
 		values.put(RosterConstants.STATUS_MODE, getStatusInt(presence));
-		values.put(RosterConstants.STATUS_SIGNED, getSignedInt(presence));
+		values.put(RosterConstants.STATUS_PGPSIGNATURE, getPGPSignature(presence));
 		values.put(RosterConstants.STATUS_MESSAGE, presence.getStatus());
 		values.put(RosterConstants.GROUP, getGroup(entry.getGroups()));
 
@@ -857,18 +861,18 @@ public class SmackableImp implements Smackable {
 		return StatusMode.offline;
 	}
 
-	private StatusSigned getSigned(Presence presence) {
-		if (presence.getExtension("x", "jabber:x:signed") != null)
-			return StatusSigned.signed_trusted;
-		else return StatusSigned.signed_not;
+	private String getPGPSignature(Presence presence) {
+		PacketExtension xs = presence.getExtension("x", PGPSignature.NAMESPACE);
+		if (xs instanceof PGPSignature) {
+			String s = presence.getStatus();
+			if (s==null) s = "";
+			return s + "|" + ((PGPSignature)xs).signature;
+		}
+		return null;
 	}
 
 	private int getStatusInt(final Presence presence) {
 		return getStatus(presence).ordinal();
-	}
-
-	private int getSignedInt(final Presence presence) {
-		return getSigned(presence).ordinal();
 	}
 
 	private void debugLog(String data) {
