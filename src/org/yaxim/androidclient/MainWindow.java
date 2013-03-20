@@ -67,7 +67,6 @@ import com.nullwire.trace.ExceptionHandler;
 
 public class MainWindow extends SherlockExpandableListActivity 
 	implements Apg.CryptoDecryptCallback {
-
 	private static final String TAG = "yaxim.MainWindow";
 
 	private YaximConfiguration mConfig;
@@ -93,6 +92,13 @@ public class MainWindow extends SherlockExpandableListActivity
 	private String mTheme;
 	
 	private PgpData mPgpData;
+	
+	public final boolean apgAvailable;  
+
+	public MainWindow() {
+		super();
+		apgAvailable = Apg.getInstance().isAvailable(getApplicationContext());
+	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1104,7 +1110,7 @@ public class MainWindow extends SherlockExpandableListActivity
 		 }
 
 		private int getIconForStatusSigned(String statusString) {
-			if (Apg.getInstance().isAvailable(getApplicationContext())) {
+			if (apgAvailable) {
 				mPgpData = new PgpData();
 				mPgpData.setEncryptedData(statusString);
 				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
