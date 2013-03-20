@@ -870,6 +870,7 @@ public class SmackableImp implements Smackable {
 
 	private String getPGPSignature(Presence presence) {
 		PacketExtension xs = presence.getExtension("x", PGPSignature.NAMESPACE);
+		if (xs == null) return "";
 		return ((PGPSignature)xs).signature;
 	}
 
