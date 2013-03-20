@@ -93,12 +93,7 @@ public class MainWindow extends SherlockExpandableListActivity
 	
 	private PgpData mPgpData;
 	
-	public final boolean apgAvailable;  
-
-	public MainWindow() {
-		super();
-		apgAvailable = Apg.getInstance().isAvailable(getApplicationContext());
-	}
+	private boolean apgAvailable;  
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -142,6 +137,7 @@ public class MainWindow extends SherlockExpandableListActivity
 		registerListAdapter();
 
 		actionBar.setSubtitle(mStatusMessage);
+		apgAvailable = Apg.getInstance().isAvailable(getApplicationContext());
 	}
 
 	@Override
