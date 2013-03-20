@@ -866,7 +866,10 @@ public class SmackableImp implements Smackable {
 		if (xs instanceof PGPSignature) {
 			String s = presence.getStatus();
 			if (s==null) s = "";
-			return s + "|" + ((PGPSignature)xs).signature;
+			return "-----BEGIN PGP SIGNED MESSAGE-----\n" + "Hash: SHA256\n\n"
+					+ s + "\n-----BEGIN PGP SIGNATURE-----\n"
+					+ "Version: APG v1.0.8\n\n" + ((PGPSignature) xs).signature
+					+ "\n-----END PGP SIGNATURE-----";
 		}
 		return null;
 	}

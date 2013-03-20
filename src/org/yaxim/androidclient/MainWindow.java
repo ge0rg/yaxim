@@ -1108,9 +1108,23 @@ public class MainWindow extends SherlockExpandableListActivity
 		private int getIconForStatusSigned(String statusString) {
 			if (apgAvailable) {
 				mPgpData = new PgpData();
-				mPgpData.setEncryptedData(statusString);
 				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
-	//			Toast.makeText( getApplicationContext(), "decrypt: " + statusString, Toast.LENGTH_SHORT).show();
+//				Apg.getInstance().decrypt(MainWindow.this, "-----BEGIN PGP SIGNED MESSAGE-----\n" + 
+//						"Hash: SHA256\n" + 
+//						"\n" + 
+//						"T\n" + 
+//						"- --\n" + 
+//						"Diese Nachricht wurde von meinem Android-Mobiltelefon mit K-9 Mail gesendet.\n" + 
+//						"-----BEGIN PGP SIGNATURE-----\n" + 
+//						"Version: APG v1.0.8\n" + 
+//						"\n" + 
+//						"iLsEAQEIACUFAlFKFn0eHEhlbm5pbmcgTWV5ZXIgPGhtZXllckBnbXguZXU+AAoJ\n" + 
+//						"EKjzVE6wGreHIVsD/A9Br3IQYMcOryoKn+Vt9ga/iFiZP6sCz/RHR+BW5zMhguvw\n" + 
+//						"4VfL3DaH3H9PswUN5XI37LW7l/TZd/gM7uMSdeItAsGC2wNk9oQa0Qy16tT0JG/B\n" + 
+//						"noDSaLmIegYjKh4tFjyA77pDbSGyQMh3RqJ+QsG4lOrn+hJdZX9JVCBh+kvL\n" + 
+//						"=or/Y\n" + 
+//						"-----END PGP SIGNATURE-----", mPgpData);
+//				Toast.makeText( getApplicationContext(), "decrypt: " + statusString, Toast.LENGTH_SHORT).show();
 				return StatusSigned.signed_not.drawableId;
 			} return StatusSigned.signed_not.drawableId;
 		}
