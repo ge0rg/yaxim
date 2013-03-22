@@ -22,8 +22,8 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.SimpleCursorTreeAdapter;
 import org.yaxim.androidclient.util.StatusMode;
 import org.yaxim.androidclient.util.crypto.Apg;
-import org.yaxim.androidclient.util.crypto.PGPSignature;
 import org.yaxim.androidclient.util.crypto.PgpData;
+import org.yaxim.androidclient.util.crypto.SignatureChecker;
 import org.yaxim.androidclient.util.crypto.StatusSigned;
 
 import android.annotation.TargetApi;
@@ -92,13 +92,11 @@ public class MainWindow extends SherlockExpandableListActivity
 	private ActionBar actionBar;
 	private String mTheme;
 	
-	private PgpData mPgpData;
+	private SignatureChecker sigChecker;
 	
-	private boolean apgAvailable;  
-
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-	    if (Apg.getInstance().onDecryptActivityResult(this, requestCode, resultCode, data, mPgpData)) {
+	    if (Apg.getInstance().onDecryptActivityResult(this, requestCode, resultCode, data)) {
 	            return;
 	    } else {
 			Toast.makeText( getApplicationContext(), "back from unhandled Intent: " + data.getDataString(), Toast.LENGTH_SHORT).show();
@@ -138,7 +136,8 @@ public class MainWindow extends SherlockExpandableListActivity
 		registerListAdapter();
 
 		actionBar.setSubtitle(mStatusMessage);
-		apgAvailable = Apg.getInstance().isAvailable(getApplicationContext());
+		sigChecker = new SignatureChecker(this.getApplicationContext());
+		getLoaderManager().initLoader(0, null, sigChecker);
 	}
 
 	@Override
@@ -1064,13 +1063,6 @@ public class MainWindow extends SherlockExpandableListActivity
 
 		@Override
 		protected void bindChildView(View view, Context context, Cursor cursor, boolean isLastChild) {
-//			return "-----BEGIN PGP SIGNED MESSAGE-----\n" + "Hash: SHA256\n\n"
-//					+ s + "\n-----BEGIN PGP SIGNATURE-----\n"
-//					+ "Version: APG v1.0.8\n\n" + ((PGPSignature) xs).signature
-//					+ "\n-----END PGP SIGNATURE-----";			
-//			if (apgAvailable) {
-//				mPgpData = new PgpData();
-//				Apg.getInstance().decrypt(MainWindow.this, statusString, mPgpData);
 			super.bindChildView(view, context, cursor, isLastChild);
 			TextView statusmsg = (TextView)view.findViewById(R.id.roster_statusmsg);
 			boolean hasStatus = statusmsg.getText() != null && statusmsg.getText().length() > 0;

@@ -362,7 +362,8 @@ public class Apg  {
      * @return handled or not
      */
     public boolean onActivityResult(Activity activity, int requestCode, int resultCode,
-                                    Intent data, PgpData pgpData) {
+                                    Intent data) {
+    	PgpData pgpData = new PgpData();
         switch (requestCode) {
         case Apg.SELECT_SECRET_KEY:
             if (resultCode != Activity.RESULT_OK || data == null) {
@@ -407,8 +408,8 @@ public class Apg  {
     }
 
     public boolean onDecryptActivityResult(CryptoDecryptCallback callback, int requestCode,
-            int resultCode, Intent data, PgpData pgpData) {
-
+            int resultCode, Intent data) {
+    	PgpData pgpData = new PgpData();
         switch (requestCode) {
             case Apg.DECRYPT_MESSAGE: {
                 if (resultCode != Activity.RESULT_OK || data == null) {
