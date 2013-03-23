@@ -19,6 +19,10 @@ The following is already supported:
  * Delivery receipts (XEP-0184)
  * Message carbons (XEP-0280)
 
+## How to install APG
+
+ * [Donwload APG](http://android-privacy-guard.googlecode.com/files/APG-1.0.8-release.apk)
+ * ```android-sdk/platform-tools/adb install APG-1.0.8-release.apk```
 
 ## Links
 
