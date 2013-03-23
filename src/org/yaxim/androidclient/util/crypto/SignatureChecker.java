@@ -3,6 +3,8 @@ package org.yaxim.androidclient.util.crypto;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 
+import android.app.Activity;
+import android.app.Application;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Context;
 import android.content.CursorLoader;
@@ -23,7 +25,7 @@ import android.widget.Toast;
 
 public class SignatureChecker implements
 	LoaderCallbacks<Cursor> {
-	private Context context;
+	private Activity activity;
 	private static final String[] SIGNATURE_QUERY = new String[] {
 		RosterConstants._ID,
 		RosterConstants.JID,
@@ -33,20 +35,30 @@ public class SignatureChecker implements
 	};
 	
 	
-	public SignatureChecker(Context con) {
-		context = con;
+	public SignatureChecker(Activity act) {
+		activity = act;
 	}
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		CursorLoader cl = new CursorLoader(context, RosterProvider.CONTENT_URI, SIGNATURE_QUERY,
+		return new CursorLoader(activity.getApplicationContext(),
+				RosterProvider.CONTENT_URI, SIGNATURE_QUERY,
 				null, null, null);
-		return cl;
 	}
 
 	@Override
-	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-		Log.d("SignatureChecker", "onLoadFinished:" + data.toString());
+	public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+		int jidIdx = cursor.getColumnIndex(RosterConstants.JID);
+		int pgpSigIxd = cursor.getColumnIndex(RosterConstants.PGPSIGNATURE);
+		cursor.moveToFirst();
+		while (!cursor.isAfterLast()) {
+			StatusSigned statSig = StatusSigned.valueOf( cursor.getString(pgpSigIxd) );
+			if (statSig == StatusSigned.unknown) {
+				String jid = cursor.getString(jidIdx);
+				Log.d("SignatureChecker", "unknown Signature:" + jid);
+			}
+			cursor.moveToNext();
+		}
 	}
 
 	@Override

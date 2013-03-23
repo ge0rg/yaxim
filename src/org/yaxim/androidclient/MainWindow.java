@@ -136,7 +136,7 @@ public class MainWindow extends SherlockExpandableListActivity
 		registerListAdapter();
 
 		actionBar.setSubtitle(mStatusMessage);
-		sigChecker = new SignatureChecker(this.getApplicationContext());
+		sigChecker = new SignatureChecker(this);
 		getLoaderManager().initLoader(0, null, sigChecker);
 	}
 
