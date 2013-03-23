@@ -285,7 +285,7 @@
      sodipodi:nodetypes="ccsscsscsssccccscsss"
      id="path11519"
      d="m 1.9929281,3.0078241 c 0,0 0,-0.088227 0,-0.088227 -9e-7,-0.150139 0.017026,-0.272031 0.05108,-0.3656768 C 2.0780604,2.4602775 2.1287539,2.3747599 2.1960888,2.2973662 2.2634207,2.2199764 2.4147271,2.0837667 2.6500079,1.8887371 2.7753853,1.786582 2.838075,1.6929379 2.8380766,1.6078045 2.838075,1.522676 2.8129218,1.456506 2.7626169,1.4092943 2.7123089,1.3620879 2.6360754,1.3384834 2.5339162,1.3384807 2.4240144,1.3384834 2.3330759,1.3748577 2.2611003,1.4476034 2.1891222,1.5203542 2.2361397,1.7279025 2.1229508,1.8283714 1.9562627,1.9763281 1.2681695,1.9646953 1.2220782,1.7169271 1.1641703,1.4056381 1.3733841,1.1190776 1.5831237,0.91708188 1.7928622,0.71509236 2.1144364,0.6140961 2.547847,0.61409248 2.8852854,0.6140961 3.1577141,0.68452275 3.3651337,0.82537255 3.6468473,1.0157597 3.7877054,1.2696046 3.7877081,1.5869087 3.7877054,1.7184772 3.7513302,1.8454 3.6785818,1.9676769 3.6058283,2.0899579 3.457231,2.2393243 3.2327892,2.4157761 3.07645,2.5396045 2.9777719,2.639053 2.9367549,2.7141219 c -0.041021,0.075071 -0.061529,0.2937022 -0.061529,0.2937022 0,0.2446865 -0.882298,0.2401288 -0.882298,0 z"
-     style="font-size:700px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;opacity:0.90000000000000002;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.15498437000000001;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline;font-family:Arial Black" />
+     style="font-size:700px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;opacity:0.90000000000000002;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.15498437000000001;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline;font-family:Arial Black" />
   <path
      transform="matrix(0.00568881,0,0,0.00568861,6.071392,1.3125555)"
      d="m -576.9991,463.34222 a 61.518291,61.518291 0 1 1 -123.03659,0 61.518291,61.518291 0 1 1 123.03659,0 z"
@@ -294,6 +294,6 @@
      sodipodi:cy="463.34222"
      sodipodi:cx="-638.5174"
      id="path11521"
-     style="opacity:0.90000000000000002;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:27.24421501000000134;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline"
+     style="opacity:0.90000000000000002;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:27.24421501000000134;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline"
      sodipodi:type="arc" />
 </svg>
