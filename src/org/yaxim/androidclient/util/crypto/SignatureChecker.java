@@ -43,7 +43,8 @@ public class SignatureChecker implements
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 		return new CursorLoader(activity.getApplicationContext(),
 				RosterProvider.CONTENT_URI, SIGNATURE_QUERY,
-				null, null, null);
+				RosterConstants.PGPSIGNATURE + " = '" + StatusSigned.unknown.name() + "'",
+				null, null);
 	}
 
 	@Override
@@ -53,10 +54,8 @@ public class SignatureChecker implements
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast()) {
 			StatusSigned statSig = StatusSigned.valueOf( cursor.getString(pgpSigIxd) );
-			if (statSig == StatusSigned.unknown) {
-				String jid = cursor.getString(jidIdx);
-				Log.d("SignatureChecker", "unknown Signature:" + jid);
-			}
+			String jid = cursor.getString(jidIdx);
+			Log.d("SignatureChecker", jid + ":" + statSig.name());
 			cursor.moveToNext();
 		}
 	}
