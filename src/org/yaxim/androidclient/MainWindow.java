@@ -938,7 +938,7 @@ public class MainWindow extends SherlockExpandableListActivity
 	}
 
 	private static final String OFFLINE_EXCLUSION =
-			RosterConstants.STATUS_MODE + " != " + StatusMode.offline.ordinal();
+			RosterConstants.STATUS_MODE + " != '" + StatusMode.offline.name() + "'";
 	private static final String countAvailableMembers =
 			"SELECT COUNT() FROM " + RosterProvider.TABLE_ROSTER + " inner_query" +
 					" WHERE inner_query." + RosterConstants.GROUP + " = " +
@@ -1086,17 +1086,11 @@ public class MainWindow extends SherlockExpandableListActivity
 
 		 protected void setViewImage(ImageView v, String value) {
 			Object tag = v.getTag();
-			int drawableId;
+			int drawableId = 0;
 			if ("signed_icon".equals(tag))
 				drawableId = getIconForStatusSigned(value);
 			else {
-				int intValue = 0;
-				try {
-					intValue = Integer.parseInt(value);
-				} catch(NumberFormatException e) {
-					Log.d(TAG, "RosterExpListAdapter.setViewImage: " + e.getMessage());
-				}
-				drawableId = getIconForPresenceMode(intValue);
+				drawableId = StatusMode.valueOf(value).getDrawableId();
 			}
 			if (drawableId!=0) {
 				v.setImageResource(drawableId);

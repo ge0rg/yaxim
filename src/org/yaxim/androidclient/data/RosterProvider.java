@@ -248,7 +248,7 @@ public class RosterProvider extends ContentProvider {
 	private static class RosterDatabaseHelper extends SQLiteOpenHelper {
 
 		private static final String DATABASE_NAME = "roster.db";
-		private static final int DATABASE_VERSION = 8;
+		private static final int DATABASE_VERSION = 9;
 
 		public RosterDatabaseHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -263,7 +263,7 @@ public class RosterProvider extends ContentProvider {
 					+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
 					+ RosterConstants.JID + " TEXT UNIQUE ON CONFLICT REPLACE, "
 					+ RosterConstants.ALIAS	+ " TEXT, "
-					+ RosterConstants.STATUS_MODE + " INTEGER, "
+					+ RosterConstants.STATUS_MODE + " TEXT, "
 					+ RosterConstants.STATUS_X_SIGNATURE + " TEXT, "
 					+ RosterConstants.PGPSIGNATURE + " TEXT, "
 					+ RosterConstants.STATUS_MESSAGE + " TEXT, "

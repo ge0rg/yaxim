@@ -532,7 +532,7 @@ public class SmackableImp implements Smackable {
 
 	private void setStatusOffline() {
 		ContentValues values = new ContentValues();
-		values.put(RosterConstants.STATUS_MODE, StatusMode.offline.ordinal());
+		values.put(RosterConstants.STATUS_MODE, StatusMode.offline.name());
 		mContentResolver.update(RosterProvider.CONTENT_URI, values, null, null);
 	}
 
@@ -805,7 +805,7 @@ public class SmackableImp implements Smackable {
 		values.put(RosterConstants.ALIAS, getName(entry));
 
 		Presence presence = mRoster.getPresence(entry.getUser());
-		values.put(RosterConstants.STATUS_MODE, getStatusInt(presence));
+		values.put(RosterConstants.STATUS_MODE, getStatus(presence).name());
 		
 		String sig = getPGPSignature(presence);
 		values.put(RosterConstants.STATUS_X_SIGNATURE, sig);

@@ -520,13 +520,13 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 
 		if (cursor.getCount() == 1) {
 			cursor.moveToFirst();
-			int status_mode = cursor.getInt(MODE_IDX);
+			String status_mode = cursor.getString(MODE_IDX);
 			String status_message = cursor.getString(MSG_IDX);
 			Log.d(TAG, "contact status changed: " + status_mode + " " + status_message);
 			mSubTitle.setVisibility((status_message != null && status_message.length() != 0)?
 					View.VISIBLE : View.GONE);
 			mSubTitle.setText(status_message);
-			mStatusMode.setImageResource(StatusMode.values()[status_mode].getDrawableId());
+			mStatusMode.setImageResource(StatusMode.valueOf(status_mode).getDrawableId());
 		}
 		cursor.close();
 	}
