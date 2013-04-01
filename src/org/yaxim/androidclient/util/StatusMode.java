@@ -10,28 +10,11 @@ public enum StatusMode {
 	available(R.string.status_available, R.drawable.ic_status_available),
 	chat(R.string.status_chat, R.drawable.ic_status_chat);
 
-	private final int textId;
-	private final int drawableId;
+	public final int textId;
+	public final int drawableId;
 
 	StatusMode(int textId, int drawableId) {
 		this.textId = textId;
 		this.drawableId = drawableId;
 	}
-
-	public int getTextId() {
-		return textId;
-	}
-
-	public int getDrawableId() {
-		return drawableId;
-	}
-
-	public String toString() {
-		return name();
-	}
-
-	public static StatusMode fromString(String status) {
-		return StatusMode.valueOf(status);
-	}
-
 }

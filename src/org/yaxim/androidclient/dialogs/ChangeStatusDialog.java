@@ -104,7 +104,7 @@ public class ChangeStatusDialog extends AlertDialog {
 
 			TextView textView = (TextView) super.getDropDownView(position,
 					convertView, parent);
-			textView.setText(getItem(position).getTextId());
+			textView.setText(getItem(position).textId);
 			return textView;
 		}
 
@@ -113,7 +113,7 @@ public class ChangeStatusDialog extends AlertDialog {
 
 			TextView textView = (TextView) super.getView(position, convertView,
 					parent);
-			textView.setText(getItem(position).getTextId());
+			textView.setText(getItem(position).textId);
 			textView.setPadding(0, 0, 0, 0);
 			return textView;
 		}

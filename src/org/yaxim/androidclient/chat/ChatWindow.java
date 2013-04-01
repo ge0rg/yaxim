@@ -526,7 +526,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			mSubTitle.setVisibility((status_message != null && status_message.length() != 0)?
 					View.VISIBLE : View.GONE);
 			mSubTitle.setText(status_message);
-			mStatusMode.setImageResource(StatusMode.valueOf(status_mode).getDrawableId());
+			mStatusMode.setImageResource(StatusMode.valueOf(status_mode).drawableId);
 		}
 		cursor.close();
 	}

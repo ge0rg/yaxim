@@ -152,10 +152,10 @@ public class MainWindow extends SherlockExpandableListActivity
 					|| getStatusMode() == null;
 
 		if (showOffline) {
-			return StatusMode.offline.getDrawableId();
+			return StatusMode.offline.drawableId;
 		}
 
-		return getStatusMode().getDrawableId();
+		return getStatusMode().drawableId;
 	}
 
 	// need this to workaround unwanted OnGroupCollapse/Expand events
@@ -579,7 +579,7 @@ public class MainWindow extends SherlockExpandableListActivity
 	}
 
 	public static String getStatusTitle(Context context, String status, String statusMessage) {
-		status = context.getString(StatusMode.fromString(status).getTextId());
+		status = context.getString(StatusMode.valueOf(status).textId);
 
 		if (statusMessage.length() > 0) {
 			status = status + " (" + statusMessage + ")";
@@ -915,7 +915,7 @@ public class MainWindow extends SherlockExpandableListActivity
 	private void getPreferences(SharedPreferences prefs) {
 		showOffline = prefs.getBoolean(PreferenceConstants.SHOW_OFFLINE, true);
 
-		setStatus(StatusMode.fromString(prefs.getString(
+		setStatus(StatusMode.valueOf(prefs.getString(
 				PreferenceConstants.STATUS_MODE, StatusMode.available.name())),
 				prefs.getString(PreferenceConstants.STATUS_MESSAGE, ""));
 	}
@@ -1090,7 +1090,7 @@ public class MainWindow extends SherlockExpandableListActivity
 			if ("signed_icon".equals(tag))
 				drawableId = getIconForStatusSigned(value);
 			else {
-				drawableId = StatusMode.valueOf(value).getDrawableId();
+				drawableId = StatusMode.valueOf(value).drawableId;
 			}
 			if (drawableId!=0) {
 				v.setImageResource(drawableId);
@@ -1101,10 +1101,6 @@ public class MainWindow extends SherlockExpandableListActivity
 
 		private int getIconForStatusSigned(String pgpSig) {
 			return StatusSigned.valueOf(pgpSig).drawableId;
-		}
-		
-		private int getIconForPresenceMode(int presenceMode) {
-			return StatusMode.values()[presenceMode].getDrawableId();
 		}
 	}
 

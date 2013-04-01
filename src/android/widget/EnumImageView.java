@@ -21,7 +21,7 @@ public class EnumImageView extends ImageView implements ViewWithValue {
 	@Override
 	public void setValue(String value) {
 		int drawableId = 0;
-		drawableId = StatusMode.valueOf(value).getDrawableId();
+		drawableId = StatusMode.valueOf(value).drawableId;
 		if (drawableId!=0) {
 			setImageResource(drawableId);
 			setVisibility(View.VISIBLE);
