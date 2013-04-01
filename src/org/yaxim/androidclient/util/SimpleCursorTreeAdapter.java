@@ -16,6 +16,8 @@
 
 package org.yaxim.androidclient.util;
 
+import org.yaxim.androidclient.widget.ViewWithValue;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -226,7 +228,9 @@ public abstract class SimpleCursorTreeAdapter extends ResourceCursorTreeAdapter 
                     if (text == null) {
                         text = "";
                     }
-                    if (v instanceof TextView) {
+                    if (v instanceof ViewWithValue) {
+                    	((ViewWithValue) v).setValue(text);
+                    } else if (v instanceof TextView) {
                         setViewText((TextView) v, text);
                     } else if (v instanceof ImageView) {
                         setViewImage((ImageView) v, text);
