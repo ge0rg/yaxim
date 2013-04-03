@@ -18,8 +18,7 @@
 			android:layout_alignRight="@+id/roster_icon"
 			android:padding="0dip"
         	android:layout_margin="0dip"
-        	android:visibility="gone"
-        	android:tag="signed_icon" />
+        	android:visibility="gone"/>
 						
 	</RelativeLayout>
 
