@@ -57,6 +57,7 @@ import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
 import android.widget.SimpleCursorTreeAdapter;
+import android.widget.SimpleCursorTreeAdapter.ViewBinder;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1026,25 +1027,7 @@ public class MainWindow extends SherlockExpandableListActivity
 						R.id.roster_signed_icon,
 						R.id.roster_icon
 					});
-			setViewBinder(new ViewBinder() {
-				@Override
-				public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
-					if (columnIndex == 3 || columnIndex == 4) {
-						String value = cursor.getString(columnIndex);
-						int drawableId = (columnIndex == 3)
-        						? StatusMode.valueOf(value).drawableId
-        						: StatusSigned.valueOf(value).drawableId;
-						if (drawableId != 0) {
-							((ImageView) v).setImageResource(drawableId);
-							v.setVisibility(View.VISIBLE);
-						} else {
-							v.setVisibility(View.GONE);
-						}
-						return true;
-					}
-					return false;
-				}
-			});			
+			setViewBinder(new RosterListViewBinder());			
 		}
 
 		public void requery() {
@@ -1126,6 +1109,32 @@ public class MainWindow extends SherlockExpandableListActivity
 		}
 		public void onChange(boolean selfChange) {
 			updateRoster();
+		}
+	}
+
+	private static final class RosterListViewBinder implements ViewBinder {
+		@Override
+		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
+			String column = cursor.getColumnName(columnIndex);
+			if (RosterConstants.STATUS_MODE.equals(column)) { 
+				String value = cursor.getString(columnIndex);
+				setDrawableId((ImageView) v, StatusMode.valueOf(value).drawableId);
+				return true;
+			}
+			if (RosterConstants.PGPSIGNATURE.equals(column)) { 
+				String value = cursor.getString(columnIndex);
+				setDrawableId((ImageView) v, StatusSigned.valueOf(value).drawableId);
+				return true;
+			}
+			return false;
+		}
+		static void setDrawableId(ImageView v, int drawableId) {
+			if (drawableId != 0) {
+				v.setImageResource(drawableId);
+				v.setVisibility(View.VISIBLE);
+			} else {
+				v.setVisibility(View.GONE);
+			}
 		}
 	}
 }
