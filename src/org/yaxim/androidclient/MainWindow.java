@@ -25,6 +25,7 @@ import org.yaxim.androidclient.util.crypto.PgpData;
 import org.yaxim.androidclient.util.crypto.StatusSigned;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -1119,7 +1120,14 @@ public class MainWindow extends SherlockExpandableListActivity
 			}
 			if (RosterConstants.PGPSIGNATURE.equals(column)) { 
 				String value = cursor.getString(columnIndex);
-				setDrawableId((ImageView) v, StatusSigned.valueOf(value).drawableId);
+				StatusSigned stat = StatusSigned.valueOf(value);
+				if (stat == StatusSigned.unknown) {
+					String jid = 
+							cursor.getString( cursor.getColumnIndex(RosterConstants.JID));
+					Activity host = (Activity) v.getContext();
+					Apg.checkStatusSignature(host, jid);
+				}
+				setDrawableId((ImageView) v, stat.drawableId);
 				return true;
 			}
 			return false;
