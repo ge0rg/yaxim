@@ -3,7 +3,9 @@ package org.yaxim.androidclient.util.crypto;
  * Inspired by k9
  * https://github.com/k9mail/
 */
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -125,10 +127,9 @@ public class Apg  {
 
     /**
      * Start the decrypt activity.
+     * @param activity 
+     * @param jId The jabberId - an e-mail
      *
-     * @param fragment
-     * @param data
-     * @param pgpData
      * @return success or failure
      */
     public static boolean checkStatusSignature(Activity activity, String jId) {
@@ -145,7 +146,7 @@ public class Apg  {
     	}
     	cursor.moveToFirst();
     	String statusMessage = cursor.getString(0);
-    	String sig = cursor.getString(1);
+    	String sig = cursor.getString(1);    	
     	// pgp string bauen
     	String pgpData = createPgpData(statusMessage, sig);
     	// define call id
@@ -512,12 +513,18 @@ public class Apg  {
 			setStatus(activity, reqData.second, StatusSigned.invalid);
 			return true;
 		}
-		String userId = data.getStringExtra(Apg.EXTRA_SIGNATURE_USER_ID);
-		if (userId == null)
+		long userId = data.getLongExtra(Apg.EXTRA_SIGNATURE_KEY_ID, 0);
+		if (userId == 0)
 			return false;
+    	long[] publicKeys = getPublicKeyIdsFromEmail(activity, reqData.second);
+    	if (publicKeys == null || publicKeys.length == 0) {
+    		setStatus(activity, reqData.second, StatusSigned.nokey);
+    		return true;
+    	}
+    	
 		switch (reqData.first) {
 			case checkSig:
-				if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_SUCCESS, false) && reqData.second.equals(userId))
+				if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_SUCCESS, false) && Arrays.asList(publicKeys).contains(userId))
 					setStatus(activity, reqData.second, StatusSigned.valid);
 				// TODO for more granular status
 //				else if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_UNKNOWN, false))
