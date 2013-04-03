@@ -1026,6 +1026,26 @@ public class MainWindow extends SherlockExpandableListActivity
 						R.id.roster_signed_icon,
 						R.id.roster_icon
 					});
+			setViewBinder(new ViewBinder() {
+				@Override
+				public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
+					if (columnIndex == 3 || columnIndex == 4) {
+						int drawableId = 0;
+						String value = cursor.getString(columnIndex);
+						if (columnIndex == 3)
+							drawableId = StatusMode.valueOf(value).drawableId;
+						if (columnIndex == 4)
+							drawableId = StatusSigned.valueOf(value).drawableId;						
+						if (drawableId!=0) {
+							((ImageView)v).setImageResource(drawableId);
+							v.setVisibility(View.VISIBLE);
+						}
+						else v.setVisibility(View.GONE);
+						return true;
+					}
+					return false;
+				}
+			});			
 		}
 
 		public void requery() {
@@ -1082,25 +1102,6 @@ public class MainWindow extends SherlockExpandableListActivity
 			unreadmsg.bringToFront();
 
 			msgcursor.close();
-		}
-
-		 protected void setViewImage(ImageView v, String value) {
-			Object tag = v.getTag();
-			int drawableId = 0;
-			if ("signed_icon".equals(tag))
-				drawableId = getIconForStatusSigned(value);
-			else {
-				drawableId = StatusMode.valueOf(value).drawableId;
-			}
-			if (drawableId!=0) {
-				v.setImageResource(drawableId);
-				v.setVisibility(View.VISIBLE);
-			}
-			else v.setVisibility(View.GONE);
-		 }
-
-		private int getIconForStatusSigned(String pgpSig) {
-			return StatusSigned.valueOf(pgpSig).drawableId;
 		}
 	}
 
