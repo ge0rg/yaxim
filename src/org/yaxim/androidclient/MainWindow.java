@@ -22,7 +22,6 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
 import org.yaxim.androidclient.util.crypto.Apg;
 import org.yaxim.androidclient.util.crypto.PgpData;
-import org.yaxim.androidclient.util.crypto.SignatureChecker;
 import org.yaxim.androidclient.util.crypto.StatusSigned;
 
 import android.annotation.TargetApi;
@@ -93,7 +92,6 @@ public class MainWindow extends SherlockExpandableListActivity
 	private ActionBar actionBar;
 	private String mTheme;
 	
-	private SignatureChecker sigChecker;
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -137,8 +135,6 @@ public class MainWindow extends SherlockExpandableListActivity
 		registerListAdapter();
 
 		actionBar.setSubtitle(mStatusMessage);
-		sigChecker = new SignatureChecker(this);
-		getLoaderManager().initLoader(0, null, sigChecker);
 	}
 
 	@Override
