@@ -4,16 +4,25 @@ package org.yaxim.androidclient.util.crypto;
  * https://github.com/k9mail/
 */
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.yaxim.androidclient.R;
+import org.yaxim.androidclient.data.RosterProvider;
+import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
+import org.yaxim.androidclient.util.StatusMode;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -29,12 +38,6 @@ public class Apg  {
     public interface CryptoDecryptCallback {
         void onDecryptDone(PgpData pgpData);
     }
-	static private Apg m_singleton;
-	public static Apg getInstance() {
-		if (m_singleton == null)
-			m_singleton = new Apg();
-		return m_singleton;
-	}
 	private Apg() {}
     private static final String mApgPackageName = "org.thialfihar.android.apg";
     private static final int mMinRequiredVersion = 16;
@@ -94,36 +97,132 @@ public class Apg  {
         Pattern.compile(".*?(-----BEGIN PGP SIGNED MESSAGE-----.*?-----BEGIN PGP SIGNATURE-----.*?-----END PGP SIGNATURE-----).*",
                         Pattern.DOTALL);
 
+    private enum CallType{
+    	/** indicates a signature check */
+    	checkSig,
+    	/** indicates, that the original call was an encryption request */
+    	encryptMsg,
+    	/** indicates, that the original call was an decryption request */
+    	decryptMsg
+    }
     /**
      * Check whether APG is installed and at a high enough version.
      *
      * @param context
      * @return whether a suitable version of APG was found
      */
-    public boolean isAvailable(Context context) {
+    public static boolean isAvailable(Context context) {
         try {
             PackageInfo pi = context.getPackageManager().getPackageInfo(mApgPackageName, 0);
             if (pi.versionCode >= mMinRequiredVersion) {
                 return true;
-            } else {
-                Toast.makeText(context,
-                               R.string.error_apg_version_not_supported, Toast.LENGTH_SHORT).show();
             }
+			Toast.makeText(context, R.string.error_apg_version_not_supported, Toast.LENGTH_SHORT).show();
         } catch (NameNotFoundException e) {
             // not found
         }
-
         return false;
     }
 
     /**
+     * Start the decrypt activity.
+     *
+     * @param fragment
+     * @param data
+     * @param pgpData
+     * @return success or failure
+     */
+    public static boolean checkStatusSignature(Activity activity, String jId) {
+    	// get from database
+    	Cursor cursor = activity.getContentResolver().query(
+    					RosterProvider.CONTENT_URI, 
+    					new String[] {RosterConstants.STATUS_MESSAGE, RosterConstants.STATUS_X_SIGNATURE}, 
+    					RosterConstants.JID + "=?",
+    					new String[] {jId},
+    					null);
+    	if (cursor.getCount() != 1) {
+    		setStatus(activity, jId, StatusSigned.invalid);
+    		return false;
+    	}
+    	cursor.moveToFirst();
+    	String statusMessage = cursor.getString(0);
+    	String sig = cursor.getString(1);
+    	// pgp string bauen
+    	String pgpData = createPgpData(statusMessage, sig);
+    	// define call id
+    	int callId = createCallId(CallType.checkSig, jId);
+    	// call decrypt
+    	return decrypt(activity, pgpData, callId);
+    }
+
+    private static class Pair<First,Second>{
+    	
+		public final First first;
+		public final Second second;
+
+		public Pair(First a, Second b) {
+			first = a;
+			second = b;
+		}
+    }
+    
+    private static AtomicInteger callCounter = new AtomicInteger(DECRYPT_MESSAGE);
+    private static Map<Integer, Pair<CallType, String>> callCache = 
+    				Collections.synchronizedMap(new HashMap<Integer, Pair<CallType, String>>());
+    
+    /********************************************************************************
+	 * created by kurella at 04.04.2013 <br>
+	 * 
+     * @param callType
+     * @param data
+	 * 
+	 * @return
+	 *******************************************************************************/
+	private static int createCallId(CallType callType, String data) {
+		int id = callCounter.getAndIncrement();
+		callCache.put(Integer.valueOf(id), new Pair<CallType, String>(callType, data));
+		return id;
+	}
+
+	/********************************************************************************
+	 * created by kurella at 04.04.2013 <br>
+	 * 
+	 * @param pgpMessage
+	 * @param sig
+	 * @return
+	 *******************************************************************************/
+	private static String createPgpData(String pgpMessage, String sig) {
+		return "-----BEGIN PGP SIGNED MESSAGE-----\n"
+						+ "Hash: SHA256\n\n"
+						+ pgpMessage
+						+ "\n-----BEGIN PGP SIGNATURE-----\n"
+						+ "Version: APG v1.0.8\n\n"
+						+ sig
+						+ "\n-----END PGP SIGNATURE-----";
+	}
+
+	/********************************************************************************
+	 * created by kurella at 03.04.2013 <br>
+	 * @param activity 
+	 * @param jId 
+	 * @param signedStatus
+	 *******************************************************************************/
+	private static void setStatus(ContextWrapper activity, String jId, StatusSigned signedStatus) {
+		// update database
+		ContentValues values = new ContentValues();
+		values.put(RosterConstants.PGPSIGNATURE, signedStatus.name());
+		// ignore double update
+		activity.getContentResolver().update(RosterProvider.CONTENT_URI, values, RosterConstants.JID + " = ?", new String[] { jId });
+	}
+
+	/**
      * Select the signature key.
      *
      * @param activity
      * @param pgpData
      * @return success or failure
      */
-    public boolean selectSecretKey(Activity activity, PgpData pgpData) {
+    public static boolean selectSecretKey(Activity activity, PgpData pgpData) {
         Intent intent = new Intent(IntentNames.SELECT_SECRET_KEY);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         try {
@@ -145,7 +244,7 @@ public class Apg  {
      * @param pgpData
      * @return success or failure
      */
-    public boolean selectEncryptionKeys(Activity activity, String emails, PgpData pgpData) {
+    public static boolean selectEncryptionKeys(Activity activity, String emails, PgpData pgpData) {
         Intent intent = new Intent(IntentNames.SELECT_PUBLIC_KEYS);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         long[] initialKeyIds = null;
@@ -204,7 +303,7 @@ public class Apg  {
      * @param email The email in question.
      * @return key ids
      */
-    public long[] getSecretKeyIdsFromEmail(Context context, String email) {
+    public static long[] getSecretKeyIdsFromEmail(Context context, String email) {
         long ids[] = null;
         try {
             Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS,
@@ -238,7 +337,7 @@ public class Apg  {
      * @param email The email in question.
      * @return key ids
      */
-    public long[] getPublicKeyIdsFromEmail(Context context, String email) {
+    public static long[] getPublicKeyIdsFromEmail(Context context, String email) {
         long ids[] = null;
         try {
             Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
@@ -270,7 +369,7 @@ public class Apg  {
      * @param email The email in question.
      * @return true if there is a secret key for this email.
      */
-    public boolean hasSecretKeyForEmail(Context context, String email) {
+    public static boolean hasSecretKeyForEmail(Context context, String email) {
         try {
             Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS, email);
             Cursor c = context.getContentResolver().query(contentUri,
@@ -297,7 +396,7 @@ public class Apg  {
      * @param email The email in question.
      * @return true if there is a public key for this email.
      */
-    public boolean hasPublicKeyForEmail(Context context, String email) {
+    public static boolean hasPublicKeyForEmail(Context context, String email) {
         try {
             Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
             Cursor c = context.getContentResolver().query(contentUri,
@@ -324,7 +423,7 @@ public class Apg  {
      * @param keyId
      * @return user id
      */
-    public String getUserId(Context context, long keyId) {
+    public static String getUserId(Context context, long keyId) {
         String userId = null;
         try {
             Uri contentUri = ContentUris.withAppendedId(
@@ -361,7 +460,7 @@ public class Apg  {
      * @param data
      * @return handled or not
      */
-    public boolean onActivityResult(Activity activity, int requestCode, int resultCode,
+    public static boolean onActivityResult(Activity activity, int requestCode, int resultCode,
                                     Intent data) {
     	PgpData pgpData = new PgpData();
         switch (requestCode) {
@@ -407,8 +506,7 @@ public class Apg  {
         return true;
     }
 
-    public boolean onDecryptActivityResult(CryptoDecryptCallback callback, int requestCode,
-            int resultCode, Intent data) {
+    public static boolean onDecryptActivityResult(CryptoDecryptCallback callback, int requestCode, int resultCode, Intent data) {
     	PgpData pgpData = new PgpData();
         switch (requestCode) {
             case Apg.DECRYPT_MESSAGE: {
@@ -447,7 +545,7 @@ public class Apg  {
      * @param pgpData
      * @return success or failure
      */
-    public boolean encrypt(Activity activity, String data, PgpData pgpData) {
+    public static boolean encrypt(Activity activity, String data, PgpData pgpData) {
         Intent intent = new Intent(IntentNames.ENCRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
@@ -467,22 +565,21 @@ public class Apg  {
 
     /**
      * Start the decrypt activity.
+     * @param data the ready to send pgp data
+     * @param pCallId pregenetated original request identifier
      *
-     * @param fragment
-     * @param data
-     * @param pgpData
      * @return success or failure
      */
-    public boolean decrypt(Activity activity, String data, PgpData pgpData) {
+    public static boolean decrypt(Activity activity, String data, int pCallId) {
+    	if (data == null) {
+    		return false;
+    	}
         Intent intent = new Intent(Apg.IntentNames.DECRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
-        if (data == null) {
-            return false;
-        }
         try {
             intent.putExtra(EXTRA_TEXT, data);
-            activity.startActivityForResult(intent, Apg.DECRYPT_MESSAGE);
+            activity.startActivityForResult(intent, pCallId);
             return true;
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity, R.string.error_activity_not_found, Toast.LENGTH_SHORT).show();
@@ -490,12 +587,12 @@ public class Apg  {
         }
     }
 
-    public boolean isEncrypted(String message) {
+    public static boolean isEncrypted(String message) {
         Matcher matcher = PGP_MESSAGE.matcher(message);
         return matcher.matches();
     }
 
-    public boolean isSigned(String message) {
+    public static boolean isSigned(String message) {
         Matcher matcher = PGP_SIGNED_MESSAGE.matcher(message);
         return matcher.matches();
     }
@@ -505,7 +602,7 @@ public class Apg  {
      *
      * @return success or failure
      */
-    public boolean test(Context context) {
+    public static boolean test(Context context) {
         if (!isAvailable(context)) {
             return false;
         }
