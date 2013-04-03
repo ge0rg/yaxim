@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
-import org.yaxim.androidclient.util.StatusMode;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -451,89 +450,89 @@ public class Apg  {
         return userId;
     }
 
-    /**
-     * Handle the activity results that concern us.
-     *
-     * @param activity
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     * @return handled or not
-     */
-    public static boolean onActivityResult(Activity activity, int requestCode, int resultCode,
-                                    Intent data) {
-    	PgpData pgpData = new PgpData();
-        switch (requestCode) {
-        case Apg.SELECT_SECRET_KEY:
-            if (resultCode != Activity.RESULT_OK || data == null) {
-                break;
-            }
-            pgpData.setSignatureKeyId(data.getLongExtra(Apg.EXTRA_KEY_ID, 0));
-            pgpData.setSignatureUserId(data.getStringExtra(Apg.EXTRA_USER_ID));
-//            ((MessageCompose) activity).updateEncryptLayout();
-            break;
+//    /**
+//     * Handle the activity results that concern us.
+//     *
+//     * @param activity
+//     * @param requestCode
+//     * @param resultCode
+//     * @param data
+//     * @return handled or not
+//     */
+//    public static boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+//    	PgpData pgpData = new PgpData();
+//        switch (requestCode) {
+//        case Apg.SELECT_SECRET_KEY:
+//            if (resultCode != Activity.RESULT_OK || data == null) {
+//                break;
+//            }
+//            pgpData.setSignatureKeyId(data.getLongExtra(Apg.EXTRA_KEY_ID, 0));
+//            pgpData.setSignatureUserId(data.getStringExtra(Apg.EXTRA_USER_ID));
+////            ((MessageCompose) activity).updateEncryptLayout();
+//            break;
+//
+//        case Apg.SELECT_PUBLIC_KEYS:
+//            if (resultCode != Activity.RESULT_OK || data == null) {
+//                pgpData.setEncryptionKeys(null);
+////                ((MessageCompose) activity).onEncryptionKeySelectionDone();
+//                break;
+//            }
+//            pgpData.setEncryptionKeys(data.getLongArrayExtra(Apg.EXTRA_SELECTION));
+////            ((MessageCompose) activity).onEncryptionKeySelectionDone();
+//            break;
+//
+//        case Apg.ENCRYPT_MESSAGE:
+//            if (resultCode != Activity.RESULT_OK || data == null) {
+//                pgpData.setEncryptionKeys(null);
+////                ((MessageCompose) activity).onEncryptDone();
+//                break;
+//            }
+//            pgpData.setEncryptedData(data.getStringExtra(Apg.EXTRA_ENCRYPTED_MESSAGE));
+//            // this was a stupid bug in an earlier version, just gonna leave this in for an APG
+//            // version or two
+//            if (pgpData.getEncryptedData() == null) {
+//                pgpData.setEncryptedData(data.getStringExtra(Apg.EXTRA_DECRYPTED_MESSAGE));
+//            }
+//            if (pgpData.getEncryptedData() != null) {
+////                ((MessageCompose) activity).onEncryptDone();
+//            }
+//            break;
+//
+//        default:
+//            return false;
+//        }
+//        return true;
+//    }
 
-        case Apg.SELECT_PUBLIC_KEYS:
-            if (resultCode != Activity.RESULT_OK || data == null) {
-                pgpData.setEncryptionKeys(null);
-//                ((MessageCompose) activity).onEncryptionKeySelectionDone();
-                break;
-            }
-            pgpData.setEncryptionKeys(data.getLongArrayExtra(Apg.EXTRA_SELECTION));
-//            ((MessageCompose) activity).onEncryptionKeySelectionDone();
-            break;
-
-        case Apg.ENCRYPT_MESSAGE:
-            if (resultCode != Activity.RESULT_OK || data == null) {
-                pgpData.setEncryptionKeys(null);
-//                ((MessageCompose) activity).onEncryptDone();
-                break;
-            }
-            pgpData.setEncryptedData(data.getStringExtra(Apg.EXTRA_ENCRYPTED_MESSAGE));
-            // this was a stupid bug in an earlier version, just gonna leave this in for an APG
-            // version or two
-            if (pgpData.getEncryptedData() == null) {
-                pgpData.setEncryptedData(data.getStringExtra(Apg.EXTRA_DECRYPTED_MESSAGE));
-            }
-            if (pgpData.getEncryptedData() != null) {
-//                ((MessageCompose) activity).onEncryptDone();
-            }
-            break;
-
-        default:
-            return false;
-        }
-        return true;
-    }
-
-    public static boolean onDecryptActivityResult(CryptoDecryptCallback callback, int requestCode, int resultCode, Intent data) {
-    	PgpData pgpData = new PgpData();
-        switch (requestCode) {
-            case Apg.DECRYPT_MESSAGE: {
-                if (resultCode != Activity.RESULT_OK || data == null) {
-                    break;
-                }
-
-                pgpData.setSignatureUserId(data.getStringExtra(Apg.EXTRA_SIGNATURE_USER_ID));
-                pgpData.setSignatureKeyId(data.getLongExtra(Apg.EXTRA_SIGNATURE_KEY_ID, 0));
-
-                if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_UNKNOWN, false)==true)
-            		pgpData.setSignatureStatus(PgpData.SignatureStatus.unknown);
-            	else if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_SUCCESS, false)==true)
-            		pgpData.setSignatureStatus(PgpData.SignatureStatus.success);
-                else
-            		pgpData.setSignatureStatus(PgpData.SignatureStatus.failed);
-
-                pgpData.setDecryptedData(data.getStringExtra(Apg.EXTRA_DECRYPTED_MESSAGE));
-                callback.onDecryptDone(pgpData);
-
-                break;
-            }
-            default: {
-                return false;
-            }
-        }
-
+    public static boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+		Pair<CallType, String> reqData = callCache.get(Integer.valueOf(requestCode));
+		if (reqData == null)
+			return false;
+		if (resultCode != Activity.RESULT_OK || data == null) {
+			setStatus(activity, reqData.second, StatusSigned.invalid);
+			return true;
+		}
+		String userId = data.getStringExtra(Apg.EXTRA_SIGNATURE_USER_ID);
+		if (userId == null)
+			return false;
+		switch (reqData.first) {
+			case checkSig:
+				if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_SUCCESS, false) && reqData.second.equals(userId))
+					setStatus(activity, reqData.second, StatusSigned.valid);
+				// TODO for more granular status
+//				else if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_UNKNOWN, false))
+//					setStatus(activity, reqData.second, StatusSigned.invalid);
+				else
+					setStatus(activity, reqData.second, StatusSigned.invalid);
+				break;
+			case decryptMsg:
+//                pgpData.setSignatureUserId(data.getStringExtra(Apg.EXTRA_SIGNATURE_USER_ID));
+//                pgpData.setSignatureKeyId(data.getLongExtra(Apg.EXTRA_SIGNATURE_KEY_ID, 0));
+//                pgpData.setDecryptedData(data.getStringExtra(Apg.EXTRA_DECRYPTED_MESSAGE));
+				break;
+			case encryptMsg:
+				break;
+		}
         return true;
     }
 

@@ -97,7 +97,7 @@ public class MainWindow extends SherlockExpandableListActivity
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-	    if (Apg.getInstance().onDecryptActivityResult(this, requestCode, resultCode, data)) {
+	    if (Apg.onActivityResult(this, requestCode, resultCode, data)) {
 	            return;
 	    } else {
 			Toast.makeText( getApplicationContext(), "back from unhandled Intent: " + data.getDataString(), Toast.LENGTH_SHORT).show();
