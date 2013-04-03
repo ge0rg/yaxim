@@ -19,7 +19,6 @@ import org.yaxim.androidclient.service.IXMPPRosterService;
 import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
-import org.yaxim.androidclient.util.SimpleCursorTreeAdapter;
 import org.yaxim.androidclient.util.StatusMode;
 import org.yaxim.androidclient.util.crypto.Apg;
 import org.yaxim.androidclient.util.crypto.PgpData;
@@ -57,6 +56,7 @@ import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
+import android.widget.SimpleCursorTreeAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
