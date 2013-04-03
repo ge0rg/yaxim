@@ -1030,17 +1030,16 @@ public class MainWindow extends SherlockExpandableListActivity
 				@Override
 				public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
 					if (columnIndex == 3 || columnIndex == 4) {
-						int drawableId = 0;
 						String value = cursor.getString(columnIndex);
-						if (columnIndex == 3)
-							drawableId = StatusMode.valueOf(value).drawableId;
-						if (columnIndex == 4)
-							drawableId = StatusSigned.valueOf(value).drawableId;						
-						if (drawableId!=0) {
-							((ImageView)v).setImageResource(drawableId);
+						int drawableId = (columnIndex == 3)
+        						? StatusMode.valueOf(value).drawableId
+        						: StatusSigned.valueOf(value).drawableId;
+						if (drawableId != 0) {
+							((ImageView) v).setImageResource(drawableId);
 							v.setVisibility(View.VISIBLE);
+						} else {
+							v.setVisibility(View.GONE);
 						}
-						else v.setVisibility(View.GONE);
 						return true;
 					}
 					return false;
