@@ -524,11 +524,21 @@ public class Apg  {
     	
 		switch (reqData.first) {
 			case checkSig:
-				if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_SUCCESS, false) && Arrays.asList(publicKeys).contains(userId))
+				boolean booleanExtra = data.getBooleanExtra(
+						Apg.EXTRA_SIGNATURE_SUCCESS, false);
+				boolean contains = false;
+				for (long l : publicKeys) {
+					if (l == userId) {
+						contains = true;
+						break;
+					}
+				}
+				if (booleanExtra && contains)
 					setStatus(activity, reqData.second, StatusSigned.valid);
 				// TODO for more granular status
-//				else if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_UNKNOWN, false))
-//					setStatus(activity, reqData.second, StatusSigned.invalid);
+				// else if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_UNKNOWN,
+				// false))
+				// setStatus(activity, reqData.second, StatusSigned.invalid);
 				else
 					setStatus(activity, reqData.second, StatusSigned.invalid);
 				break;
