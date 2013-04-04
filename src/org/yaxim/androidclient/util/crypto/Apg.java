@@ -192,6 +192,7 @@ public class Apg  {
 	 * @return
 	 *******************************************************************************/
 	private static String createPgpData(String pgpMessage, String sig) {
+		if (pgpMessage == null) pgpMessage = "";
 		return "-----BEGIN PGP SIGNED MESSAGE-----\n"
 						+ "Hash: SHA256\n\n"
 						+ pgpMessage
@@ -349,7 +350,6 @@ public class Apg  {
                     ids[c.getPosition()] = c.getLong(0);
                 }
             }
-
             if (c != null) {
                 c.close();
             }
@@ -358,7 +358,6 @@ public class Apg  {
                            context.getResources().getString(R.string.insufficient_apg_permissions),
                            Toast.LENGTH_LONG).show();
         }
-
         return ids;
     }
 
