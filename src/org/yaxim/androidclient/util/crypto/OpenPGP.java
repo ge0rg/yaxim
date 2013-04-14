@@ -3,9 +3,7 @@ package org.yaxim.androidclient.util.crypto;
  * Inspired by k9
  * https://github.com/k9mail/
 */
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,10 +38,11 @@ public class OpenPGP  {
         void onDecryptDone(PgpData pgpData);
     }
 	private OpenPGP() {}
-    private static final String mApgPackageName = "org.thialfihar.android.apg";
-    private static final int mMinRequiredVersion = 16;
+    private static final String PGP_PACKAGE_NAME = "org.sufficientlysecure.keychain";
+    /** Check for unknown Version in isAvailable */
+    private static final int MIN_REQUIRED_VERSION = Integer.MIN_VALUE;
 
-    public static final String AUTHORITY = "org.thialfihar.android.apg.provider";
+    public static final String AUTHORITY = PGP_PACKAGE_NAME;
     public static final Uri CONTENT_URI_SECRET_KEY_RING_BY_KEY_ID =
         Uri.parse("content://" + AUTHORITY + "/key_rings/secret/key_id/");
     public static final Uri CONTENT_URI_SECRET_KEY_RING_BY_EMAILS =
@@ -55,14 +54,16 @@ public class OpenPGP  {
         Uri.parse("content://" + AUTHORITY + "/key_rings/public/emails/");
 
     public static class IntentNames {
-        public static final String DECRYPT = "org.thialfihar.android.apg.intent.DECRYPT";
-        public static final String ENCRYPT = "org.thialfihar.android.apg.intent.ENCRYPT";
-        public static final String DECRYPT_FILE = "org.thialfihar.android.apg.intent.DECRYPT_FILE";
-        public static final String ENCRYPT_FILE = "org.thialfihar.android.apg.intent.ENCRYPT_FILE";
-        public static final String DECRYPT_AND_RETURN = "org.thialfihar.android.apg.intent.DECRYPT_AND_RETURN";
-        public static final String ENCRYPT_AND_RETURN = "org.thialfihar.android.apg.intent.ENCRYPT_AND_RETURN";
-        public static final String SELECT_PUBLIC_KEYS = "org.thialfihar.android.apg.intent.SELECT_PUBLIC_KEYS";
-        public static final String SELECT_SECRET_KEY = "org.thialfihar.android.apg.intent.SELECT_SECRET_KEY";
+    	/** OpenPGP intent name */
+        public static final String DECRYPT_AND_RETURN = PGP_PACKAGE_NAME + ".action.DECRYPT_AND_RETURN";
+        
+        public static final String DECRYPT = PGP_PACKAGE_NAME + ".intent.DECRYPT";
+        public static final String ENCRYPT = PGP_PACKAGE_NAME + ".intent.ENCRYPT";
+        public static final String DECRYPT_FILE = PGP_PACKAGE_NAME + ".intent.DECRYPT_FILE";
+        public static final String ENCRYPT_FILE = PGP_PACKAGE_NAME + ".intent.ENCRYPT_FILE";
+        public static final String ENCRYPT_AND_RETURN = PGP_PACKAGE_NAME + ".intent.ENCRYPT_AND_RETURN";
+        public static final String SELECT_PUBLIC_KEYS = PGP_PACKAGE_NAME + ".intent.SELECT_PUBLIC_KEYS";
+        public static final String SELECT_SECRET_KEY = PGP_PACKAGE_NAME + ".intent.SELECT_SECRET_KEY";
     }
 
     public static final String EXTRA_TEXT = "text";
@@ -114,11 +115,11 @@ public class OpenPGP  {
      */
     public static boolean isAvailable(Context context) {
         try {
-            PackageInfo pi = context.getPackageManager().getPackageInfo(mApgPackageName, 0);
-            if (pi.versionCode >= mMinRequiredVersion) {
+            PackageInfo pi = context.getPackageManager().getPackageInfo(PGP_PACKAGE_NAME, 0);
+            if (pi.versionCode >= MIN_REQUIRED_VERSION) {
                 return true;
             }
-			Toast.makeText(context, R.string.error_apg_version_not_supported, Toast.LENGTH_SHORT).show();
+			Toast.makeText(context, R.string.error_pgp_version_not_supported, Toast.LENGTH_SHORT).show();
         } catch (NameNotFoundException e) {
             // not found
         }
@@ -273,7 +274,7 @@ public class OpenPGP  {
                 }
             } catch (SecurityException e) {
                 Toast.makeText(activity,
-                               activity.getResources().getString(R.string.insufficient_apg_permissions),
+                               activity.getResources().getString(R.string.insufficient_pgp_permissions),
                                Toast.LENGTH_LONG).show();
             }
             if (!keyIds.isEmpty()) {
@@ -324,7 +325,7 @@ public class OpenPGP  {
             }
         } catch (SecurityException e) {
             Toast.makeText(context,
-                           context.getResources().getString(R.string.insufficient_apg_permissions),
+                           context.getResources().getString(R.string.insufficient_pgp_permissions),
                            Toast.LENGTH_LONG).show();
         }
 
@@ -344,7 +345,12 @@ public class OpenPGP  {
             Uri contentUri = Uri.withAppendedPath(OpenPGP.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
             Cursor c = context.getContentResolver().query(contentUri,
                        new String[] { "master_key_id" }, null, null, null);
-            if (c != null && c.getCount() > 0) {
+            if (c == null) {
+                Toast.makeText(context,
+                        context.getResources().getString(R.string.pgp_error),
+                        Toast.LENGTH_LONG).show();
+            }
+            if (c.getCount() > 0) {
                 ids = new long[c.getCount()];
                 while (c.moveToNext()) {
                     ids[c.getPosition()] = c.getLong(0);
@@ -355,8 +361,12 @@ public class OpenPGP  {
             }
         } catch (SecurityException e) {
             Toast.makeText(context,
-                           context.getResources().getString(R.string.insufficient_apg_permissions),
+                           context.getResources().getString(R.string.insufficient_pgp_permissions),
                            Toast.LENGTH_LONG).show();
+        } catch(Exception e) {
+            Toast.makeText(context,
+                    e.toString(),
+                    Toast.LENGTH_LONG).show();
         }
         return ids;
     }
@@ -382,7 +392,7 @@ public class OpenPGP  {
             }
         } catch (SecurityException e) {
             Toast.makeText(context,
-                    context.getResources().getString(R.string.insufficient_apg_permissions),
+                    context.getResources().getString(R.string.insufficient_pgp_permissions),
                     Toast.LENGTH_LONG).show();
         }
         return false;
@@ -409,7 +419,7 @@ public class OpenPGP  {
             }
         } catch (SecurityException e) {
             Toast.makeText(context,
-                    context.getResources().getString(R.string.insufficient_apg_permissions),
+                    context.getResources().getString(R.string.insufficient_pgp_permissions),
                     Toast.LENGTH_LONG).show();
         }
         return false;
@@ -440,7 +450,7 @@ public class OpenPGP  {
             }
         } catch (SecurityException e) {
             Toast.makeText(context,
-                           context.getResources().getString(R.string.insufficient_apg_permissions),
+                           context.getResources().getString(R.string.insufficient_pgp_permissions),
                            Toast.LENGTH_LONG).show();
         }
 
@@ -515,14 +525,14 @@ public class OpenPGP  {
 		long userId = data.getLongExtra(OpenPGP.EXTRA_SIGNATURE_KEY_ID, 0);
 		if (userId == 0)
 			return false;
-    	long[] publicKeys = getPublicKeyIdsFromEmail(activity, reqData.second);
-    	if (publicKeys == null || publicKeys.length == 0) {
-    		setStatus(activity, reqData.second, StatusSigned.nokey);
-    		return true;
-    	}
     	
 		switch (reqData.first) {
 			case checkSig:
+				long[] publicKeys = getPublicKeyIdsFromEmail(activity, reqData.second);
+				if (publicKeys == null || publicKeys.length == 0) {
+					setStatus(activity, reqData.second, StatusSigned.nokey);
+					return true;
+				}
 				boolean booleanExtra = data.getBooleanExtra(
 						OpenPGP.EXTRA_SIGNATURE_SUCCESS, false);
 				boolean contains = false;
@@ -637,7 +647,7 @@ public class OpenPGP  {
             // if there was a problem, then let the user know, this will not stop Yaxim/APG from
             // working, but some features won't be available, so we can still return "true"
             Toast.makeText(context,
-                           context.getResources().getString(R.string.insufficient_apg_permissions),
+                           context.getResources().getString(R.string.insufficient_pgp_permissions),
                            Toast.LENGTH_LONG).show();
         }
 
