@@ -312,7 +312,7 @@ public class XMPPService extends GenericService {
 		if (message != null)
 			message += mReconnectInfo;
 		if (mIsConnected.get()) {
-			message = MainWindow.getStatusTitle(this, mConfig.statusMode, mConfig.statusMessage);
+			message = MainWindow.getStatusTitle(this, mConfig.statusMode, mConfig.getStatusMessage());
 			n.icon = R.drawable.ic_online;
 		}
 		n.setLatestEventInfo(this, title, message, n.contentIntent);

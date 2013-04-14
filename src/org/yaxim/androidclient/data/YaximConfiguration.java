@@ -32,7 +32,22 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	public boolean require_ssl;
 
 	public String statusMode;
-	public String statusMessage;
+	private String statusMessage;
+
+	/**
+	 * @return the statusMessage
+	 */
+	public String getStatusMessage() {
+		return statusMessage;
+	}
+
+	/**
+	 * @param statusMessage the statusMessage to set
+	 */
+	public void setStatusMessage(String statusMessage) {
+		this.statusMessage = statusMessage;
+	}
+
 
 	public boolean isLEDNotify;
 	public String vibraNotify;
@@ -122,7 +137,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 		this.require_ssl = prefs.getBoolean(PreferenceConstants.REQUIRE_SSL,
 				false);
 		this.statusMode = prefs.getString(PreferenceConstants.STATUS_MODE, "available");
-		this.statusMessage = prefs.getString(PreferenceConstants.STATUS_MESSAGE, "");
+		setStatusMessage( prefs.getString(PreferenceConstants.STATUS_MESSAGE, "") );
         this.theme = prefs.getString(PreferenceConstants.THEME, "dark");
         this.chatFontSize = prefs.getString("setSizeChat", "18");
 

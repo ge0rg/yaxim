@@ -20,7 +20,7 @@ import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
-import org.yaxim.androidclient.util.crypto.Apg;
+import org.yaxim.androidclient.util.crypto.OpenPGP;
 import org.yaxim.androidclient.util.crypto.PgpData;
 import org.yaxim.androidclient.util.crypto.StatusSigned;
 
@@ -68,7 +68,7 @@ import com.actionbarsherlock.view.Window;
 import com.nullwire.trace.ExceptionHandler;
 
 public class MainWindow extends SherlockExpandableListActivity 
-	implements Apg.CryptoDecryptCallback {
+	implements OpenPGP.CryptoDecryptCallback {
 	private static final String TAG = "yaxim.MainWindow";
 
 	private YaximConfiguration mConfig;
@@ -96,7 +96,7 @@ public class MainWindow extends SherlockExpandableListActivity
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-	    if (Apg.onActivityResult(this, requestCode, resultCode, data)) {
+	    if (OpenPGP.onActivityResult(this, requestCode, resultCode, data)) {
 	            return;
 	    } else {
 			Toast.makeText( getApplicationContext(), "back from unhandled Intent: " + data.getDataString(), Toast.LENGTH_SHORT).show();
@@ -1125,7 +1125,7 @@ public class MainWindow extends SherlockExpandableListActivity
 					String jid = 
 							cursor.getString( cursor.getColumnIndex(RosterConstants.JID));
 					Activity host = (Activity) v.getContext();
-					Apg.checkStatusSignature(host, jid);
+					OpenPGP.checkStatusSignature(host, jid);
 				}
 				setDrawableId((ImageView) v, stat.drawableId);
 				return true;

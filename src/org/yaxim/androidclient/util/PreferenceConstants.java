@@ -23,5 +23,6 @@ public class PreferenceConstants {
 	public final static String REQUIRE_SSL = "require_ssl";
 	public final static String STATUS_MODE = "status_mode";
 	public final static String STATUS_MESSAGE = "status_message";
+	public final static String STATUS_MESSAGE_SIG = "status_message_sig";
 	public final static String THEME = "theme";
 }

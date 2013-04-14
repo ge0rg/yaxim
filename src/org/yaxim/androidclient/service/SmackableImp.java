@@ -404,8 +404,11 @@ public class SmackableImp implements Smackable {
 		Presence presence = new Presence(Presence.Type.available);
 		Mode mode = Mode.valueOf(mConfig.statusMode);
 		presence.setMode(mode);
-		presence.setStatus(mConfig.statusMessage);
+		presence.setStatus(mConfig.getStatusMessage());
 		presence.setPriority(mConfig.priority);
+
+		PGPSignature sig = new PGPSignature(presence.getStatus());
+		presence.addExtension(sig);
 		mXMPPConnection.sendPacket(presence);
 	}
 

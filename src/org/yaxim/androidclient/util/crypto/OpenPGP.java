@@ -35,11 +35,11 @@ import android.widget.Toast;
 /**
  * APG integration.
  */
-public class Apg  {
+public class OpenPGP  {
     public interface CryptoDecryptCallback {
         void onDecryptDone(PgpData pgpData);
     }
-	private Apg() {}
+	private OpenPGP() {}
     private static final String mApgPackageName = "org.thialfihar.android.apg";
     private static final int mMinRequiredVersion = 16;
 
@@ -227,7 +227,7 @@ public class Apg  {
         Intent intent = new Intent(IntentNames.SELECT_SECRET_KEY);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         try {
-            activity.startActivityForResult(intent, Apg.SELECT_SECRET_KEY);
+            activity.startActivityForResult(intent, OpenPGP.SELECT_SECRET_KEY);
             return true;
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity,
@@ -257,7 +257,7 @@ public class Apg  {
 
             try {
                 Uri contentUri = Uri.withAppendedPath(
-                                     Apg.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS,
+                                     OpenPGP.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS,
                                      emails);
                 Cursor c = activity.getContentResolver().query(contentUri,
                            new String[] { "master_key_id" },
@@ -285,9 +285,9 @@ public class Apg  {
         } else {
             initialKeyIds = pgpData.getEncryptionKeys();
         }
-        intent.putExtra(Apg.EXTRA_SELECTION, initialKeyIds);
+        intent.putExtra(OpenPGP.EXTRA_SELECTION, initialKeyIds);
         try {
-            activity.startActivityForResult(intent, Apg.SELECT_PUBLIC_KEYS);
+            activity.startActivityForResult(intent, OpenPGP.SELECT_PUBLIC_KEYS);
             return true;
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity,
@@ -307,7 +307,7 @@ public class Apg  {
     public static long[] getSecretKeyIdsFromEmail(Context context, String email) {
         long ids[] = null;
         try {
-            Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS,
+            Uri contentUri = Uri.withAppendedPath(OpenPGP.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS,
                                                   email);
             Cursor c = context.getContentResolver().query(contentUri,
                        new String[] { "master_key_id" },
@@ -341,7 +341,7 @@ public class Apg  {
     public static long[] getPublicKeyIdsFromEmail(Context context, String email) {
         long ids[] = null;
         try {
-            Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
+            Uri contentUri = Uri.withAppendedPath(OpenPGP.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
             Cursor c = context.getContentResolver().query(contentUri,
                        new String[] { "master_key_id" }, null, null, null);
             if (c != null && c.getCount() > 0) {
@@ -370,7 +370,7 @@ public class Apg  {
      */
     public static boolean hasSecretKeyForEmail(Context context, String email) {
         try {
-            Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS, email);
+            Uri contentUri = Uri.withAppendedPath(OpenPGP.CONTENT_URI_SECRET_KEY_RING_BY_EMAILS, email);
             Cursor c = context.getContentResolver().query(contentUri,
                     new String[] { "master_key_id" }, null, null, null);
             if (c != null && c.getCount() > 0) {
@@ -397,7 +397,7 @@ public class Apg  {
      */
     public static boolean hasPublicKeyForEmail(Context context, String email) {
         try {
-            Uri contentUri = Uri.withAppendedPath(Apg.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
+            Uri contentUri = Uri.withAppendedPath(OpenPGP.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS, email);
             Cursor c = context.getContentResolver().query(contentUri,
                     new String[] { "master_key_id" }, null, null, null);
             if (c != null && c.getCount() > 0) {
@@ -426,7 +426,7 @@ public class Apg  {
         String userId = null;
         try {
             Uri contentUri = ContentUris.withAppendedId(
-                                 Apg.CONTENT_URI_SECRET_KEY_RING_BY_KEY_ID,
+                                 OpenPGP.CONTENT_URI_SECRET_KEY_RING_BY_KEY_ID,
                                  keyId);
             Cursor c = context.getContentResolver().query(contentUri,
                        new String[] { "user_id" },
@@ -512,7 +512,7 @@ public class Apg  {
 			setStatus(activity, reqData.second, StatusSigned.invalid);
 			return true;
 		}
-		long userId = data.getLongExtra(Apg.EXTRA_SIGNATURE_KEY_ID, 0);
+		long userId = data.getLongExtra(OpenPGP.EXTRA_SIGNATURE_KEY_ID, 0);
 		if (userId == 0)
 			return false;
     	long[] publicKeys = getPublicKeyIdsFromEmail(activity, reqData.second);
@@ -524,7 +524,7 @@ public class Apg  {
 		switch (reqData.first) {
 			case checkSig:
 				boolean booleanExtra = data.getBooleanExtra(
-						Apg.EXTRA_SIGNATURE_SUCCESS, false);
+						OpenPGP.EXTRA_SIGNATURE_SUCCESS, false);
 				boolean contains = false;
 				for (long l : publicKeys) {
 					if (l == userId) {
@@ -564,11 +564,11 @@ public class Apg  {
         Intent intent = new Intent(IntentNames.ENCRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
-        intent.putExtra(Apg.EXTRA_TEXT, data);
-        intent.putExtra(Apg.EXTRA_ENCRYPTION_KEY_IDS, pgpData.getEncryptionKeys());
-        intent.putExtra(Apg.EXTRA_SIGNATURE_KEY_ID, pgpData.getSignatureKeyId());
+        intent.putExtra(OpenPGP.EXTRA_TEXT, data);
+        intent.putExtra(OpenPGP.EXTRA_ENCRYPTION_KEY_IDS, pgpData.getEncryptionKeys());
+        intent.putExtra(OpenPGP.EXTRA_SIGNATURE_KEY_ID, pgpData.getSignatureKeyId());
         try {
-            activity.startActivityForResult(intent, Apg.ENCRYPT_MESSAGE);
+            activity.startActivityForResult(intent, OpenPGP.ENCRYPT_MESSAGE);
             return true;
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity,
@@ -589,7 +589,7 @@ public class Apg  {
     	if (data == null) {
     		return false;
     	}
-        Intent intent = new Intent(Apg.IntentNames.DECRYPT_AND_RETURN);
+        Intent intent = new Intent(OpenPGP.IntentNames.DECRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
         try {
@@ -625,7 +625,7 @@ public class Apg  {
         try {
             // try out one content provider to check permissions
             Uri contentUri = ContentUris.withAppendedId(
-                                 Apg.CONTENT_URI_SECRET_KEY_RING_BY_KEY_ID,
+                                 OpenPGP.CONTENT_URI_SECRET_KEY_RING_BY_KEY_ID,
                                  12345);
             Cursor c = context.getContentResolver().query(contentUri,
                        new String[] { "user_id" },
