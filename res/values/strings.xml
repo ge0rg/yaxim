@@ -116,6 +116,11 @@
 	<!-- Accountprefs -->
 	<string name="account_settings_login">Login Information</string>
 	<string name="account_settings_title">Account Settings</string>
+	<string name="crypto_settings">Crypto Information</string>
+	<string name="account_pgp_keyID_title">PGP Key ID</string>
+	<string name="account_pgp_keyID_sum">no key selected</string>
+	<string name="account_pgp_keyID_dialog_title">Enter Key ID:</string>
+	<string name="account_pgp_keyID_hint">00411886</string>
 	<string name="account_options_title">Connecting Options</string>
 	<string name="account_options_advanced">Advanced Options</string>
 	<string name="connstartup_title">Connect at Startup</string>
@@ -263,6 +268,7 @@
 	<string name="signed_trusted">encryption available, trusted</string>
 	<string name="signed_invalid">encryption available, invalid signature</string>
 	<string name="error_activity_not_found">Activity not found</string>
+	<string name="error_key_not_matching_jabber_id">Selected key does not match your Jabber ID</string>
 	<string name="error_pgp_version_not_supported">PGP version not supported</string>
 	<string name="pgp_error">Error using PGP</string>
 	<string name="insufficient_pgp_permissions">insufficient APG permissions</string>

@@ -4,6 +4,7 @@ package org.yaxim.androidclient.util.crypto;
  * https://github.com/k9mail/
 */
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,10 @@ import java.util.regex.Pattern;
 import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
+import org.yaxim.androidclient.preferences.AccountPrefs;
+import org.yaxim.androidclient.preferences.PGPKeyIDPreference;
+import org.yaxim.androidclient.util.ArrayUtils;
+import org.yaxim.androidclient.util.PreferenceConstants;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -23,10 +28,15 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.net.Uri;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 
@@ -56,6 +66,7 @@ public class OpenPGP  {
     public static class IntentNames {
     	/** OpenPGP intent name */
         public static final String DECRYPT_AND_RETURN = PGP_PACKAGE_NAME + ".action.DECRYPT_AND_RETURN";
+        public static final String SELECT_SECRET_KEY = PGP_PACKAGE_NAME + ".action.SELECT_SECRET_KEYRING";
         
         public static final String DECRYPT = PGP_PACKAGE_NAME + ".intent.DECRYPT";
         public static final String ENCRYPT = PGP_PACKAGE_NAME + ".intent.ENCRYPT";
@@ -63,7 +74,6 @@ public class OpenPGP  {
         public static final String ENCRYPT_FILE = PGP_PACKAGE_NAME + ".intent.ENCRYPT_FILE";
         public static final String ENCRYPT_AND_RETURN = PGP_PACKAGE_NAME + ".intent.ENCRYPT_AND_RETURN";
         public static final String SELECT_PUBLIC_KEYS = PGP_PACKAGE_NAME + ".intent.SELECT_PUBLIC_KEYS";
-        public static final String SELECT_SECRET_KEY = PGP_PACKAGE_NAME + ".intent.SELECT_SECRET_KEY";
     }
 
     public static final String EXTRA_TEXT = "text";
@@ -78,10 +88,13 @@ public class OpenPGP  {
     public static final String EXTRA_SIGNATURE_UNKNOWN = "signatureUnknown";
     public static final String EXTRA_USER_ID = "userId";
     public static final String EXTRA_KEY_ID = "keyId";
+    public static final String EXTRA_MASTER_KEY_ID = "masterKeyId";
     public static final String EXTRA_ENCRYPTION_KEY_IDS = "encryptionKeyIds";
     public static final String EXTRA_SELECTION = "selection";
     public static final String EXTRA_MESSAGE = "message";
     public static final String EXTRA_INTENT_VERSION = "intentVersion";
+
+    
 
     public static final String INTENT_VERSION = "1";
 
@@ -89,7 +102,6 @@ public class OpenPGP  {
     public static final int DECRYPT_MESSAGE = 0x0000A001;
     public static final int ENCRYPT_MESSAGE = 0x0000A002;
     public static final int SELECT_PUBLIC_KEYS = 0x0000A003;
-    public static final int SELECT_SECRET_KEY = 0x0000A004;
 
     public static Pattern PGP_MESSAGE =
         Pattern.compile(".*?(-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----).*",
@@ -105,7 +117,9 @@ public class OpenPGP  {
     	/** indicates, that the original call was an encryption request */
     	encryptMsg,
     	/** indicates, that the original call was an decryption request */
-    	decryptMsg
+    	decryptMsg,
+    	/** indicates a request to select private key */
+    	selectPrivKey
     }
     /**
      * Check whether APG is installed and at a high enough version.
@@ -224,11 +238,13 @@ public class OpenPGP  {
      * @param pgpData
      * @return success or failure
      */
-    public static boolean selectSecretKey(Activity activity, PgpData pgpData) {
-        Intent intent = new Intent(IntentNames.SELECT_SECRET_KEY);
+    public static boolean selectSecretKey(Activity activity) {
+    	int pCallId = createCallId(CallType.selectPrivKey, null);
+
+    	Intent intent = new Intent(IntentNames.SELECT_SECRET_KEY);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         try {
-            activity.startActivityForResult(intent, OpenPGP.SELECT_SECRET_KEY);
+            activity.startActivityForResult(intent, pCallId);
             return true;
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity,
@@ -522,27 +538,16 @@ public class OpenPGP  {
 			setStatus(activity, reqData.second, StatusSigned.invalid);
 			return true;
 		}
-		long userId = data.getLongExtra(OpenPGP.EXTRA_SIGNATURE_KEY_ID, 0);
-		if (userId == 0)
-			return false;
-    	
 		switch (reqData.first) {
 			case checkSig:
+				long userId = data.getLongExtra(OpenPGP.EXTRA_SIGNATURE_KEY_ID, 0);
 				long[] publicKeys = getPublicKeyIdsFromEmail(activity, reqData.second);
-				if (publicKeys == null || publicKeys.length == 0) {
+				if (!ArrayUtils.contains(publicKeys, userId)) {
 					setStatus(activity, reqData.second, StatusSigned.nokey);
 					return true;
 				}
-				boolean booleanExtra = data.getBooleanExtra(
-						OpenPGP.EXTRA_SIGNATURE_SUCCESS, false);
-				boolean contains = false;
-				for (long l : publicKeys) {
-					if (l == userId) {
-						contains = true;
-						break;
-					}
-				}
-				if (booleanExtra && contains)
+				if (data.getBooleanExtra(
+						OpenPGP.EXTRA_SIGNATURE_SUCCESS, false))
 					setStatus(activity, reqData.second, StatusSigned.valid);
 				// TODO for more granular status
 				// else if (data.getBooleanExtra(Apg.EXTRA_SIGNATURE_UNKNOWN,
@@ -558,10 +563,14 @@ public class OpenPGP  {
 				break;
 			case encryptMsg:
 				break;
+			case selectPrivKey:
+				long keyID = data.getLongExtra(EXTRA_MASTER_KEY_ID, 0);
+				((AccountPrefs)activity).setPGPKeyID(keyID);
+				return true;
 		}
         return true;
     }
-
+    
     /**
      * Start the encrypt activity.
      *
@@ -599,7 +608,7 @@ public class OpenPGP  {
     	if (data == null) {
     		return false;
     	}
-        Intent intent = new Intent(OpenPGP.IntentNames.DECRYPT_AND_RETURN);
+        Intent intent = new Intent(IntentNames.DECRYPT_AND_RETURN);
         intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
         intent.setType("text/plain");
         try {

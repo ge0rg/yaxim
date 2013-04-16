@@ -2,9 +2,12 @@ package org.yaxim.androidclient.preferences;
 
 import org.yaxim.androidclient.YaximApplication;
 import org.yaxim.androidclient.exceptions.YaximXMPPAdressMalformedException;
+import org.yaxim.androidclient.util.ArrayUtils;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.XMPPHelper;
+import org.yaxim.androidclient.util.crypto.OpenPGP;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -14,6 +17,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.widget.Toast;
 
 import org.yaxim.androidclient.R;
 
@@ -25,6 +29,7 @@ public class AccountPrefs extends PreferenceActivity {
 
 	private EditTextPreference prefPrio;
 	private EditTextPreference prefAccountID;
+	private PGPKeyIDPreference prefPGPID;
 	private int themedTextColor;
 
 	public void onCreate(Bundle savedInstanceState) {
@@ -35,6 +40,7 @@ public class AccountPrefs extends PreferenceActivity {
 		sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
 		themedTextColor = XMPPHelper.getEditTextColor(this);
 
+		this.prefPGPID = (PGPKeyIDPreference) findPreference(PreferenceConstants.PGP_ID);
 		this.prefAccountID = (EditTextPreference) findPreference(PreferenceConstants.JID);
 		this.prefAccountID.getEditText().addTextChangedListener(
 				new TextWatcher() {
@@ -112,6 +118,26 @@ public class AccountPrefs extends PreferenceActivity {
 
 		});
 
+	}
+	
+	public void setPGPKeyID(long id) {
+		String jid = prefAccountID.getText();
+		long pkids[] = OpenPGP.getSecretKeyIdsFromEmail(getApplicationContext(), jid);
+		if (!ArrayUtils.contains(pkids, id)) {
+            Toast.makeText(this,
+                       R.string.error_key_not_matching_jabber_id,
+                       Toast.LENGTH_SHORT).show();
+		}
+		prefPGPID.setId(id);
+	}
+	
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	    if (OpenPGP.onActivityResult(this, requestCode, resultCode, data)) {
+	            return;
+	    } else {
+			Toast.makeText( getApplicationContext(), "back from unhandled Intent: " + data.getDataString(), Toast.LENGTH_SHORT).show();
+	    }
 	}
 
 }
