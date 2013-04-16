@@ -118,7 +118,8 @@
 	<string name="account_settings_title">Account Settings</string>
 	<string name="crypto_settings">Crypto Information</string>
 	<string name="account_pgp_keyID_title">PGP Key ID</string>
-	<string name="account_pgp_keyID_sum">no key selected</string>
+	<string name="account_pgp_not_installed">OpenPGP not installed - tap to fix</string>
+	<string name="account_pgp_no_key">no key selected</string>
 	<string name="account_pgp_keyID_dialog_title">Enter Key ID:</string>
 	<string name="account_pgp_keyID_hint">00411886</string>
 	<string name="account_options_title">Connecting Options</string>

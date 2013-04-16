@@ -662,4 +662,12 @@ public class OpenPGP  {
 
         return true;
     }
+
+	public static void installOpenPGP(Activity context) {
+		final String appName = "org.sufficientlysecure.keychain";
+		try {
+		    context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id="+appName)));
+		} catch (android.content.ActivityNotFoundException anfe) {
+			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id="+appName)));
+		}	}
 }

@@ -1,5 +1,6 @@
 package org.yaxim.androidclient.preferences;
 
+import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.util.crypto.OpenPGP;
 
 import android.annotation.SuppressLint;
@@ -9,6 +10,7 @@ import android.content.SharedPreferences;
 import android.preference.Preference;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.ViewGroup;
 
 public class PGPKeyIDPreference extends Preference {
 	private long mId;
@@ -27,25 +29,42 @@ public class PGPKeyIDPreference extends Preference {
 	@Override
 	protected void onClick() {
 		super.onClick();
-		OpenPGP.selectSecretKey((Activity)getContext());
+		if (hasOpenPGP())
+			OpenPGP.selectSecretKey((Activity)getContext());
+		else
+			OpenPGP.installOpenPGP((Activity)getContext());
 	}
     /**
      * Saves the id to the {@link SharedPreferences}.
      * 
      * @param id The id to save
      */
+	@SuppressLint("DefaultLocale") // just converting a hex num
     public void setId(long id) {
         final boolean wasBlocking = shouldDisableDependents();
-		if (id == 0) return;
+		if (id == 0) {
+			if (hasOpenPGP()) 
+				setSummary(R.string.account_pgp_no_key);
+			return;
+		}
         mId = id;
         persistLong(id);
         final boolean isBlocking = shouldDisableDependents(); 
         if (isBlocking != wasBlocking) {
             notifyDependencyChange(isBlocking);
         }
-        setSummaryToID(id);
+        setSummary(Integer.toHexString((int)id).toUpperCase());
     }
-    /**
+    /* (non-Javadoc)
+	 * @see android.preference.Preference#onCreateView(android.view.ViewGroup)
+	 */
+	@Override
+	protected View onCreateView(ViewGroup parent) {
+		setId(getPersistedLong(0));
+		return super.onCreateView(parent);
+	}
+
+	/**
      * Gets the id from the {@link SharedPreferences}.
      * 
      * @return The current preference value.
@@ -53,18 +72,7 @@ public class PGPKeyIDPreference extends Preference {
     public long getId() {
         return mId;
     }    
-	@Override
-	protected void onBindView(View view) {
-		super.onBindView(view);
-		setSummaryToID(getPersistedLong(0));
+	private boolean hasOpenPGP() {
+		return OpenPGP.isAvailable(getContext());
 	}
-    @Override
-    protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        setId(restoreValue ? getPersistedLong(mId) : 0);
-    }	
-	@SuppressLint("DefaultLocale") // just converting a hex num
-	private void setSummaryToID(long id) {
-		if (id != 0) setSummary(Integer.toHexString((int)id).toUpperCase());
-	}
-
 }
