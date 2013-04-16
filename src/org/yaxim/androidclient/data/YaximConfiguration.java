@@ -18,6 +18,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 	public String password;
 	public String ressource;
+	public long pgpid;
 	public int port;
 	public int priority;
 	public boolean foregroundService;
@@ -111,6 +112,8 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 		this.password = prefs.getString(PreferenceConstants.PASSWORD, "");
 		this.ressource = prefs
 				.getString(PreferenceConstants.RESSOURCE, "yaxim");
+		this.pgpid = prefs
+				.getLong(PreferenceConstants.PGP_ID, 0);
 		this.port = XMPPHelper.tryToParseInt(prefs.getString(
 				PreferenceConstants.PORT, PreferenceConstants.DEFAULT_PORT),
 				PreferenceConstants.DEFAULT_PORT_INT);

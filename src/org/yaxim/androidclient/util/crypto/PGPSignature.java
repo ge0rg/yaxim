@@ -7,9 +7,9 @@ public class PGPSignature implements PacketExtension {
 	public static final String NAMESPACE = "jabber:x:signed";
 	public final String signature;
 
-	public PGPSignature(String signature) {
+	public PGPSignature(String stringToSign, long keyid) {
 		super();
-		this.signature = signature;
+		this.signature = OpenPGP.getSignature(stringToSign, keyid);
 		Log.d("PGPSignature", signature);
 	}
 

@@ -67,6 +67,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class SmackableImp implements Smackable {
@@ -407,7 +408,7 @@ public class SmackableImp implements Smackable {
 		presence.setStatus(mConfig.getStatusMessage());
 		presence.setPriority(mConfig.priority);
 
-		PGPSignature sig = new PGPSignature(presence.getStatus());
+		PGPSignature sig = new PGPSignature(presence.getStatus(), mConfig.pgpid);
 		presence.addExtension(sig);
 		mXMPPConnection.sendPacket(presence);
 	}

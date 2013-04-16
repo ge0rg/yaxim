@@ -670,4 +670,9 @@ public class OpenPGP  {
 		} catch (android.content.ActivityNotFoundException anfe) {
 			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id="+appName)));
 		}	}
+
+	public static String getSignature(String stringToSign, long keyid) {
+		// TODO: create Signature!
+		return "this is a signature";
+	}
 }
