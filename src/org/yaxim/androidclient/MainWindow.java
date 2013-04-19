@@ -474,31 +474,25 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 			int itemID = item.getItemId();
 
-			switch (itemID) {
-			case R.id.roster_contextmenu_contact_open_chat:
+			if (itemID == R.id.roster_contextmenu_contact_open_chat) {
 				startChatActivity(userJid, userName, null);
 				return true;
-
-			case R.id.roster_contextmenu_contact_delmsg:
+			} else if (itemID == R.id.roster_contextmenu_contact_delmsg) {
 				removeChatHistoryDialog(userJid, userName);
 				return true;
-
-			case R.id.roster_contextmenu_contact_delete:
+			} else if (itemID == R.id.roster_contextmenu_contact_delete) {
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
 				removeRosterItemDialog(userJid, userName);
 				return true;
-
-			case R.id.roster_contextmenu_contact_rename:
+			} else if (itemID == R.id.roster_contextmenu_contact_rename) {
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
 				renameRosterItemDialog(userJid, userName);
 				return true;
-
-			case R.id.roster_contextmenu_contact_request_auth:
+			} else if (itemID == R.id.roster_contextmenu_contact_request_auth) {
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
 				serviceAdapter.requestAuthorizationForRosterItem(userJid);
 				return true;
-
-			case R.id.roster_contextmenu_contact_change_group:
+			} else if (itemID == R.id.roster_contextmenu_contact_change_group) {
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
 				moveRosterItemToGroupDialog(userJid);
 				return true;
@@ -509,12 +503,10 @@ public class MainWindow extends SherlockExpandableListActivity {
 			String seletedGroup = getPackedItemRow(packedPosition, RosterConstants.GROUP);
 			Log.d(TAG, "action for group " + seletedGroup);
 
-			switch (itemID) {
-			case R.id.roster_contextmenu_group_rename:
+			if (itemID == R.id.roster_contextmenu_group_rename) {
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
 				renameRosterGroupDialog(seletedGroup);
 				return true;
-
 			}
 		}
 		return false;
@@ -707,48 +699,38 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		int itemID = item.getItemId();
 
-		switch (itemID) {
-		case R.id.menu_connect:
+		if (itemID == R.id.menu_connect) {
 			toggleConnection();
 			return true;
-
-		case R.id.menu_add_friend:
+		} else if (itemID == R.id.menu_add_friend) {
 			if (serviceAdapter.isAuthenticated()) {
 				new AddRosterItemDialog(this, serviceAdapter).show();
 			} else {
 				showToastNotification(R.string.Global_authenticate_first);
 			}
 			return true;
-
-		case R.id.menu_show_hide:
+		} else if (itemID == R.id.menu_show_hide) {
 			setOfflinceContactsVisibility(!showOffline);
 			updateRoster();
 			return true;
-
-		case android.R.id.home:
-		case R.id.menu_status:
+		} else if (itemID == android.R.id.home || itemID == R.id.menu_status) {
 			new ChangeStatusDialog(this).show();
 			return true;
-
-		case R.id.menu_exit:
+		} else if (itemID == R.id.menu_exit) {
 			PreferenceManager.getDefaultSharedPreferences(this).edit().
 				putBoolean(PreferenceConstants.CONN_STARTUP, false).commit();
 			stopService(xmppServiceIntent);
 			finish();
 			return true;
-
-		case R.id.menu_settings:
+		} else if (itemID == R.id.menu_settings) {
 			startActivity(new Intent(this, MainPrefs.class));
 			return true;
-
-		case R.id.menu_about:
+		} else if (itemID == R.id.menu_about) {
 			aboutDialog();
 			return true;
-			
-		case R.id.menu_testmuc:
+		} else if (itemID == R.id.menu_testmuc) {
 			mucTest();
 			return true;
-
 		}
 
 		return false;

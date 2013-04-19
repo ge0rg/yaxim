@@ -273,16 +273,15 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 	}
 
 	public boolean onContextItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.chat_contextmenu_copy_text:
+		if (item.getItemId() == R.id.chat_contextmenu_copy_text) {
 			ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
 			cm.setText(getMessageFromContextMenu(item));
 			return true;
-		case R.id.chat_contextmenu_resend:
+		} else if (item.getItemId() == R.id.chat_contextmenu_resend) {
 			sendMessage(getMessageFromContextMenu(item).toString());
 			Log.d(TAG, "resend!");
 			return true;
-		default:
+		} else {
 			return super.onContextItemSelected((android.view.MenuItem) item);
 		}
 	}
