@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.sufficientlysecure.keychain.service.IKeychainApiService;
 import org.yaxim.androidclient.IXMPPRosterCallback.Stub;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
@@ -134,8 +135,20 @@ public class MainWindow extends SherlockExpandableListActivity
 		createUICallback();
 		setupContenView();
 		registerListAdapter();
+		
+		connectOpenPGPService();
 
 		actionBar.setSubtitle(mStatusMessage);
+	}
+
+	/********************************************************************************
+	 * created by kurella at 24.04.2013 <br>
+	 * binds the open PGPService.
+	 *******************************************************************************/
+	private void connectOpenPGPService() {
+		bindService(new Intent(IKeychainApiService.class.getName()),
+						OpenPGP.sOpenPGPConnection,
+						Context.BIND_AUTO_CREATE);		
 	}
 
 	@Override

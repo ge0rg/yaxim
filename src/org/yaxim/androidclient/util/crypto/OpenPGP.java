@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.sufficientlysecure.keychain.service.IKeychainApiService;
 import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
@@ -23,6 +24,7 @@ import org.yaxim.androidclient.util.PreferenceConstants;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -30,6 +32,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
@@ -37,6 +40,8 @@ import android.net.Uri;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.os.IBinder;
+import android.util.Log;
 import android.widget.Toast;
 
 
@@ -44,6 +49,30 @@ import android.widget.Toast;
  * APG integration.
  */
 public class OpenPGP  {
+	static IKeychainApiService sOpenPGPService;
+	
+	public static ServiceConnection sOpenPGPConnection = openServiceConnection();
+
+	static ServiceConnection openServiceConnection() {
+		return new ServiceConnection() {
+
+			// Called when the connection with the service is established
+			@Override
+			public void onServiceConnected(ComponentName className, IBinder service) {
+				sOpenPGPService = IKeychainApiService.Stub.asInterface(service);
+				Log.i("OpenPGP", "connected to openPGPService");
+			}
+
+			// Called when the connection with the service disconnects unexpectedly
+			@Override
+			public void onServiceDisconnected(ComponentName className) {
+				sOpenPGPService = null;
+				sOpenPGPConnection = openServiceConnection();
+			}
+		};
+	}
+	
+	
     public interface CryptoDecryptCallback {
         void onDecryptDone(PgpData pgpData);
     }
