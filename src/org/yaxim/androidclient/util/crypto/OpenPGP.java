@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.spongycastle.bcpg.ArmoredOutputStream;
+import org.spongycastle.bcpg.BCPGOutputStream;
 import org.sufficientlysecure.keychain.service.IKeychainApiService;
 import org.sufficientlysecure.keychain.service.handler.IKeychainDecryptHandler;
 import org.yaxim.androidclient.R;
@@ -668,7 +669,7 @@ public class OpenPGP  {
      * @param decryptHandler 
      * @return success or failure
      */
-    public static boolean decrypt(String data, final PGPDecryptHandler decryptHandler) {
+    public static boolean decrypt(final String data, final PGPDecryptHandler decryptHandler) {
     	if (data == null) {
     		return false;
     	}
@@ -677,13 +678,15 @@ public class OpenPGP  {
     		return false;
     	}
     	try {
+    		Log.i("OpenPGP", "decrypting " + data);
     		ByteArrayOutputStream oByteStream = new ByteArrayOutputStream();
-			new PrintStream(new ArmoredOutputStream(oByteStream)).print(data);
+			new PrintStream(new BCPGOutputStream(oByteStream)).print(data);
 			sOpenPGPService.decryptAndVerifyAsymmetric(oByteStream.toByteArray(), "", "", new IKeychainDecryptHandler.Stub() {
 				@Override
 				public void onSuccess(byte[] pOutputBytes, String pOutputUri, boolean pSignature, long pSignatureKeyId,
 								String pSignatureUserId, boolean pSignatureSuccess, boolean pSignatureUnknown)
 								throws RemoteException {
+		    		Log.i("OpenPGP", "decrypted " + data);
 					try {
 						decryptHandler.onDecrypt(
 										new String(pOutputBytes, "utf-8"),
