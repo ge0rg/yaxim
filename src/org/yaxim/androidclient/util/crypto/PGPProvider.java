@@ -16,7 +16,7 @@ public class PGPProvider implements PacketExtensionProvider {
           		&& PGPSignature.NAMESPACE.equals(xpp.getNamespace()) ) {
           			inTag = true;
          } else if(inTag && eventType == XmlPullParser.TEXT) {
-        	return new PGPSignature( xpp.getText() );
+        	return PGPSignature.extensionFromSignature( xpp.getText() );
          } else {
          	inTag = false;
          }
