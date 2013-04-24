@@ -3,6 +3,9 @@ package org.yaxim.androidclient.util.crypto;
  * Inspired by k9
  * https://github.com/k9mail/
 */
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.sufficientlysecure.keychain.service.IKeychainApiService;
 import org.sufficientlysecure.keychain.service.handler.IKeychainDecryptHandler;
 import org.yaxim.androidclient.R;
@@ -673,7 +677,9 @@ public class OpenPGP  {
     		return false;
     	}
     	try {
-			sOpenPGPService.decryptAndVerifyAsymmetric(data.getBytes("utf-8"), "", "", new IKeychainDecryptHandler.Stub() {
+    		ByteArrayOutputStream oByteStream = new ByteArrayOutputStream();
+			new PrintStream(new ArmoredOutputStream(oByteStream)).print(data);
+			sOpenPGPService.decryptAndVerifyAsymmetric(oByteStream.toByteArray(), "", "", new IKeychainDecryptHandler.Stub() {
 				@Override
 				public void onSuccess(byte[] pOutputBytes, String pOutputUri, boolean pSignature, long pSignatureKeyId,
 								String pSignatureUserId, boolean pSignatureSuccess, boolean pSignatureUnknown)
@@ -703,9 +709,6 @@ public class OpenPGP  {
 				
 			});
 		} catch (RemoteException pEx) {
-    		Toast.makeText(decryptHandler.getContext(), R.string.error_pgp_service + ": " + pEx.toString(), Toast.LENGTH_LONG).show();
-			return false;
-		} catch (UnsupportedEncodingException pEx) {
     		Toast.makeText(decryptHandler.getContext(), R.string.error_pgp_service + ": " + pEx.toString(), Toast.LENGTH_LONG).show();
 			return false;
 		}
