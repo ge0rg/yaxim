@@ -10,7 +10,9 @@ public enum StatusSigned {
 	valid(R.string.signed_valid, R.drawable.rel_signed_valid),
 	/** signature succesfully validated and we trust the key*/
 	trusted(R.string.signed_trusted, R.drawable.rel_signed_trusted),
-	invalid(R.string.signed_invalid, R.drawable.rel_signed_invalid);
+	invalid(R.string.signed_invalid, R.drawable.rel_signed_invalid),
+	/** valid signature but signer id does not match jabber id. */
+	mismatch(R.string.signed_invalid, R.drawable.rel_signed_invalid);
 
 	public final int textId;
 	public final int drawableId;

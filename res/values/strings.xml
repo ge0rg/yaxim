@@ -271,6 +271,7 @@
 	<string name="error_activity_not_found">Activity not found</string>
 	<string name="error_key_not_matching_jabber_id">Selected key does not match your Jabber ID</string>
 	<string name="error_pgp_version_not_supported">PGP version not supported</string>
+	<string name="error_pgp_service">The PGP Service failed</string>
 	<string name="pgp_error">Error using PGP</string>
 	<string name="insufficient_pgp_permissions">insufficient APG permissions</string>
 		<string name="unknown_crypto_signature_user_id">unknown Crypto Signature UserID</string>

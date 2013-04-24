@@ -3,24 +3,21 @@ package org.yaxim.androidclient.util.crypto;
  * Inspired by k9
  * https://github.com/k9mail/
 */
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.sufficientlysecure.keychain.service.IKeychainApiService;
+import org.sufficientlysecure.keychain.service.handler.IKeychainDecryptHandler;
 import org.yaxim.androidclient.R;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.preferences.AccountPrefs;
-import org.yaxim.androidclient.preferences.PGPKeyIDPreference;
 import org.yaxim.androidclient.util.ArrayUtils;
-import org.yaxim.androidclient.util.PreferenceConstants;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -30,17 +27,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.net.Uri;
-import android.preference.Preference;
-import android.preference.PreferenceActivity;
-import android.preference.PreferenceManager;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -49,6 +42,32 @@ import android.widget.Toast;
  * APG integration.
  */
 public class OpenPGP  {
+	
+	/********************************************************************************
+	 *
+	 * @author kurella at 24.04.2013
+	 *******************************************************************************/
+	public interface PGPDecryptHandler {
+
+		/********************************************************************************
+		 * created by kurella at 24.04.2013 <br>
+		 * 
+		 * @param decryptedMessage decrypted message withoit signature 
+		 * @param signersKeyId 0 if original message was not signed 
+		 * @param signersUserId taken from PGP return call
+		 * @param statusSigned the actual status identified
+		 *******************************************************************************/
+		void onDecrypt(String decryptedMessage, long signersKeyId, String signersUserId, StatusSigned statusSigned);
+
+		/********************************************************************************
+		 * created by kurella at 24.04.2013 <br>
+		 * 
+		 * @return a context to create Toasts
+		 *******************************************************************************/
+		Context getContext();
+
+	}
+
 	static IKeychainApiService sOpenPGPService;
 	
 	public static ServiceConnection sOpenPGPConnection = openServiceConnection();
@@ -130,7 +149,7 @@ public class OpenPGP  {
     // Note: The support package only allows us to use the lower 16 bits of a request code.
     public static final int DECRYPT_MESSAGE = 0x0000A001;
     public static final int ENCRYPT_MESSAGE = 0x0000A002;
-    public static final int SELECT_PUBLIC_KEYS = 0x0000A003;
+//    public static final int SELECT_PUBLIC_KEYS = 0x0000A003;
 
     public static Pattern PGP_MESSAGE =
         Pattern.compile(".*?(-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----).*",
@@ -176,7 +195,7 @@ public class OpenPGP  {
      *
      * @return success or failure
      */
-    public static boolean checkStatusSignature(Activity activity, String jId) {
+    public static boolean checkStatusSignature(final Activity activity, final String jId) {
     	// get from database
     	Cursor cursor = activity.getContentResolver().query(
     					RosterProvider.CONTENT_URI, 
@@ -193,10 +212,25 @@ public class OpenPGP  {
     	String sig = cursor.getString(1);    	
     	// pgp string bauen
     	String pgpData = createPgpData(statusMessage, sig);
-    	// define call id
-    	int callId = createCallId(CallType.checkSig, jId);
     	// call decrypt
-    	return decrypt(activity, pgpData, callId);
+    	return decrypt(pgpData, new PGPDecryptHandler() {
+			
+			@Override
+			public void onDecrypt(String pDecryptedMessage, long pSignersKeyId, String pSignersUserId,
+							StatusSigned pStatusSigned) {
+				long[] publicKeys = getPublicKeyIdsFromEmail(activity, jId);
+				if (!ArrayUtils.contains(publicKeys, pSignersKeyId)) {
+					setStatus(activity, jId, StatusSigned.mismatch);
+				} else {
+					setStatus(activity, jId, pStatusSigned);
+				}
+			}
+			
+			@Override
+			public Context getContext() {
+				return activity;
+			}
+		});
     }
 
     private static class Pair<First,Second>{
@@ -235,11 +269,10 @@ public class OpenPGP  {
 	 * @param sig
 	 * @return
 	 *******************************************************************************/
-	private static String createPgpData(String pgpMessage, String sig) {
-		if (pgpMessage == null) pgpMessage = "";
+	private static String createPgpData(final String pgpMessage, final String sig) {
 		return "-----BEGIN PGP SIGNED MESSAGE-----\n"
 						+ "Hash: SHA256\n\n"
-						+ pgpMessage
+						+ ((pgpMessage == null) ? "" : pgpMessage)
 						+ "\n-----BEGIN PGP SIGNATURE-----\n"
 						+ "Version: APG v1.0.8\n\n"
 						+ sig
@@ -252,7 +285,7 @@ public class OpenPGP  {
 	 * @param jId 
 	 * @param signedStatus
 	 *******************************************************************************/
-	private static void setStatus(ContextWrapper activity, String jId, StatusSigned signedStatus) {
+	static void setStatus(ContextWrapper activity, String jId, StatusSigned signedStatus) {
 		// update database
 		ContentValues values = new ContentValues();
 		values.put(RosterConstants.PGPSIGNATURE, signedStatus.name());
@@ -283,65 +316,65 @@ public class OpenPGP  {
         }
     }
 
-    /**
-     * Select encryption keys.
-     *
-     * @param activity
-     * @param emails The emails that should be used for preselection.
-     * @param pgpData
-     * @return success or failure
-     */
-    public static boolean selectEncryptionKeys(Activity activity, String emails, PgpData pgpData) {
-        Intent intent = new Intent(IntentNames.SELECT_PUBLIC_KEYS);
-        intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
-        long[] initialKeyIds = null;
-        if (!pgpData.hasEncryptionKeys()) {
-            List<Long> keyIds = new ArrayList<Long>();
-            if (pgpData.hasSignatureKey()) {
-                keyIds.add(pgpData.getSignatureKeyId());
-            }
-
-            try {
-                Uri contentUri = Uri.withAppendedPath(
-                                     OpenPGP.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS,
-                                     emails);
-                Cursor c = activity.getContentResolver().query(contentUri,
-                           new String[] { "master_key_id" },
-                           null, null, null);
-                if (c != null) {
-                    while (c.moveToNext()) {
-                        keyIds.add(c.getLong(0));
-                    }
-                }
-
-                if (c != null) {
-                    c.close();
-                }
-            } catch (SecurityException e) {
-                Toast.makeText(activity,
-                               activity.getResources().getString(R.string.insufficient_pgp_permissions),
-                               Toast.LENGTH_LONG).show();
-            }
-            if (!keyIds.isEmpty()) {
-                initialKeyIds = new long[keyIds.size()];
-                for (int i = 0, size = keyIds.size(); i < size; ++i) {
-                    initialKeyIds[i] = keyIds.get(i);
-                }
-            }
-        } else {
-            initialKeyIds = pgpData.getEncryptionKeys();
-        }
-        intent.putExtra(OpenPGP.EXTRA_SELECTION, initialKeyIds);
-        try {
-            activity.startActivityForResult(intent, OpenPGP.SELECT_PUBLIC_KEYS);
-            return true;
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(activity,
-                           R.string.error_activity_not_found,
-                           Toast.LENGTH_SHORT).show();
-            return false;
-        }
-    }
+//    /**
+//     * Select encryption keys.
+//     *
+//     * @param activity
+//     * @param emails The emails that should be used for preselection.
+//     * @param pgpData
+//     * @return success or failure
+//     */
+//    public static boolean selectEncryptionKeys(Activity activity, String emails, PgpData pgpData) {
+//        Intent intent = new Intent(IntentNames.SELECT_PUBLIC_KEYS);
+//        intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
+//        long[] initialKeyIds = null;
+//        if (!pgpData.hasEncryptionKeys()) {
+//            List<Long> keyIds = new ArrayList<Long>();
+//            if (pgpData.hasSignatureKey()) {
+//                keyIds.add(pgpData.getSignatureKeyId());
+//            }
+//
+//            try {
+//                Uri contentUri = Uri.withAppendedPath(
+//                                     OpenPGP.CONTENT_URI_PUBLIC_KEY_RING_BY_EMAILS,
+//                                     emails);
+//                Cursor c = activity.getContentResolver().query(contentUri,
+//                           new String[] { "master_key_id" },
+//                           null, null, null);
+//                if (c != null) {
+//                    while (c.moveToNext()) {
+//                        keyIds.add(c.getLong(0));
+//                    }
+//                }
+//
+//                if (c != null) {
+//                    c.close();
+//                }
+//            } catch (SecurityException e) {
+//                Toast.makeText(activity,
+//                               activity.getResources().getString(R.string.insufficient_pgp_permissions),
+//                               Toast.LENGTH_LONG).show();
+//            }
+//            if (!keyIds.isEmpty()) {
+//                initialKeyIds = new long[keyIds.size()];
+//                for (int i = 0, size = keyIds.size(); i < size; ++i) {
+//                    initialKeyIds[i] = keyIds.get(i);
+//                }
+//            }
+//        } else {
+//            initialKeyIds = pgpData.getEncryptionKeys();
+//        }
+//        intent.putExtra(OpenPGP.EXTRA_SELECTION, initialKeyIds);
+//        try {
+//            activity.startActivityForResult(intent, OpenPGP.SELECT_PUBLIC_KEYS);
+//            return true;
+//        } catch (ActivityNotFoundException e) {
+//            Toast.makeText(activity,
+//                           R.string.error_activity_not_found,
+//                           Toast.LENGTH_SHORT).show();
+//            return false;
+//        }
+//    }
 
     /**
      * Get secret key ids based on a given email.
@@ -394,6 +427,7 @@ public class OpenPGP  {
                 Toast.makeText(context,
                         context.getResources().getString(R.string.pgp_error),
                         Toast.LENGTH_LONG).show();
+                return ids;
             }
             if (c.getCount() > 0) {
                 ids = new long[c.getCount()];
@@ -401,9 +435,7 @@ public class OpenPGP  {
                     ids[c.getPosition()] = c.getLong(0);
                 }
             }
-            if (c != null) {
-                c.close();
-            }
+            c.close();
         } catch (SecurityException e) {
             Toast.makeText(context,
                            context.getResources().getString(R.string.insufficient_pgp_permissions),
@@ -629,25 +661,55 @@ public class OpenPGP  {
     /**
      * Start the decrypt activity.
      * @param data the ready to send pgp data
-     * @param pCallId pregenetated original request identifier
-     *
+     * @param decryptHandler 
      * @return success or failure
      */
-    public static boolean decrypt(Activity activity, String data, int pCallId) {
+    public static boolean decrypt(String data, final PGPDecryptHandler decryptHandler) {
     	if (data == null) {
     		return false;
     	}
-        Intent intent = new Intent(IntentNames.DECRYPT_AND_RETURN);
-        intent.putExtra(EXTRA_INTENT_VERSION, INTENT_VERSION);
-        intent.setType("text/plain");
-        try {
-            intent.putExtra(EXTRA_TEXT, data);
-            activity.startActivityForResult(intent, pCallId);
-            return true;
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(activity, R.string.error_activity_not_found, Toast.LENGTH_SHORT).show();
-            return false;
-        }
+    	if (sOpenPGPService == null) {
+    		Toast.makeText(decryptHandler.getContext(), R.string.error_activity_not_found, Toast.LENGTH_SHORT).show();
+    		return false;
+    	}
+    	try {
+			sOpenPGPService.decryptAndVerifyAsymmetric(data.getBytes("utf-8"), "", "", new IKeychainDecryptHandler.Stub() {
+				@Override
+				public void onSuccess(byte[] pOutputBytes, String pOutputUri, boolean pSignature, long pSignatureKeyId,
+								String pSignatureUserId, boolean pSignatureSuccess, boolean pSignatureUnknown)
+								throws RemoteException {
+					try {
+						decryptHandler.onDecrypt(
+										new String(pOutputBytes, "utf-8"),
+										pSignature ? pSignatureKeyId : 0L,
+										pSignatureUserId,
+										!pSignature
+												? StatusSigned.not
+										: pSignatureSuccess 
+												? StatusSigned.valid
+										: pSignatureUnknown
+												? StatusSigned.unknown
+												: StatusSigned.invalid);
+					} catch (UnsupportedEncodingException pEx) {
+						onException(-1, pEx.getMessage());
+					}
+				}
+
+				@Override
+				public void onException(int pExceptionNumber, String pMessage) throws RemoteException {
+		    		//Toast.makeText(decryptHandler.getContext(), R.string.error_pgp_service + ": " + pMessage, Toast.LENGTH_LONG).show();
+					Log.e("OpenPGP", pExceptionNumber + ", " + pMessage);
+				}
+				
+			});
+		} catch (RemoteException pEx) {
+    		Toast.makeText(decryptHandler.getContext(), R.string.error_pgp_service + ": " + pEx.toString(), Toast.LENGTH_LONG).show();
+			return false;
+		} catch (UnsupportedEncodingException pEx) {
+    		Toast.makeText(decryptHandler.getContext(), R.string.error_pgp_service + ": " + pEx.toString(), Toast.LENGTH_LONG).show();
+			return false;
+		}
+    	return true;
     }
 
     public static boolean isEncrypted(String message) {
@@ -700,6 +762,13 @@ public class OpenPGP  {
 			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id="+appName)));
 		}	}
 
+	/********************************************************************************
+	 * created by hmeyer at 24.04.2013 <br>
+	 * 
+	 * @param stringToSign TODO
+	 * @param keyid TODO
+	 * @return TODO
+	 *******************************************************************************/
 	public static String getSignature(String stringToSign, long keyid) {
 		// TODO: create Signature!
 		return "this is a signature";
