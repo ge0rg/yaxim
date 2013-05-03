@@ -27,13 +27,19 @@ import org.jivesoftware.smack.packet.Presence.Mode;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.carbons.Carbon;
+import org.jivesoftware.smackx.carbons.CarbonManager;
+import org.jivesoftware.smackx.forward.Forwarded;
 import org.jivesoftware.smackx.provider.DelayInfoProvider;
-import org.jivesoftware.smackx.provider.DeliveryReceiptProvider;
 import org.jivesoftware.smackx.provider.DiscoverInfoProvider;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.DelayInfo;
-import org.jivesoftware.smackx.packet.DeliveryReceipt;
-import org.jivesoftware.smackx.packet.DeliveryReceiptRequest;
+import org.jivesoftware.smackx.ping.PingManager;
+import org.jivesoftware.smackx.ping.packet.*;
+import org.jivesoftware.smackx.ping.provider.PingProvider;
+import org.jivesoftware.smackx.receipts.DeliveryReceipt;
+import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
+import org.jivesoftware.smackx.receipts.DeliveryReceiptRequest;
 import org.yaxim.androidclient.YaximApplication;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.RosterProvider;
@@ -44,8 +50,6 @@ import org.yaxim.androidclient.exceptions.YaximXMPPException;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
-
-import org.yaxim.androidclient.packet.*;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -89,7 +93,8 @@ public class SmackableImp implements Smackable {
 		pm.addExtensionProvider("sent", Carbon.NAMESPACE, new Carbon.Provider());
 		pm.addExtensionProvider("received", Carbon.NAMESPACE, new Carbon.Provider());
 		// add delivery receipts
-		pm.addExtensionProvider("received", DeliveryReceipt.NAMESPACE, new DeliveryReceiptProvider());
+		pm.addExtensionProvider(DeliveryReceipt.ELEMENT, DeliveryReceipt.NAMESPACE, new DeliveryReceipt.Provider());
+		pm.addExtensionProvider(DeliveryReceiptRequest.ELEMENT, DeliveryReceipt.NAMESPACE, new DeliveryReceiptRequest.Provider());
 		// add XMPP Ping (XEP-0199)
 		pm.addIQProvider("ping","urn:xmpp:ping", new PingProvider());
 
@@ -109,9 +114,9 @@ public class SmackableImp implements Smackable {
 	private final ContentResolver mContentResolver;
 
 	private PacketListener mSendFailureListener;
-	private PacketListener mPingListener;
 	private PacketListener mPongListener;
 	private String mPingID;
+	private long mPingTimestamp;
 
 	private PendingIntent mPingAlarmPendIntent;
 	private PendingIntent mPongTimeoutAlarmPendIntent;
@@ -137,6 +142,7 @@ public class SmackableImp implements Smackable {
 			this.mXMPPConfig = new ConnectionConfiguration(mConfig.server); // use SRV
 		this.mXMPPConfig.setReconnectionAllowed(false);
 		this.mXMPPConfig.setSendPresence(false);
+		this.mXMPPConfig.setCompressionEnabled(false); // disable for now
 		this.mXMPPConfig.setDebuggerEnabled(mConfig.smackdebug);
 		if (config.require_ssl)
 			this.mXMPPConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
@@ -163,14 +169,18 @@ public class SmackableImp implements Smackable {
 		if (isAuthenticated()) {
 			registerMessageListener();
 			registerMessageSendFailureListener();
-			registerPingListener();
 			registerPongListener();
 			sendOfflineMessages();
+			if (mServiceCallBack == null) {
+				// sometimes we get disconnected while not yet quite connected.
+				// bail out if this is the case
+				debugLog("doConnect: mServiceCallBack is null, aborting connection...");
+				mXMPPConnection.disconnect();
+				return false;
+			}
 			// we need to "ping" the service to let it know we are actually
 			// connected, even when no roster entries will come in
 			mServiceCallBack.rosterChanged();
-			registerRosterListener();
-			setRosterEntries();
 		}
 		return isAuthenticated();
 	}
@@ -182,9 +192,18 @@ public class SmackableImp implements Smackable {
 			sdm = new ServiceDiscoveryManager(mXMPPConnection);
 
 		sdm.addFeature("http://jabber.org/protocol/disco#info");
-		sdm.addFeature(DeliveryReceipt.NAMESPACE);
-		sdm.addFeature(Carbon.NAMESPACE);
-		sdm.addFeature("urn:xmpp:ping");
+
+		// reference PingManager, set ping flood protection to 10s
+		PingManager.getInstanceFor(mXMPPConnection).setPingMinimumInterval(10*1000);
+		// reference DeliveryReceiptManager, add listener
+
+		DeliveryReceiptManager dm = DeliveryReceiptManager.getInstanceFor(mXMPPConnection);
+		dm.enableAutoReceipts();
+		dm.registerReceiptReceivedListener(new DeliveryReceiptManager.ReceiptReceivedListener() {
+			public void onReceiptReceived(String fromJid, String toJid, String receiptId) {
+				Log.d(TAG, "got delivery receipt for " + receiptId);
+				changeMessageDeliveryStatus(receiptId, ChatConstants.DS_ACKED);
+			}});
 	}
 
 	public void addRosterItem(String user, String alias, String group)
@@ -243,6 +262,8 @@ public class SmackableImp implements Smackable {
 			}
 			SmackConfiguration.setPacketReplyTimeout(PACKET_TIMEOUT);
 			SmackConfiguration.setKeepAliveInterval(-1);
+			SmackConfiguration.setDefaultPingInterval(0);
+			registerRosterListener();
 			mXMPPConnection.connect();
 			if (!mXMPPConnection.isConnected()) {
 				throw new YaximXMPPException("SMACK connect failed without exception!");
@@ -350,7 +371,8 @@ public class SmackableImp implements Smackable {
 		}
 	}
 
-	private void setRosterEntries() {
+	private void removeOldRosterEntries() {
+		Log.d(TAG, "removeOldRosterEntries()");
 		mRoster = mXMPPConnection.getRoster();
 		Collection<RosterEntry> rosterEntries = mRoster.getEntries();
 		StringBuilder exclusion = new StringBuilder(RosterConstants.JID + " NOT IN (");
@@ -364,18 +386,14 @@ public class SmackableImp implements Smackable {
 			exclusion.append("'").append(rosterEntry.getUser()).append("'");
 		}
 		exclusion.append(")");
-		mContentResolver.delete(RosterProvider.CONTENT_URI, exclusion.toString(), null);
+		int count = mContentResolver.delete(RosterProvider.CONTENT_URI, exclusion.toString(), null);
+		Log.d(TAG, "deleted " + count + " old roster entries");
 	}
 
 
 	public void setStatusFromConfig() {
-		IQ enableCC = new IQ() {
-			public String getChildElementXML() {
-				return "<enable xmlns='urn:xmpp:carbons:2'/>";
-			}
-		};
-		enableCC.setType(IQ.Type.SET);
-		mXMPPConnection.sendPacket(enableCC);
+		if (mConfig.messageCarbons)
+			CarbonManager.getInstanceFor(mXMPPConnection).sendCarbonsEnabled(true);
 
 		Presence presence = new Presence(Presence.Type.available);
 		Mode mode = Mode.valueOf(mConfig.statusMode);
@@ -476,7 +494,6 @@ public class SmackableImp implements Smackable {
 			mXMPPConnection.getRoster().removeRosterListener(mRosterListener);
 			mXMPPConnection.removePacketListener(mPacketListener);
 			mXMPPConnection.removePacketSendFailureListener(mSendFailureListener);
-			mXMPPConnection.removePacketListener(mPingListener);
 			mXMPPConnection.removePacketListener(mPongListener);
 			((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPingAlarmPendIntent);
 			((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPongTimeoutAlarmPendIntent);
@@ -518,15 +535,25 @@ public class SmackableImp implements Smackable {
 		mRoster = mXMPPConnection.getRoster();
 
 		mRosterListener = new RosterListener() {
+			private boolean first_roster = true;
 
 			public void entriesAdded(Collection<String> entries) {
 				debugLog("entriesAdded(" + entries + ")");
 
+				ContentValues[] cvs = new ContentValues[entries.size()];
+				int i = 0;
 				for (String entry : entries) {
 					RosterEntry rosterEntry = mRoster.getEntry(entry);
-					addRosterEntryToDB(rosterEntry);
+					cvs[i++] = getContentValuesForRosterEntry(rosterEntry);
 				}
-				mServiceCallBack.rosterChanged();
+				mContentResolver.bulkInsert(RosterProvider.CONTENT_URI, cvs);
+				// when getting the roster in the beginning, remove remains of old one
+				if (first_roster) {
+					removeOldRosterEntries();
+					first_roster = false;
+					mServiceCallBack.rosterChanged();
+				}
+				debugLog("entriesAdded() done");
 			}
 
 			public void entriesDeleted(Collection<String> entries) {
@@ -576,13 +603,22 @@ public class SmackableImp implements Smackable {
 				new String[] { packetID });
 	}
 
-	private void sendPing() {
+	public void sendServerPing() {
+		if (mPingID != null) {
+			debugLog("Ping: requested, but still waiting for " + mPingID);
+			return; // a ping is still on its way
+		}
 		Ping ping = new Ping();
 		ping.setType(Type.GET);
 		ping.setTo(mConfig.server);
 		mPingID = ping.getPacketID();
-		debugLog("Send PING with ID " + mPingID);
+		mPingTimestamp = System.currentTimeMillis();
+		debugLog("Ping: sending ping " + mPingID);
 		mXMPPConnection.sendPacket(ping);
+
+		// register ping timeout handler: PACKET_TIMEOUT(30s) + 3s
+		((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).set(AlarmManager.RTC_WAKEUP,
+			System.currentTimeMillis() + PACKET_TIMEOUT + 3000, mPongTimeoutAlarmPendIntent);
 	}
 
 	/**
@@ -590,7 +626,7 @@ public class SmackableImp implements Smackable {
 	 */
 	private class PongTimeoutAlarmReceiver extends BroadcastReceiver {
 		public void onReceive(Context ctx, Intent i) {
-			debugLog("Pong Timeout Alarm received.");
+			debugLog("Ping: timeout for " + mPingID);
 			mServiceCallBack.disconnectOnError();
 			unRegisterCallback();
 		}
@@ -602,12 +638,9 @@ public class SmackableImp implements Smackable {
 	private class PingAlarmReceiver extends BroadcastReceiver {
 		public void onReceive(Context ctx, Intent i) {
 			if (mXMPPConnection.isAuthenticated()) {
-				debugLog("Ping Alarm received.");
-				sendPing();
-				((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).set(AlarmManager.RTC_WAKEUP, 
-						System.currentTimeMillis() + PACKET_TIMEOUT + 3000, mPongTimeoutAlarmPendIntent);
+				sendServerPing();
 			} else
-				debugLog("Ping Alarm received, but not connected to server.");
+				debugLog("Ping: alarm received, but not connected to server.");
 		}
 	}
 
@@ -618,21 +651,11 @@ public class SmackableImp implements Smackable {
 	 * Also sets up the AlarmManager Timer plus necessary intents.
 	 */
 	private void registerPongListener() {
+		// reset ping expectation on new connection
+		mPingID = null;
 
 		if (mPongListener != null)
 			mXMPPConnection.removePacketListener(mPongListener);
-
-		PacketFilter filter = new PacketFilter() {
-
-			@Override
-			public boolean accept(Packet packet) {
-				if ((packet instanceof IQ)) {
-					debugLog("got IQ packet with ID: " + packet.getPacketID());
-					return true;
-				}
-				return false;
-			}
-		};
 
 		mPongListener = new PacketListener() {
 
@@ -641,14 +664,16 @@ public class SmackableImp implements Smackable {
 				if (packet == null) return;
 
 				if (packet.getPacketID().equals(mPingID)) {
-					debugLog("got Pong");
+					Log.i(TAG, String.format("Ping: server latency %1.3fs",
+								(System.currentTimeMillis() - mPingTimestamp)/1000.));
+					mPingID = null;
 					((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPongTimeoutAlarmPendIntent);
 				}
 			}
 
 		};
 
-		mXMPPConnection.addPacketListener(mPongListener, filter);
+		mXMPPConnection.addPacketListener(mPongListener, new PacketTypeFilter(IQ.class));
 		mPingAlarmPendIntent = PendingIntent.getBroadcast(mService.getApplicationContext(), 0, mPingAlarmIntent,
 					PendingIntent.FLAG_UPDATE_CURRENT);
 		mPongTimeoutAlarmPendIntent = PendingIntent.getBroadcast(mService.getApplicationContext(), 0, mPongTimeoutAlarmIntent,
@@ -657,38 +682,6 @@ public class SmackableImp implements Smackable {
 		mService.registerReceiver(mPongTimeoutAlarmReceiver, new IntentFilter(PONG_TIMEOUT_ALARM));
 		((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).setInexactRepeating(AlarmManager.RTC_WAKEUP, 
 				System.currentTimeMillis() + AlarmManager.INTERVAL_FIFTEEN_MINUTES, AlarmManager.INTERVAL_FIFTEEN_MINUTES, mPingAlarmPendIntent);
-	}
-
-	/**
-	 * Registers a smack packet listener for IQ packets with a ping inside.
-	 * Generates and sends a matching IQ response ("pong") to the peer.
-	 */
-	private void registerPingListener() {
-
-		if (mPingListener != null)
-			mXMPPConnection.removePacketListener(mPingListener);
-
-		PacketFilter filter = new PacketFilter() {
-
-			@Override
-			public boolean accept(Packet packet) {
-				if (packet instanceof Ping) return true;
-				return false;
-			}
-		};
-
-		mPingListener = new PacketListener() {
-
-			@Override
-			public void processPacket(Packet packet) {
-				if (packet == null) return;
-
-				mXMPPConnection.sendPacket(new Pong((Ping)packet));
-			}
-
-		};
-
-		mXMPPConnection.addPacketListener(mPingListener, filter);
 	}
 
 	private void registerMessageSendFailureListener() {
@@ -733,30 +726,29 @@ public class SmackableImp implements Smackable {
 					Message msg = (Message) packet;
 					String chatMessage = msg.getBody();
 
-					DeliveryReceipt dr = (DeliveryReceipt)msg.getExtension("received", DeliveryReceipt.NAMESPACE);
-					if (dr != null) {
-						Log.d(TAG, "got delivery receipt for " + dr.getId());
-						changeMessageDeliveryStatus(dr.getId(), ChatConstants.DS_ACKED);
+					// try to extract a carbon
+					Carbon cc = CarbonManager.getCarbon(msg);
+					if (cc != null && cc.getDirection() == Carbon.Direction.received) {
+						Log.d(TAG, "carbon: " + cc.toXML());
+						msg = (Message)cc.getForwarded().getForwardedPacket();
+						chatMessage = msg.getBody();
+						// fall through
+					}  else if (cc != null && cc.getDirection() == Carbon.Direction.sent) {
+						Log.d(TAG, "carbon: " + cc.toXML());
+						msg = (Message)cc.getForwarded().getForwardedPacket();
+						chatMessage = msg.getBody();
+						if (chatMessage == null) return;
+						String fromJID = getJabberID(msg.getTo());
+
+						addChatMessageToDB(ChatConstants.OUTGOING, fromJID, chatMessage, ChatConstants.DS_SENT_OR_READ, System.currentTimeMillis(), msg.getPacketID());
+						// always return after adding
+						return;
 					}
 
 					if (chatMessage == null) {
-						// first try to get an incoming copy
-						Carbon cc = (Carbon)msg.getExtension("received", Carbon.NAMESPACE);
-						if (cc == null) {
-							cc = (Carbon)msg.getExtension("sent", Carbon.NAMESPACE);
-							Log.d(TAG, "carbon: " + cc.toXML());
-							msg = (Message)cc.getForwarded().getPacket();
-							chatMessage = msg.getBody();
-							String fromJID = getJabberID(msg.getTo());
-
-							addChatMessageToDB(ChatConstants.OUTGOING, fromJID, chatMessage, ChatConstants.DS_SENT_OR_READ, System.currentTimeMillis(), msg.getPacketID());
-							return;
-						} 
-						Log.d(TAG, "carbon: " + cc.toXML());
-						msg = (Message)cc.getForwarded().getPacket();
-						chatMessage = msg.getBody();
-						if (chatMessage == null) return;
+						return;
 					}
+
 					if (msg.getType() == Message.Type.error) {
 						chatMessage = "<Error> " + chatMessage;
 					}
@@ -772,10 +764,6 @@ public class SmackableImp implements Smackable {
 
 					String fromJID = getJabberID(msg.getFrom());
 
-					if (msg.getExtension("request", DeliveryReceipt.NAMESPACE) != null) {
-						// got XEP-0184 request, send receipt
-						sendReceipt(msg.getFrom(), msg.getPacketID());
-					}
 					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
 					mServiceCallBack.newMessage(fromJID, chatMessage);
 				}
