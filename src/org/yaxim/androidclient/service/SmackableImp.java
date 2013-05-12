@@ -633,6 +633,7 @@ public class SmackableImp implements Smackable {
 		Collection<RosterEntry> rosterEntries = mRoster.getEntries();
 		StringBuilder exclusion = new StringBuilder(RosterConstants.JID + " NOT IN (");
 		boolean first = true;
+		
 		for (RosterEntry rosterEntry : rosterEntries) {
 			updateRosterEntryInDB(rosterEntry);
 			if (first)
@@ -641,7 +642,8 @@ public class SmackableImp implements Smackable {
 				exclusion.append(",");
 			exclusion.append("'").append(rosterEntry.getUser()).append("'");
 		}
-		exclusion.append(")");
+		
+		exclusion.append(") AND GROUP NOT 'MUCs';");
 		int count = mContentResolver.delete(RosterProvider.CONTENT_URI, exclusion.toString(), null);
 		Log.d(TAG, "deleted " + count + " old roster entries");
 	}
