@@ -908,12 +908,6 @@ public class SmackableImp implements Smackable {
 		}
 	}
 
-	@Override
-	public void mucTest() {
-		Log.i(TAG, "starting muctest");
-		addRoom("yaximtest@conference.kanojo.de", "", "HonestTester");
-	}
-
 	public void syncDbRooms() {
 		ArrayList<String> joinedRooms = new ArrayList<String>(Arrays.asList(getJoinedRooms()));
 		Cursor cursor = mContentResolver.query(RosterProvider.MUCS_URI, 
@@ -974,11 +968,16 @@ public class SmackableImp implements Smackable {
 		DiscussionHistory history = new DiscussionHistory();
 		history.setMaxStanzas(historyLen);
 		
+
+		
 		try {
 			muc.join(nickname, password, history, SmackConfiguration.getPacketReplyTimeout());
 		} catch (XMPPException e) {
 			Log.e(TAG, "Could not join MUC-room "+room);
 			e.printStackTrace();
+			if(nickname == null || nickname.equals("")) {
+				joinRoom(room, "NoNick", password, historyLen);
+			}
 			return false;
 		}
 
