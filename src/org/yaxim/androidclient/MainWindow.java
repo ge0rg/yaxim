@@ -301,7 +301,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
-			ContextMenu.ContextMenuInfo menuInfo) {
+			ContextMenu.ContextMenuInfo menuInfo) {				//TODO: somehow display a different menu for MUCs?
 		ExpandableListView.ExpandableListContextMenuInfo info;
 
 		try {
@@ -315,7 +315,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 		boolean isChild = isChild(packedPosition);
 
 		getMenuInflater().inflate(R.menu.roster_contextmenu, menu);
-
+		
 		// get the entry name for the item
 		String menuName;
 		if (isChild) {
@@ -829,7 +829,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 	}
 
 	private void registerListAdapter() {
-
 		rosterListAdapter = new RosterExpListAdapter(this);
 		setListAdapter(rosterListAdapter);
 	}

@@ -1,47 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
 
-	<RelativeLayout
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent">
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
 
-		<LinearLayout android:id="@+id/details"
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content"
-			android:layout_alignParentBottom="true"
-			android:baselineAligned="false"
-			android:gravity="bottom"
-			android:stretchColumns="1">
+        <LinearLayout
+            android:id="@+id/details"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:baselineAligned="false"
+            android:gravity="bottom"
+            android:stretchColumns="1"
+            tools:ignore="Orientation" >
 
-			<EditText
-			    android:id="@+id/Chat_UserInput"
-			    android:layout_width="fill_parent"
-			    android:layout_height="wrap_content"
-			    android:layout_marginRight="60sp"
-			    android:hint="@string/chat_enterMsgHint"
-			    android:inputType="textShortMessage|textAutoCorrect|textCapSentences|textMultiLine" />
+            <EditText
+                android:id="@+id/Chat_UserInput"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="60sp"
+                android:hint="@string/chat_enterMsgHint"
+                android:inputType="textShortMessage|textAutoCorrect|textCapSentences|textMultiLine" />
 
-			<Button android:id="@+id/Chat_SendButton"
-				android:layout_width="60sp"
-				android:layout_marginLeft="-60sp"
-				android:layout_height="wrap_content"
-				android:text="@android:string/ok"
-				/>
+            <Button
+                android:id="@+id/Chat_SendButton"
+                android:layout_width="60sp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="-60sp"
+                android:text="@android:string/ok" />
+        </LinearLayout>
 
-		</LinearLayout>
-
-		<ListView android:id="@android:id/list"
-			android:layout_width="fill_parent"
-			android:layout_height="fill_parent"
-			android:fastScrollEnabled="true"
-			android:stackFromBottom="true"
-			android:layout_above="@id/details" 
-			android:transcriptMode="normal" />
-
-	</RelativeLayout>
+        <ListView
+            android:id="@android:id/list"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_above="@id/details"
+            android:fastScrollEnabled="true"
+            android:stackFromBottom="true"
+            android:transcriptMode="normal" />
+    </RelativeLayout>
 
 </LinearLayout>
