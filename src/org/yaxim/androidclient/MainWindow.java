@@ -301,6 +301,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 		long packedPosition = info.packedPosition;
 		boolean isChild = isChild(packedPosition);
 
+		getMenuInflater().inflate(R.menu.roster_contextmenu, menu);
+
 		// get the entry name for the item
 		String menuName;
 		if (isChild) {
