@@ -17,7 +17,7 @@
 		android:minHeight="52dp" android:layout_gravity="center_vertical"
 		android:gravity="center_vertical">
 
-		<TextView android:id="@+id/roster_screenname"
+		<TextView android:id="@+id/muc_screenname"
 			android:paddingLeft="10dp" android:longClickable="false"
 			android:textSize="20sp" android:layout_width="fill_parent"
 			android:layout_height="wrap_content" android:singleLine="true" />
