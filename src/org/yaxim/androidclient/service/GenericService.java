@@ -3,6 +3,7 @@ package org.yaxim.androidclient.service;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jivesoftware.smack.packet.Message;
 import org.yaxim.androidclient.chat.ChatWindow;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.util.LogConstants;
@@ -93,7 +94,8 @@ public abstract class GenericService extends Service {
 	}
 
 	protected void notifyClient(String fromJid, String fromUserName, String message,
-			boolean showNotification) {
+			boolean showNotification, Message.Type msgType) { 
+		
 		if (!showNotification) {
 			// only play sound and return
 			RingtoneManager.getRingtone(getApplicationContext(), mConfig.notifySound).play();
@@ -103,6 +105,8 @@ public abstract class GenericService extends Service {
 		setNotification(fromJid, fromUserName, message);
 		setLEDNotification();
 		mNotification.sound = mConfig.notifySound;
+		
+		// TODO: do something with messagetype
 		
 		int notifyId = 0;
 		if (notificationId.containsKey(fromJid)) {

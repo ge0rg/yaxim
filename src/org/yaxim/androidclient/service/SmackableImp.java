@@ -803,7 +803,7 @@ public class SmackableImp implements Smackable {
 					String[] fromJID = getJabberID(msg.getFrom());
 
 					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
-					mServiceCallBack.newMessage(fromJID[0], chatMessage);
+					mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType());
 				}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(
