@@ -801,9 +801,15 @@ public class SmackableImp implements Smackable {
 						ts = System.currentTimeMillis();
 
 					String[] fromJID = getJabberID(msg.getFrom());
-
-					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID());
-					mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType());
+					
+					if(msg.getType() != Message.Type.groupchat
+						|| 
+						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, fromJID))
+						) {
+						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, 
+								ChatConstants.DS_NEW, ts, msg.getPacketID());
+						mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType());
+					}
 				}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(
@@ -815,9 +821,23 @@ public class SmackableImp implements Smackable {
 
 		mXMPPConnection.addPacketListener(mPacketListener, filter);
 	}
+	
+	private boolean checkAddMucMessage(Message msg, String[] fromJid ) {
+		final String[] projection = new String[] {
+				ChatConstants._ID, ChatConstants.DATE,
+				ChatConstants.JID, ChatConstants.MESSAGE
+		};
+		final String selection = ChatConstants.JID+"='"+fromJid[0]+"' AND "+ChatConstants.MESSAGE+"='"+msg.getBody()+"'";
+		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, null);
+		if(cursor.getCount()==0)
+			return true;	
+		else
+			return false;
+	}
 
 	private void addChatMessageToDB(int direction, String[] JID,
-			String message, int delivery_status, long ts, String packetID) {
+			String message, int delivery_status, long ts, 
+			String packetID) {
 		ContentValues values = new ContentValues();
 		
 		values.put(ChatConstants.DIRECTION, direction);
