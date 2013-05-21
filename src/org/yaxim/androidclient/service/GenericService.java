@@ -5,15 +5,19 @@ import java.util.Map;
 
 import org.jivesoftware.smack.packet.Message;
 import org.yaxim.androidclient.chat.ChatWindow;
+import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.YaximConfiguration;
+import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.util.LogConstants;
 
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -22,6 +26,7 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
+import android.telephony.gsm.SmsMessage.MessageClass;
 import android.util.Log;
 import android.widget.Toast;
 import org.yaxim.androidclient.R;
@@ -95,18 +100,31 @@ public abstract class GenericService extends Service {
 
 	protected void notifyClient(String fromJid, String fromUserName, String message,
 			boolean showNotification, Message.Type msgType) { 
+		boolean isMuc = (msgType==Message.Type.groupchat);
+		
+		if(isMuc && mConfig.highlightNickMuc) {
+			ContentResolver contentResolver = getContentResolver();
+			Cursor cursor = contentResolver.query(RosterProvider.MUCS_URI, new String[] {RosterConstants.NICKNAME}, 
+					RosterConstants.JID+"='"+fromJid+"'", null, null);
+			cursor.moveToFirst();
+			String nick = cursor.getString( cursor.getColumnIndexOrThrow(RosterConstants.NICKNAME) );
+			Log.d(TAG, "highlightNickMuc is set and nick is: "+nick+" fromJid is: "+fromJid+" message is: "+message);
+			if(!message.contains(nick)) {
+				return;
+			}
+		}
 		
 		if (!showNotification) {
 			// only play sound and return
-			RingtoneManager.getRingtone(getApplicationContext(), mConfig.notifySound).play();
+			Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
+			RingtoneManager.getRingtone(getApplicationContext(), sound).play();
 			return;
 		}
 		mWakeLock.acquire();
-		setNotification(fromJid, fromUserName, message);
-		setLEDNotification();
-		mNotification.sound = mConfig.notifySound;
+		setNotification(fromJid, fromUserName, message, isMuc);
+		setLEDNotification(isMuc);
+		mNotification.sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
 		
-		// TODO: do something with messagetype
 		
 		int notifyId = 0;
 		if (notificationId.containsKey(fromJid)) {
@@ -119,19 +137,22 @@ public abstract class GenericService extends Service {
 
 		// If vibration is set to "system default", add the vibration flag to the 
 		// notification and let the system decide.
-		if("SYSTEM".equals(mConfig.vibraNotify)) {
+		if((!isMuc && "SYSTEM".equals(mConfig.vibraNotify)) 
+				|| (isMuc && "SYSTEM".equals(mConfig.vibraNotifyMuc))) {
 			mNotification.defaults |= Notification.DEFAULT_VIBRATE;
 		}
 		mNotificationMGR.notify(notifyId, mNotification);
 		
 		// If vibration is forced, vibrate now.
-		if("ALWAYS".equals(mConfig.vibraNotify)) {
+		if((!isMuc && "ALWAYS".equals(mConfig.vibraNotify))
+				|| (isMuc && "ALWAYS".equals(mConfig.vibraNotifyMuc))) {
 			mVibrator.vibrate(400);
 		}
 		mWakeLock.release();
 	}
 	
-	private void setNotification(String fromJid, String fromUserId, String message) {
+	private void setNotification(String fromJid, String fromUserId, String message,
+			boolean isMuc) {
 		
 		int mNotificationCounter = 0;
 		if (notificationCount.containsKey(fromJid)) {
@@ -147,7 +168,7 @@ public abstract class GenericService extends Service {
 		}
 		String title = getString(R.string.notification_message, author);
 		String ticker;
-		if (mConfig.ticker) {
+		if ((!isMuc && mConfig.ticker) || (isMuc && mConfig.tickerMuc)) {
 			int newline = message.indexOf('\n');
 			int limit = 0;
 			String messageSummary = message;
@@ -177,8 +198,8 @@ public abstract class GenericService extends Service {
 		mNotification.flags = Notification.FLAG_AUTO_CANCEL;
 	}
 
-	private void setLEDNotification() {
-		if (mConfig.isLEDNotify) {
+	private void setLEDNotification(boolean isMuc) {
+		if ((!isMuc && mConfig.isLEDNotify) || (isMuc && mConfig.isLEDNotifyMuc)) {
 			mNotification.ledARGB = Color.MAGENTA;
 			mNotification.ledOnMS = 300;
 			mNotification.ledOffMS = 1000;
