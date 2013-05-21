@@ -183,7 +183,7 @@ public class XMPPService extends GenericService {
 		};
 	}
 	
-	private void createServiceMucStub() { // TODO
+	private void createServiceMucStub() {
 		mServiceMucConnection = new IXMPPMucService.Stub() {
 			@Override
 			public void sendMessage(String room, String message)
