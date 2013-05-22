@@ -554,6 +554,11 @@ public class XMPPService extends GenericService {
 				logInfo("Smackable disconnected on error");
 				postConnectionFailed(getString(R.string.conn_disconnected));
 			}
+
+			@Override
+			public void mucInvitationReceived(String room, String body) {
+				// TODO make a notification...
+			}
 		});
 	}
 
