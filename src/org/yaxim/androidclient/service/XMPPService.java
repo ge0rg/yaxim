@@ -522,6 +522,11 @@ public class XMPPService extends GenericService {
 					updateServiceNotification();
 				}
 			}
+
+			@Override
+			public void mucInvitationReceived(String room, String body) {
+				// TODO make a notification...
+			}
 		});
 	}
 
