@@ -1,67 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	android:versionCode="16" android:versionName="0.8.6b" package="org.yaxim.androidclient">
+    package="org.yaxim.androidclient"
+    android:versionCode="16"
+    android:versionName="0.8.6b" >
 
-	<uses-sdk android:targetSdkVersion="14" android:minSdkVersion="7"/>
+    <uses-sdk
+        android:minSdkVersion="7"
+        android:targetSdkVersion="14" />
 
-	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.VIBRATE" />
-	<uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-	<application android:icon="@drawable/icon"
-		android:name=".YaximApplication"
-		android:theme="@style/YaximDarkTheme"
-		android:debuggable="true" android:label="@string/app_name">
+    <application
+        android:name="org.yaxim.androidclient.YaximApplication"
+        android:debuggable="true"
+        android:icon="@drawable/icon"
+        android:label="@string/app_name"
+        android:theme="@style/YaximDarkTheme" >
+        <activity
+            android:name="org.yaxim.androidclient.MainWindow"
+            android:configChanges="orientation|keyboardHidden"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-		<activity android:name=".MainWindow" android:label="@string/app_name"
-			android:configChanges="orientation|keyboardHidden">
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-			<intent-filter android:icon="@drawable/icon" android:label="@string/app_name">
-				<action android:name="android.intent.action.SEND"></action>
-				<category android:name="android.intent.category.DEFAULT"></category>
-				<data android:mimeType="text/*"></data>
-			</intent-filter>
-			<intent-filter android:icon="@drawable/icon" android:label="@string/app_name">
-				<action android:name="android.intent.action.SENDTO" />
-				<category android:name="android.intent.category.DEFAULT" />
-				<data android:host="jabber" android:scheme="imto" />
-			</intent-filter>
-		</activity>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter
+                android:icon="@drawable/icon"
+                android:label="@string/app_name" >
+                <action android:name="android.intent.action.SEND" >
+                </action>
 
-		<activity android:name=".chat.ChatWindow" android:label="@string/app_name"
-			android:alwaysRetainTaskState="true">
-		</activity>
+                <category android:name="android.intent.category.DEFAULT" >
+                </category>
 
-		<activity android:name=".preferences.MainPrefs"
-			android:label="@string/app_name">
-		</activity>
+                <data android:mimeType="text/*" >
+                </data>
+            </intent-filter>
+            <intent-filter
+                android:icon="@drawable/icon"
+                android:label="@string/app_name" >
+                <action android:name="android.intent.action.SENDTO" />
 
-		<activity android:name=".preferences.AccountPrefs"
-			android:label="@string/app_name">
-		</activity>
+                <category android:name="android.intent.category.DEFAULT" />
 
-		<service android:name=".service.XMPPService">
-			<intent-filter>
-				<action android:name="de.hdmstuttgart.yaxim.XMPPSERVICE" />
-			</intent-filter>
-		</service>
+                <data
+                    android:host="jabber"
+                    android:scheme="imto" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="org.yaxim.androidclient.MucInviteActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="org.yaxim.androidclient.chat.ChatWindow"
+            android:alwaysRetainTaskState="true"
+            android:label="@string/app_name" >
+        </activity>
+        <activity
+            android:name="org.yaxim.androidclient.preferences.MainPrefs"
+            android:label="@string/app_name" >
+        </activity>
+        <activity
+            android:name="org.yaxim.androidclient.preferences.AccountPrefs"
+            android:label="@string/app_name" >
+        </activity>
 
-		<receiver android:name=".service.YaximBroadcastReceiver">
-			<intent-filter>
-				<action android:name="android.intent.action.ACTION_SHUTDOWN" />
-				<action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-			</intent-filter>
-		</receiver>
+        <service android:name="org.yaxim.androidclient.service.XMPPService" >
+            <intent-filter>
+                <action android:name="de.hdmstuttgart.yaxim.XMPPSERVICE" />
+            </intent-filter>
+        </service>
 
-		<provider android:name=".data.ChatProvider"
-			android:authorities="org.yaxim.androidclient.provider.Chats" />
-		<provider android:name=".data.RosterProvider"
-			android:authorities="org.yaxim.androidclient.provider.Roster" />
+        <receiver android:name="org.yaxim.androidclient.service.YaximBroadcastReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
 
-		<activity android:name="de.duenndns.ssl.MemorizingActivity" />
-	</application>
+        <provider
+            android:name="org.yaxim.androidclient.data.ChatProvider"
+            android:authorities="org.yaxim.androidclient.provider.Chats" />
+        <provider
+            android:name="org.yaxim.androidclient.data.RosterProvider"
+            android:authorities="org.yaxim.androidclient.provider.Roster" />
+
+        <activity android:name="de.duenndns.ssl.MemorizingActivity" />
+        <activity
+            android:name="org.yaxim.androidclient.MucInviteActivity"
+            android:label="@string/title_activity_muc_invite" >
+        </activity>
+    </application>
+
 </manifest>
