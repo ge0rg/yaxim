@@ -1420,4 +1420,11 @@ public class SmackableImp implements Smackable {
 		syncDbRooms();
 		return new ArrayList<String>(Arrays.asList(getJoinedRooms())).contains(jid);
 	}
+
+	@Override
+	public boolean inviteToRoom(String contactJid, String roomJid) {
+		MultiUserChat muc = multiUserChats.get(roomJid);
+		muc.invite(contactJid, "User "+contactJid+" has invited you to a chat!");
+		return false;
+	}
 }
