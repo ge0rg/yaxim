@@ -666,6 +666,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 	
 	private void mucInviteDialog(String userJid, String userName) {
 		MucDialogBuilder builder = new MucDialogBuilder(MucDialogBuilder.INVITE_DIALOG);
+		builder.setContactName(userJid);
 		Dialog dialog = builder.createDialog(MainWindow.this);
 		dialog.show();
 	}
@@ -1334,7 +1335,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 			View view = inflater.inflate(R.layout.muc_dialog, null);
 			builder.setView(view);
 			
-			builder.setMessage("Configure MUCs"); // TODO: translate?
+			if(mode==MANAGE_DIALOG) builder.setMessage("Configure MUCs"); //TODO: translate
+			else if(mode==INVITE_DIALOG) builder.setMessage("Invite to MUC");
 			builder.setPositiveButton("OK", new OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
