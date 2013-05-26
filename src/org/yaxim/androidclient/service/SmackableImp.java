@@ -2,6 +2,7 @@ package org.yaxim.androidclient.service;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,6 +41,7 @@ import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.InvitationListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.carbons.Carbon;
 import org.jivesoftware.smackx.carbons.Carbon;
 import org.jivesoftware.smackx.carbons.CarbonManager;
@@ -818,7 +820,7 @@ public class SmackableImp implements Smackable {
 					
 					if(msg.getType() != Message.Type.groupchat
 						|| 
-						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, fromJID))
+						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, ts, fromJID))
 						) {
 						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, 
 								ChatConstants.DS_NEW, ts, msg.getPacketID());
@@ -837,16 +839,18 @@ public class SmackableImp implements Smackable {
 	}
 
 
-	private boolean checkAddMucMessage(Message msg, String[] fromJid ) {
+	private boolean checkAddMucMessage(Message msg, long ts, String[] fromJid ) {
 		final String[] projection = new String[] {
 				ChatConstants._ID, ChatConstants.DATE,
 				ChatConstants.JID, ChatConstants.MESSAGE
 		};
 				
-		//final String selection = ChatConstants.JID+"='"+fromJid[0]+"' AND "+ChatConstants.MESSAGE+"='"+msg.getBody()+"'"
-		//		+ " AND "+ChatConstants.PACKET_ID+"='"+msg.getPacketID()+"'";
-		final String selection = ChatConstants.PACKET_ID+"='"+msg.getPacketID()+"'";
+		String content_match= ChatConstants.JID+"='"+fromJid[0]+"' AND "+ChatConstants.MESSAGE+"='"+msg.getBody()+"'"
+				+" AND "+ChatConstants.DATE+"='"+ts+"'";
+		String packet_match = ChatConstants.PACKET_ID+"='"+msg.getPacketID()+"'";
+		final String selection = "("+content_match+") OR ("+packet_match+")";
 		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, null);
+		
 		if(cursor.getCount()==0)
 			return true;	
 		else
@@ -1149,5 +1153,20 @@ public class SmackableImp implements Smackable {
 		Log.d(TAG, "invitng contact: "+contactJid+" to room: "+muc);
 		muc.invite(contactJid, "User "+contactJid+" has invited you to a chat!");
 		return false;
+	}
+
+	@Override
+	public String[] getUserList(String jid) {
+		MultiUserChat muc = null;
+		try {
+			muc = multiUserChats.get(jid);
+		} catch (Exception e) {
+			return new String[] {};
+		}
+		Iterator<String> occIter = muc.getOccupants();
+		ArrayList<String> tmpList = new ArrayList<String>();
+		while(occIter.hasNext())
+			tmpList.add(occIter.next().split("/")[1]);
+		return (String[]) tmpList.toArray(new String[]{});
 	}
 }
