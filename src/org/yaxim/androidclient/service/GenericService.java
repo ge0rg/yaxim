@@ -105,18 +105,16 @@ public abstract class GenericService extends Service {
 		}
 		mWakeLock.acquire();
 
-		boolean notifyTimeout = 
-				System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
-		boolean notifyCarbon = (isCarbon && 
-				System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid) > mConfig.notifyInhibitCarbons*1000);
-		
-		Log.d(TAG, String.format("got system millis %d, lastMsgDate %d, lastNewOwnMsgDate %d, notifyTimout %d, inhibitCarbons %d", 
-				System.currentTimeMillis(), fetchLastMsgDate(fromJid), fetchNewestOwnMsgDate(fromJid), mConfig.notifyTimeout, mConfig.notifyInhibitCarbons));
+		boolean notifyTimeout = System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
+		boolean notifyCarbon = System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid) < mConfig.notifyInhibitCarbons*1000;
+		Log.d(TAG, System.currentTimeMillis()+"-"+fetchNewestOwnMsgDate(fromJid)+"="+(System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid))+" ?<? "+mConfig.notifyInhibitCarbons*1000);
+		Log.d(TAG, String.format("on message '%s' -- got system millis %d, lastMsgDate %d, lastNewOwnMsgDate %d, isCarbon %b, notifyTimout %d, inhibitCarbons %d, notifyTimeout: %b, notifyCarbon: %b", 
+				message, System.currentTimeMillis(), fetchLastMsgDate(fromJid), fetchNewestOwnMsgDate(fromJid), isCarbon, mConfig.notifyTimeout, mConfig.notifyInhibitCarbons, notifyTimeout, notifyCarbon));
 		
 		setNotification(fromJid, fromUserName, message);
 	
 		// make notification ring/vibrate/led only if not in timeout
-		if(notifyTimeout || notifyCarbon) {
+		if( notifyTimeout && !notifyCarbon ) {
 			Log.d(TAG, "will notify");
 			setLEDNotification();
 			mNotification.sound = mConfig.notifySound;
@@ -141,9 +139,6 @@ public abstract class GenericService extends Service {
 	}
 	
 	private long fetchNewestOwnMsgDate(String fromJid) {
-		Log.d(TAG, "got where: "+String.format("%s = '%s' AND %s = %s AND %s = %s", ChatConstants.JID, fromJid, 
-				ChatConstants.DIRECTION, ChatConstants.OUTGOING,
-				ChatConstants.WAS_CARBON, ChatConstants.MSG_CARBON));
 		Cursor cursor = getContentResolver().query(ChatProvider.CONTENT_URI, 
 				new String[]{ChatConstants.DATE}, 
 				String.format("%s = '%s' AND %s = %s AND %s = %s", ChatConstants.JID, fromJid, 

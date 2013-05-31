@@ -726,16 +726,19 @@ public class SmackableImp implements Smackable {
 					Message msg = (Message) packet;
 					String chatMessage = msg.getBody();
 					int wasCarbon = ChatConstants.MSG_NO_CARBON;
+					
+					Log.d(TAG, "got new packet with smg "+chatMessage);
+					
 					// try to extract a carbon
 					Carbon cc = CarbonManager.getCarbon(msg);
 					if (cc != null && cc.getDirection() == Carbon.Direction.received) {
-						Log.d(TAG, "carbon: " + cc.toXML());
+						Log.d(TAG, "carbon-recv: " + cc.toXML());
 						msg = (Message)cc.getForwarded().getForwardedPacket();
 						chatMessage = msg.getBody();
 						wasCarbon=ChatConstants.MSG_CARBON;
 						// fall through for "received" message
 					}  else if (cc != null && cc.getDirection() == Carbon.Direction.sent) {
-						Log.d(TAG, "carbon: " + cc.toXML());
+						Log.d(TAG, "carbon-sent: " + cc.toXML());
 						msg = (Message)cc.getForwarded().getForwardedPacket();
 						chatMessage = msg.getBody();
 						if (chatMessage == null) return;
@@ -769,7 +772,8 @@ public class SmackableImp implements Smackable {
 
 					addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, 
 							ts, msg.getPacketID(), wasCarbon);
-					mServiceCallBack.newMessage(fromJID, chatMessage, cc!=null);
+					Log.d(TAG, "calling newMessage: "+fromJID+", '"+chatMessage+"', "+wasCarbon+" ?==? "+ChatConstants.MSG_CARBON);
+					mServiceCallBack.newMessage(fromJID, chatMessage, wasCarbon==ChatConstants.MSG_CARBON);
 				}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(
