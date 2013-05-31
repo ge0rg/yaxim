@@ -153,19 +153,8 @@ public abstract class GenericService extends Service {
 			notificationId.put(fromJid, Integer.valueOf(notifyId));
 		}
 
-		// If vibration is set to "system default", add the vibration flag to the 
-		// notification and let the system decide.
-		if((!isMuc && "SYSTEM".equals(mConfig.vibraNotify)) 
-				|| (isMuc && "SYSTEM".equals(mConfig.vibraNotifyMuc))) {
-			mNotification.defaults |= Notification.DEFAULT_VIBRATE;
-		}
 		mNotificationMGR.notify(notifyId, mNotification);
-		
-		// If vibration is forced, vibrate now.
-		if((!isMuc && "ALWAYS".equals(mConfig.vibraNotify))
-				|| (isMuc && "ALWAYS".equals(mConfig.vibraNotifyMuc))) {
-			mVibrator.vibrate(400);
-		}
+
 		mWakeLock.release();
 	}
 	
