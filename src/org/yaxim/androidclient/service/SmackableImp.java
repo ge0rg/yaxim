@@ -502,13 +502,14 @@ public class SmackableImp implements Smackable {
 				sendMucMessage(toJID, message);
 			} else {
 				addChatMessageToDB(ChatConstants.OUTGOING, toJID, message, ChatConstants.DS_SENT_OR_READ,
-						System.currentTimeMillis(), newMessage.getPacketID());
+						System.currentTimeMillis(), newMessage.getPacketID(), ChatConstants.MSG_NO_CARBON);
 				mXMPPConnection.sendPacket(newMessage);
 			}
+
 		} else {
 			// send offline -> store to DB
 			addChatMessageToDB(ChatConstants.OUTGOING, toJID, message, ChatConstants.DS_NEW,
-					System.currentTimeMillis(), newMessage.getPacketID());
+					System.currentTimeMillis(), newMessage.getPacketID(), ChatConstants.MSG_NO_CARBON);
 		}
 	}
 
@@ -772,22 +773,29 @@ public class SmackableImp implements Smackable {
 						sendReceipt(msg.getFrom(), msg.getPacketID());
 					}
 
+					int wasCarbon = ChatConstants.MSG_NO_CARBON;
+					
+					Log.d(TAG, "got new packet with smg "+chatMessage);
+
 					// try to extract a carbon
 					Carbon cc = CarbonManager.getCarbon(msg);
 					if (cc != null && cc.getDirection() == Carbon.Direction.received) {
-						Log.d(TAG, "carbon: " + cc.toXML());
+						Log.d(TAG, "carbon-recv: " + cc.toXML());
 						msg = (Message)cc.getForwarded().getForwardedPacket();
 						chatMessage = msg.getBody();
-						// fall through
+						wasCarbon=ChatConstants.MSG_CARBON;
+						// fall through for "received" message
 					}  else if (cc != null && cc.getDirection() == Carbon.Direction.sent) {
-						Log.d(TAG, "carbon: " + cc.toXML());
+						Log.d(TAG, "carbon-sent: " + cc.toXML());
 						msg = (Message)cc.getForwarded().getForwardedPacket();
 						chatMessage = msg.getBody();
 						if (chatMessage == null) return;
 						String[] fromJID = getJabberID(msg.getTo());
 
-						addChatMessageToDB(ChatConstants.OUTGOING, fromJID, chatMessage, ChatConstants.DS_SENT_OR_READ, System.currentTimeMillis(), msg.getPacketID());
-						// always return after adding
+						addChatMessageToDB(ChatConstants.OUTGOING, fromJID, chatMessage, 
+								ChatConstants.DS_SENT_OR_READ, System.currentTimeMillis(), 
+								msg.getPacketID(), ChatConstants.MSG_CARBON);
+						// return after adding "own" message
 						return;
 					}
 					
@@ -815,17 +823,19 @@ public class SmackableImp implements Smackable {
 					else
 						ts = System.currentTimeMillis();
 
-					
+				
 					String[] fromJID = getJabberID(msg.getFrom());
 					
 					if(msg.getType() != Message.Type.groupchat
 						|| 
 						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, ts, fromJID))
 						) {
-						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, 
-								ChatConstants.DS_NEW, ts, msg.getPacketID());
-						mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType());
+						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, 
+								ts, msg.getPacketID(), wasCarbon);
+						Log.d(TAG, "calling newMessage: "+fromJID+", '"+chatMessage+"', "+wasCarbon+" ?==? "+ChatConstants.MSG_CARBON);
+						mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType(), wasCarbon==ChatConstants.MSG_CARBON);
 					}
+
 				}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(
@@ -837,7 +847,6 @@ public class SmackableImp implements Smackable {
 
 		mXMPPConnection.addPacketListener(mPacketListener, filter);
 	}
-
 
 	private boolean checkAddMucMessage(Message msg, long ts, String[] fromJid ) {
 		final String[] projection = new String[] {
@@ -859,7 +868,7 @@ public class SmackableImp implements Smackable {
 
 	private void addChatMessageToDB(int direction, String[] JID,
 			String message, int delivery_status, long ts, 
-			String packetID) {
+			String packetID, int was_carbon) {
 		ContentValues values = new ContentValues();
 		
 		values.put(ChatConstants.DIRECTION, direction);
@@ -869,14 +878,15 @@ public class SmackableImp implements Smackable {
 		values.put(ChatConstants.DELIVERY_STATUS, delivery_status);
 		values.put(ChatConstants.DATE, ts);
 		values.put(ChatConstants.PACKET_ID, packetID);
+		values.put(ChatConstants.WAS_CARBON, was_carbon);
 
 		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
 	}
 
 	private void addChatMessageToDB(int direction, String JID,
-			String message, int delivery_status, long ts, String packetID) {
+			String message, int delivery_status, long ts, String packetID, int was_carbon) {
 		String[] tJID = {JID, ""};
-		addChatMessageToDB(direction, tJID, message, delivery_status, ts, packetID);
+		addChatMessageToDB(direction, tJID, message, delivery_status, ts, packetID, was_carbon);
 	}
 
 	private ContentValues getContentValuesForRosterEntry(final RosterEntry entry) {

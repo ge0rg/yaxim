@@ -33,6 +33,9 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 	public String statusMode;
 	public String statusMessage;
+	
+	public int notifyTimeout;
+	public int notifyInhibitCarbons;
 
 	public boolean isLEDNotify;
 	public String vibraNotify;
@@ -92,8 +95,9 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 	private void loadPrefs(SharedPreferences prefs) {
 		this.highlightNickMuc = prefs.getBoolean(PreferenceConstants.HIGHLIGHTMUC, false);
-		this.isLEDNotifyMuc = prefs.getBoolean(PreferenceConstants.LEDNOTIFYMUC,
-				false);
+		this.isLEDNotifyMuc = prefs.getBoolean(PreferenceConstants.LEDNOTIFYMUC, false);
+		this.notifyTimeout = Integer.parseInt(prefs.getString(PreferenceConstants.NOTIFY_TIMEOUT, "0"));
+		this.notifyInhibitCarbons = Integer.parseInt(prefs.getString(PreferenceConstants.NOTIFY_INHIBIT_CARBONS, "0"));
 		this.vibraNotifyMuc = prefs.getString(
 				PreferenceConstants.VIBRATIONNOTIFYMUC, "SYSTEM");
 		this.notifySoundMuc = Uri.parse(prefs.getString(

@@ -7,6 +7,9 @@ import org.jivesoftware.smack.packet.Message;
 import org.yaxim.androidclient.chat.ChatWindow;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.YaximConfiguration;
+import org.yaxim.androidclient.data.ChatProvider;
+import org.yaxim.androidclient.data.YaximConfiguration;
+import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.util.LogConstants;
 
@@ -99,7 +102,7 @@ public abstract class GenericService extends Service {
 	}
 
 	protected void notifyClient(String fromJid, String fromUserName, String message,
-			boolean showNotification, Message.Type msgType) { 
+			boolean showNotification, Message.Type msgType, boolean isCarbon) { 
 		boolean isMuc = (msgType==Message.Type.groupchat);
 		
 		if(isMuc && mConfig.highlightNickMuc) {
@@ -120,10 +123,26 @@ public abstract class GenericService extends Service {
 			return;
 		}
 		mWakeLock.acquire();
-		setNotification(fromJid, fromUserName, message, isMuc);
-		setLEDNotification(isMuc);
-		mNotification.sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
+
+		boolean notifyTimeout = System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
+		boolean notifyCarbon = System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid) < mConfig.notifyInhibitCarbons*1000;
+		Log.d(TAG, System.currentTimeMillis()+"-"+fetchNewestOwnMsgDate(fromJid)+"="+(System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid))+" ?<? "+mConfig.notifyInhibitCarbons*1000);
+		Log.d(TAG, String.format("on message '%s' -- got system millis %d, lastMsgDate %d, lastNewOwnMsgDate %d, isCarbon %b, notifyTimout %d, inhibitCarbons %d, notifyTimeout: %b, notifyCarbon: %b", 
+				message, System.currentTimeMillis(), fetchLastMsgDate(fromJid), fetchNewestOwnMsgDate(fromJid), isCarbon, mConfig.notifyTimeout, mConfig.notifyInhibitCarbons, notifyTimeout, notifyCarbon));
 		
+		setNotification(fromJid, fromUserName, message, isMuc);
+	
+		// make notification ring/vibrate/led only if not in timeout
+		if( notifyTimeout && !notifyCarbon ) {
+			Log.d(TAG, "will notify");
+			setLEDNotification(isMuc);
+			mNotification.sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
+			if("SYSTEM".equals(mConfig.vibraNotify)) {
+				mNotification.defaults |= Notification.DEFAULT_VIBRATE;
+			} else if("ALWAYS".equals(mConfig.vibraNotify)) {
+				mVibrator.vibrate(400);
+			}
+		} else Log.d(TAG, "will NOT notify");
 		
 		int notifyId = 0;
 		if (notificationId.containsKey(fromJid)) {
@@ -150,8 +169,39 @@ public abstract class GenericService extends Service {
 		mWakeLock.release();
 	}
 	
-	private void setNotification(String fromJid, String fromUserId, String message,
-			boolean isMuc) {
+	private long fetchNewestOwnMsgDate(String fromJid) {
+		Cursor cursor = getContentResolver().query(ChatProvider.CONTENT_URI, 
+				new String[]{ChatConstants.DATE}, 
+				String.format("%s = '%s' AND %s = %s AND %s = %s", ChatConstants.JID, fromJid, 
+						ChatConstants.DIRECTION, ChatConstants.OUTGOING,
+						ChatConstants.WAS_CARBON, ChatConstants.MSG_CARBON), 
+				null, 
+				ChatConstants.DATE+" desc");
+		if(cursor.getCount() == 0) {
+			Log.w(TAG, "could not find newest own (carbons) msg");
+			return 0;
+		}
+		cursor.moveToFirst();
+		long ret = cursor.getLong( cursor.getColumnIndexOrThrow(ChatConstants.DATE) );
+		return ret;
+	}
+
+	private long fetchLastMsgDate(String fromJid) {
+		Cursor cursor = getContentResolver().query(ChatProvider.CONTENT_URI, 
+				new String[]{ChatConstants.DATE}, 
+				String.format("%s = '%s'", ChatConstants.JID, fromJid), 
+				null, ChatConstants.DATE+" desc");
+		cursor.moveToFirst();
+		if(cursor.getCount() < 2) {
+			Log.w(TAG, "could not fetch date oflast message, timeout won't work");
+			return 0;
+		}
+		cursor.moveToNext(); // we need the 2nd entry, as the first is the newly added message
+		long ret = cursor.getLong( cursor.getColumnIndexOrThrow(ChatConstants.DATE) );
+		return ret;
+	}
+
+	private void setNotification(String fromJid, String fromUserId, String message, boolean isMuc) {
 		
 		int mNotificationCounter = 0;
 		if (notificationCount.containsKey(fromJid)) {
