@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_name">yaxim</string>
+	<string name="build_version">dev</string>
+	
 
 	<!-- Connection state -->
 	<string name="conn_title">yaxim: %s</string>
@@ -45,6 +47,10 @@
 	<string name="ringtone_summ">Tone for incoming messages</string>
 	<string name="ticker_title">Message preview</string>
 	<string name="ticker_summ">Show sender and message in status bar</string>
+	<string name="notifyinhibitcarbons_title">Less noticiations on carbons</string>
+	<string name="notifytimeout_title">Notification Timeout</string>
+	<string name="notifyinhibitcarbons_summ">Only notify on a received carbon if no other resource is actually active (0: always notify)</string>
+	<string name="notifytimeout_summ">Notify again only after timeout elapsed (0: no timeout)</string>
 
 	<!-- Startup Setting Strings -->
 	<string name="preftitle_boot">Startup Options</string>

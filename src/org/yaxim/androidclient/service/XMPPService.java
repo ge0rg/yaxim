@@ -485,9 +485,10 @@ public class XMPPService extends GenericService {
 		}
 
 		mSmackable.registerCallback(new XMPPServiceCallback() {
-			public void newMessage(String from, String message) {
+			public void newMessage(String from, String message, boolean isCarbon) {
 				logInfo("notification: " + from);
-				notifyClient(from, mSmackable.getNameForJID(from), message, !mIsBoundTo.contains(from));
+				notifyClient(from, mSmackable.getNameForJID(from), message, 
+						!mIsBoundTo.contains(from), isCarbon);
 			}
 
 			public void rosterChanged() {

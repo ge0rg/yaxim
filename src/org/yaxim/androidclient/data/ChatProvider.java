@@ -196,7 +196,7 @@ public class ChatProvider extends ContentProvider {
 	private static class ChatDatabaseHelper extends SQLiteOpenHelper {
 
 		private static final String DATABASE_NAME = "yaxim.db";
-		private static final int DATABASE_VERSION = 5;
+		private static final int DATABASE_VERSION = 6;
 
 		public ChatDatabaseHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -215,7 +215,8 @@ public class ChatProvider extends ContentProvider {
 					+ ChatConstants.JID + " TEXT,"
 					+ ChatConstants.MESSAGE + " TEXT,"
 					+ ChatConstants.DELIVERY_STATUS + " INTEGER,"
-					+ ChatConstants.PACKET_ID + " TEXT);");
+					+ ChatConstants.PACKET_ID + " TEXT,"
+					+ ChatConstants.WAS_CARBON + " INTEGER);");
 		}
 
 		@Override
@@ -250,10 +251,13 @@ public class ChatProvider extends ContentProvider {
 		public static final String MESSAGE = "message";
 		public static final String DELIVERY_STATUS = "read"; // SQLite can not rename columns, reuse old name
 		public static final String PACKET_ID = "pid";
+		public static final String WAS_CARBON = "was_carbon";
 
 		// boolean mappings
 		public static final int INCOMING = 0;
 		public static final int OUTGOING = 1;
+		public static final int MSG_NO_CARBON = 0;
+		public static final int MSG_CARBON = 1;
 		public static final int DS_NEW = 0; //< this message has not been sent/displayed yet
 		public static final int DS_SENT_OR_READ = 1; //< this message was sent but not yet acked, or it was received and read
 		public static final int DS_ACKED = 2; //< this message was XEP-0184 acknowledged

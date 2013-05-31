@@ -4,7 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.yaxim.androidclient.chat.ChatWindow;
+import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.YaximConfiguration;
+import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
+import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.util.LogConstants;
 
 import android.app.Notification;
@@ -13,6 +16,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -93,16 +97,35 @@ public abstract class GenericService extends Service {
 	}
 
 	protected void notifyClient(String fromJid, String fromUserName, String message,
-			boolean showNotification) {
+			boolean showNotification, boolean isCarbon) {
 		if (!showNotification) {
 			// only play sound and return
 			RingtoneManager.getRingtone(getApplicationContext(), mConfig.notifySound).play();
 			return;
 		}
 		mWakeLock.acquire();
+
+		boolean notifyTimeout = 
+				System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
+		boolean notifyCarbon = (isCarbon && 
+				System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid) > mConfig.notifyInhibitCarbons*1000);
+		
+		Log.d(TAG, String.format("got system millis %d, lastMsgDate %d, lastNewOwnMsgDate %d, notifyTimout %d, inhibitCarbons %d", 
+				System.currentTimeMillis(), fetchLastMsgDate(fromJid), fetchNewestOwnMsgDate(fromJid), mConfig.notifyTimeout, mConfig.notifyInhibitCarbons));
+		
 		setNotification(fromJid, fromUserName, message);
-		setLEDNotification();
-		mNotification.sound = mConfig.notifySound;
+	
+		// make notification ring/vibrate/led only if not in timeout
+		if(notifyTimeout || notifyCarbon) {
+			Log.d(TAG, "will notify");
+			setLEDNotification();
+			mNotification.sound = mConfig.notifySound;
+			if("SYSTEM".equals(mConfig.vibraNotify)) {
+				mNotification.defaults |= Notification.DEFAULT_VIBRATE;
+			} else if("ALWAYS".equals(mConfig.vibraNotify)) {
+				mVibrator.vibrate(400);
+			}
+		} else Log.d(TAG, "will NOT notify");
 		
 		int notifyId = 0;
 		if (notificationId.containsKey(fromJid)) {
@@ -113,20 +136,45 @@ public abstract class GenericService extends Service {
 			notificationId.put(fromJid, Integer.valueOf(notifyId));
 		}
 
-		// If vibration is set to "system default", add the vibration flag to the 
-		// notification and let the system decide.
-		if("SYSTEM".equals(mConfig.vibraNotify)) {
-			mNotification.defaults |= Notification.DEFAULT_VIBRATE;
-		}
 		mNotificationMGR.notify(notifyId, mNotification);
-		
-		// If vibration is forced, vibrate now.
-		if("ALWAYS".equals(mConfig.vibraNotify)) {
-			mVibrator.vibrate(400);
-		}
 		mWakeLock.release();
 	}
 	
+	private long fetchNewestOwnMsgDate(String fromJid) {
+		Log.d(TAG, "got where: "+String.format("%s = '%s' AND %s = %s AND %s = %s", ChatConstants.JID, fromJid, 
+				ChatConstants.DIRECTION, ChatConstants.OUTGOING,
+				ChatConstants.WAS_CARBON, ChatConstants.MSG_CARBON));
+		Cursor cursor = getContentResolver().query(ChatProvider.CONTENT_URI, 
+				new String[]{ChatConstants.DATE}, 
+				String.format("%s = '%s' AND %s = %s AND %s = %s", ChatConstants.JID, fromJid, 
+						ChatConstants.DIRECTION, ChatConstants.OUTGOING,
+						ChatConstants.WAS_CARBON, ChatConstants.MSG_CARBON), 
+				null, 
+				ChatConstants.DATE+" desc");
+		if(cursor.getCount() == 0) {
+			Log.w(TAG, "could not find newest own (carbons) msg");
+			return 0;
+		}
+		cursor.moveToFirst();
+		long ret = cursor.getLong( cursor.getColumnIndexOrThrow(ChatConstants.DATE) );
+		return ret;
+	}
+
+	private long fetchLastMsgDate(String fromJid) {
+		Cursor cursor = getContentResolver().query(ChatProvider.CONTENT_URI, 
+				new String[]{ChatConstants.DATE}, 
+				String.format("%s = '%s'", ChatConstants.JID, fromJid), 
+				null, ChatConstants.DATE+" desc");
+		cursor.moveToFirst();
+		if(cursor.getCount() < 2) {
+			Log.w(TAG, "could not fetch date oflast message, timeout won't work");
+			return 0;
+		}
+		cursor.moveToNext(); // we need the 2nd entry, as the first is the newly added message
+		long ret = cursor.getLong( cursor.getColumnIndexOrThrow(ChatConstants.DATE) );
+		return ret;
+	}
+
 	private void setNotification(String fromJid, String fromUserId, String message) {
 		
 		int mNotificationCounter = 0;

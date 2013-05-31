@@ -13,6 +13,8 @@ public class PreferenceConstants {
 	public final static String AUTO_RECONNECT = "reconnect";
 	public final static String MESSAGE_CARBONS = "carbons";
 	public final static String SHOW_OFFLINE = "showOffline";
+	public final static String NOTIFY_TIMEOUT="notifyTimeout";
+	public final static String NOTIFY_INHIBIT_CARBONS="notifyInhibitCarbons";
 	public final static String LEDNOTIFY = "led";
 	public final static String VIBRATIONNOTIFY = "vibration_list";
 	public final static String RINGTONENOTIFY= "ringtone";
