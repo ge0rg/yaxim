@@ -21,8 +21,8 @@
 
     <style name="RosterGroupItem">
         <item name="android:textSize">20sp</item>
-    </style>
-
+    </style>	
+	
 	<style name="StyleErrorView">
 		<item name="android:textSize">18sp</item>
 		<item name="android:padding">5sp</item>
@@ -31,10 +31,12 @@
 		<item name="android:shadowColor">#44000000</item>
 		<item name="android:shadowRadius">3.0</item>
 	</style>
+		
 	<style name="StyleErrorView.Light">
 		<item name="android:background">#f88</item>
 		<item name="android:textColor">#400</item>
 	</style>
+	
     <style name="RosterMessageCounter">
         <item name="android:visibility">gone</item>
         <item name="android:layout_width">wrap_content</item>
