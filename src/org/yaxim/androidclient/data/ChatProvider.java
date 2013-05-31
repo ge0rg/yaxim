@@ -229,6 +229,7 @@ public class ChatProvider extends ContentProvider {
 				db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD " + ChatConstants.PACKET_ID + " TEXT");
 			case 5:
 				db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD " + ChatConstants.RESOURCE + " TEXT DEFAULT NULL");
+				db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD " + ChatConstants.WAS_CARBON+ " INTEGER");
 				break;
 			default:
 				db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
