@@ -97,16 +97,19 @@ public abstract class GenericService extends Service {
 			boolean showNotification, boolean silent_notification, Message.Type msgType) {
 		boolean isMuc = (msgType==Message.Type.groupchat);
 		
-		if(isMuc && mConfig.highlightNickMuc) {
+		if(isMuc) {
 			ContentResolver contentResolver = getContentResolver();
 			Cursor cursor = contentResolver.query(RosterProvider.MUCS_URI, new String[] {RosterConstants.NICKNAME}, 
 					RosterConstants.JID+"='"+fromJid+"'", null, null);
 			cursor.moveToFirst();
 			String nick = cursor.getString( cursor.getColumnIndexOrThrow(RosterConstants.NICKNAME) );
-			if(!message.contains(nick)) {
+			if(!message.contains(nick) && mConfig.highlightNickMuc) { // if we're not mentioned and highlight only on nick is set
 				return;
 			}
-		}
+			if((fromJid.contains("/") && fromJid.split("/")[1].equals(nick))) { // if this is a message from us
+				return;
+			}
+		} 
 		
 		if (!showNotification) {
 			// only play sound and return
