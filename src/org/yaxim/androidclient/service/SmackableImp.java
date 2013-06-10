@@ -83,6 +83,7 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 
 import android.net.Uri;
+import android.telephony.gsm.SmsMessage.MessageClass;
 import android.util.Log;
 
 public class SmackableImp implements Smackable {
@@ -826,13 +827,16 @@ public class SmackableImp implements Smackable {
 				
 					String[] fromJID = getJabberID(msg.getFrom());
 					
+					Log.d(TAG, 
+							String.format("attempting to add message '''%s''' from %s to db, msgtype==groupchat?: %b, checkaddmucmessage is: %b", chatMessage, fromJID[0], msg.getType()==Message.Type.groupchat, checkAddMucMessage(msg, ts, fromJID))
+							);
 					if(msg.getType() != Message.Type.groupchat
 						|| 
 						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, ts, fromJID))
 						) {
+						Log.d(TAG, "actually adding msg...");
 						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, 
 								ts, msg.getPacketID(), wasCarbon);
-						Log.d(TAG, "calling newMessage: "+fromJID+", '"+chatMessage+"', "+wasCarbon+" ?==? "+ChatConstants.MSG_CARBON);
 						mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType(), wasCarbon==ChatConstants.MSG_CARBON);
 					}
 

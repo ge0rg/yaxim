@@ -104,6 +104,7 @@ public abstract class GenericService extends Service {
 	protected void notifyClient(String fromJid, String fromUserName, String message,
 			boolean showNotification, Message.Type msgType, boolean isCarbon) { 
 		boolean isMuc = (msgType==Message.Type.groupchat);
+		boolean beNoisy=true;
 		
 		if(isMuc && mConfig.highlightNickMuc) {
 			ContentResolver contentResolver = getContentResolver();
@@ -112,16 +113,17 @@ public abstract class GenericService extends Service {
 			cursor.moveToFirst();
 			String nick = cursor.getString( cursor.getColumnIndexOrThrow(RosterConstants.NICKNAME) );
 			if(!message.contains(nick)) {
-				return;
+				beNoisy=false;
 			}
 		}
 		
-		if (!showNotification) {
+		if (!showNotification && beNoisy) {
 			// only play sound and return
 			Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
 			RingtoneManager.getRingtone(getApplicationContext(), sound).play();
 			return;
 		}
+
 		mWakeLock.acquire();
 
 		boolean notifyTimeout = System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
@@ -133,7 +135,7 @@ public abstract class GenericService extends Service {
 		setNotification(fromJid, fromUserName, message, isMuc);
 	
 		// make notification ring/vibrate/led only if not in timeout
-		if( notifyTimeout && !notifyCarbon ) {
+		if( notifyTimeout && !notifyCarbon && beNoisy) {
 			Log.d(TAG, "will notify");
 			setLEDNotification(isMuc);
 			mNotification.sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
