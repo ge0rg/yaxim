@@ -104,6 +104,7 @@ public abstract class GenericService extends Service {
 	protected void notifyClient(String fromJid, String fromUserName, String message,
 			boolean showNotification, Message.Type msgType, boolean isCarbon) { 
 		boolean isMuc = (msgType==Message.Type.groupchat);
+		boolean beNoisy=true;
 		
 		if(isMuc) {
 			ContentResolver contentResolver = getContentResolver();
@@ -111,7 +112,10 @@ public abstract class GenericService extends Service {
 					RosterConstants.JID+"='"+fromJid+"'", null, null);
 			cursor.moveToFirst();
 			String nick = cursor.getString( cursor.getColumnIndexOrThrow(RosterConstants.NICKNAME) );
-			if(!message.contains(nick) && mConfig.highlightNickMuc) { // if we're not mentioned and highlight only on nick is set
+			if((mConfig.highlightNickMuc && !message.contains(nick))) {
+				beNoisy=false;
+			}
+			if(fromJid.contains("/") && fromJid.split("/")[1]==nick) { // own message? never notify!
 				return;
 			}
 			if((fromJid.contains("/") && fromJid.split("/")[1].equals(nick))) { // if this is a message from us
@@ -119,12 +123,13 @@ public abstract class GenericService extends Service {
 			}
 		} 
 		
-		if (!showNotification) {
+		if (!showNotification && beNoisy) {
 			// only play sound and return
 			Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
 			RingtoneManager.getRingtone(getApplicationContext(), sound).play();
 			return;
 		}
+
 		mWakeLock.acquire();
 
 		boolean notifyTimeout = System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
@@ -136,7 +141,7 @@ public abstract class GenericService extends Service {
 		setNotification(fromJid, fromUserName, message, isMuc);
 	
 		// make notification ring/vibrate/led only if not in timeout
-		if( notifyTimeout && !notifyCarbon ) {
+		if( notifyTimeout && !notifyCarbon && beNoisy) {
 			Log.d(TAG, "will notify");
 			setLEDNotification(isMuc);
 			mNotification.sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
