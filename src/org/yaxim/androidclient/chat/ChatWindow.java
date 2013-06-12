@@ -226,6 +226,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 						IXMPPMucService.Stub.asInterface(service), 
 						mWithJabberID);
 				invalidateOptionsMenu();
+				getListView().invalidateViews();
 			}
 			public void onServiceDisconnected(ComponentName name) {
 			}
