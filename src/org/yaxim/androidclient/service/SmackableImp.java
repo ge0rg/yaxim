@@ -837,7 +837,7 @@ public class SmackableImp implements Smackable {
 						Log.d(TAG, "actually adding msg...");
 						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, 
 								ts, msg.getPacketID(), wasCarbon);
-						mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType(), wasCarbon==ChatConstants.MSG_CARBON);
+						mServiceCallBack.newMessage(fromJID, chatMessage, msg.getType(), wasCarbon==ChatConstants.MSG_CARBON);
 					}
 
 				}
@@ -855,19 +855,30 @@ public class SmackableImp implements Smackable {
 	private boolean checkAddMucMessage(Message msg, long ts, String[] fromJid ) {
 		final String[] projection = new String[] {
 				ChatConstants._ID, ChatConstants.DATE,
-				ChatConstants.JID, ChatConstants.MESSAGE
+				ChatConstants.JID, ChatConstants.MESSAGE,
+				ChatConstants.PACKET_ID
 		};
 				
 		String content_match= ChatConstants.JID+"='"+fromJid[0]+"' AND "+ChatConstants.MESSAGE+"='"+msg.getBody()+"'"
-				+" AND "+ChatConstants.DATE+"='"+ts+"'";
+				+" AND "+ChatConstants.DATE+"='"+ts+"'"; // TODO: and this, dear children, IS A SQL INJECTION VULNERABILITY
 		String packet_match = ChatConstants.PACKET_ID+"='"+msg.getPacketID()+"'";
 		final String selection = "("+content_match+") OR ("+packet_match+")";
 		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, null);
 		
-		if(cursor.getCount()==0)
+		Log.d(TAG, "in checkAddMucMessage, got newmsg packetid: "+msg.getPacketID()+" from: "+fromJid[0]+" body: "+msg.getBody()+" and ts: "+ts);
+		
+		if(cursor.getCount()==0) {
+			Log.d(TAG, "returning true, NO hit");
 			return true;	
-		else
+		} else {
+			cursor.moveToFirst();
+			long dts = cursor.getLong( cursor.getColumnIndexOrThrow(projection[1]) );
+			String djid = cursor.getString( cursor.getColumnIndexOrThrow(projection[2]) );
+			String dmsg = cursor.getString( cursor.getColumnIndexOrThrow(projection[3]) );
+			long dpid = cursor.getLong( cursor.getColumnIndexOrThrow(projection[4]) );
+			Log.d(TAG, "FOUND hit, returning false: ts: "+dts+" jid: "+djid+" msg: "+dmsg+" pid: "+dpid);
 			return false;
+		}
 	}
 
 	private void addChatMessageToDB(int direction, String[] JID,

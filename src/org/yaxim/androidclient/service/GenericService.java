@@ -101,8 +101,9 @@ public abstract class GenericService extends Service {
 		mNotificationIntent = new Intent(this, ChatWindow.class);
 	}
 
-	protected void notifyClient(String fromJid, String fromUserName, String message,
+	protected void notifyClient(String[] jid, String fromUserName, String message,
 			boolean showNotification, Message.Type msgType, boolean isCarbon) { 
+		String fromJid = jid[0];
 		boolean isMuc = (msgType==Message.Type.groupchat);
 		boolean beNoisy=true;
 		
@@ -115,10 +116,7 @@ public abstract class GenericService extends Service {
 			if((mConfig.highlightNickMuc && !message.contains(nick))) {
 				beNoisy=false;
 			}
-			if(fromJid.contains("/") && fromJid.split("/")[1]==nick) { // own message? never notify!
-				return;
-			}
-			if((fromJid.contains("/") && fromJid.split("/")[1].equals(nick))) { // if this is a message from us
+			if(jid.length > 1 && jid[1].equals(nick)) { // if this is a message from us
 				return;
 			}
 		} 
