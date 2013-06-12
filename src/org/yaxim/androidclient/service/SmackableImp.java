@@ -829,7 +829,7 @@ public class SmackableImp implements Smackable {
 						Log.d(TAG, "actually adding msg...");
 						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, 
 								ChatConstants.DS_NEW, ts, msg.getPacketID());
-						mServiceCallBack.newMessage(fromJID[0], chatMessage, msg.getType());
+						mServiceCallBack.newMessage(fromJID, chatMessage, msg.getType());
 					}
 				}
 				} catch (Exception e) {
