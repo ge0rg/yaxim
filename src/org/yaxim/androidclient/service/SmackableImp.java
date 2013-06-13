@@ -372,7 +372,7 @@ public class SmackableImp implements Smackable {
 				// spawn thread to do disconnect
 				new Thread() {
 					public void run() {
-						updateConnectingThread(this);
+						updateConnectionState(ConnectionState.DISCONNECTING);
 						mXMPPConnection.shutdown();
 						mStreamHandler.close();
 						mAlarmManager.cancel(mPongTimeoutAlarmPendIntent);
@@ -524,7 +524,7 @@ public class SmackableImp implements Smackable {
 		try {
 			if (mXMPPConnection.isConnected()) {
 				try {
-					mStreamHandler.quickShutdown(); // blocking shutdown prior to re-connection
+					mXMPPConnection.shutdown();
 				} catch (Exception e) {
 					debugLog("conn.shutdown() failed: " + e);
 				}
