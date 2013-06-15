@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_name">yaxim</string>
+	<string name="build_version">dev</string>
+	
 
 	<!-- Connection state -->
 	<string name="conn_title">yaxim: %s</string>
@@ -119,6 +121,7 @@
 	<string name="roster_contextmenu_group_rename">Rename group</string>
 	<string name="roster_contextmenu_contact_delete">Delete Contact</string>
 	<string name="roster_contextmenu_contact_delmsg">Delete Chat History</string>
+	<string name="roster_contextmenu_contact_markread">Mark as Read</string>
 	<string name="roster_contextmenu_contact_open_chat">Open Chat</string>
 	<string name="roster_contextmenu_contact_rename">Rename</string>
 	<string name="roster_contextmenu_contact_request_auth">Request Authorization</string>
