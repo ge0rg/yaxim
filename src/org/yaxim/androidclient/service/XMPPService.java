@@ -150,9 +150,11 @@ public class XMPPService extends GenericService {
 				return START_STICKY;
 			} else
 			if ("ping".equals(intent.getAction())) {
-				if (mSmackable != null && mSmackable.isAuthenticated())
+				if (mSmackable != null && mSmackable.isAuthenticated()) {
 					mSmackable.sendServerPing();
-				return START_STICKY;
+					return START_STICKY;
+				}
+				// if not authenticated, fall through to doConnect()
 			}
 		}
 		
@@ -289,12 +291,12 @@ public class XMPPService extends GenericService {
 
 			public int getConnectionState() throws RemoteException {
 				if (mSmackable != null && mSmackable.isAuthenticated()) {
-					return ConnectionState.AUTHENTICATED;
+					return ConnectionState.ONLINE.ordinal();
 				} else if (mConnectionDemanded.get() &&
 						networkConnectedOrConnecting()) {
-					return ConnectionState.CONNECTING;
+					return ConnectionState.CONNECTING.ordinal();
 				} else {
-					return ConnectionState.OFFLINE;
+					return ConnectionState.OFFLINE.ordinal();
 				}
 			}
 
@@ -413,15 +415,14 @@ public class XMPPService extends GenericService {
 
 		mLastConnectionError = getString(R.string.conn_connecting);
 		updateServiceNotification();
-		if (mSmackable != null) {
-			mSmackable.unRegisterCallback();
+		if (mSmackable == null) {
+			createAdapter();
 		}
 
 		mConnectingThread = new Thread() {
 
 			public void run() {
 				try {
-					createAdapter();
 					if (!mSmackable.doConnect(create_account)) {
 						postConnectionFailed("Inconsistency in Smackable.doConnect()");
 					} else
@@ -508,8 +509,7 @@ public class XMPPService extends GenericService {
 			mReconnectInfo = "";
 			updateServiceNotification();
 			if (mSmackable != null) {
-				mSmackable.unRegisterCallback();
-				mSmackable = null;
+				mSmackable.requestConnectionState(ConnectionState.RECONNECT_NETWORK);
 			}
 			YaximBroadcastReceiver.initNetworkStatus(getApplicationContext());
 		} else if (mConnectionDemanded.get()) {
@@ -567,8 +567,8 @@ public class XMPPService extends GenericService {
 			}
 		}
 		if (mSmackable != null) {
-			mSmackable.unRegisterCallback();
-			mSmackable = null;
+			// TODO: blocking
+			mSmackable.requestConnectionState(ConnectionState.OFFLINE);
 		}
 		connectionFailed(getString(R.string.conn_offline));
 		mServiceNotification.hideNotification(this, SERVICE_NOTIFICATION);
@@ -588,7 +588,7 @@ public class XMPPService extends GenericService {
 				notifyClient(from, mSmackable.getNameForJID(from[0]), message, !mIsBoundTo.contains(from), msgType, isCarbon);
 			}
 
-			public void rosterChanged() {
+			public void stateChanged() {
 				postRosterChanged();
 			}
 
@@ -618,6 +618,7 @@ public class XMPPService extends GenericService {
 				mNotificationMGR.notify(lastNotificationId, invNotify);
 				lastNotificationId += 1;
 			}
+
 		});
 	}
 

@@ -4,7 +4,7 @@ import org.jivesoftware.smack.packet.Message;
 
 public interface XMPPServiceCallback {
 	void newMessage(String[] from, String messageBody, Message.Type msgType, boolean isCarbon);
-	void rosterChanged();
+	void stateChanged();
 	void disconnectOnError();
 	void mucInvitationReceived(String room, String body);
 }

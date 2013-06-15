@@ -34,9 +34,11 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.Presence.Mode;
 import org.jivesoftware.smack.provider.ProviderManager;
+import org.jivesoftware.smack.util.DNSUtil;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
+import org.jivesoftware.smack.util.dns.DNSJavaResolver;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.InvitationListener;
@@ -61,6 +63,7 @@ import org.jivesoftware.smackx.ping.provider.PingProvider;
 import org.jivesoftware.smackx.receipts.DeliveryReceipt;
 import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 import org.jivesoftware.smackx.receipts.DeliveryReceiptRequest;
+import org.jivesoftware.smackx.receipts.ReceiptReceivedListener;
 import org.yaxim.androidclient.YaximApplication;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.RosterProvider;
@@ -68,6 +71,7 @@ import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
+import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.StatusMode;
@@ -100,6 +104,7 @@ public class SmackableImp implements Smackable {
 
 	static {
 		registerSmackProviders();
+		DNSUtil.setDNSResolver(DNSJavaResolver.getInstance());
 	}
 
 	static void registerSmackProviders() {
@@ -121,20 +126,27 @@ public class SmackableImp implements Smackable {
 
 		ServiceDiscoveryManager.setIdentityName(YaximApplication.XMPP_IDENTITY_NAME);
 		ServiceDiscoveryManager.setIdentityType(YaximApplication.XMPP_IDENTITY_TYPE);
+		
+		XmppStreamHandler.addExtensionProviders();
 	}
 
 	private final YaximConfiguration mConfig;
-	private final ConnectionConfiguration mXMPPConfig;
-	private final XMPPConnection mXMPPConnection;
+	private ConnectionConfiguration mXMPPConfig;
+	private XmppStreamHandler.ExtXMPPConnection mXMPPConnection;
+	private XmppStreamHandler mStreamHandler;
 
+	private ConnectionState mRequestedState = ConnectionState.OFFLINE;
+	private ConnectionState mState = ConnectionState.OFFLINE;
+	private String mLastError;
+	
 	private XMPPServiceCallback mServiceCallBack;
 	private Roster mRoster;
 	private RosterListener mRosterListener;
 	private PacketListener mPacketListener;
+	private ConnectionListener mConnectionListener;
 
 	private final ContentResolver mContentResolver;
 
-	private PacketListener mSendFailureListener;
 	private PacketListener mPongListener;
 	private String mPingID;
 	private long mPingTimestamp;
@@ -157,43 +169,51 @@ public class SmackableImp implements Smackable {
 			ContentResolver contentResolver,
 			Service service) {
 		this.mConfig = config;
+		this.mContentResolver = contentResolver;
+		this.mService = service;
+	}
+		
+	// this code runs a DNS resolver, might be blocking
+	private synchronized void initXMPPConnection() {
 		// allow custom server / custom port to override SRV record
 		if (mConfig.customServer.length() > 0 || mConfig.port != PreferenceConstants.DEFAULT_PORT_INT)
-			this.mXMPPConfig = new ConnectionConfiguration(mConfig.customServer,
+			mXMPPConfig = new ConnectionConfiguration(mConfig.customServer,
 					mConfig.port, mConfig.server);
 		else
-			this.mXMPPConfig = new ConnectionConfiguration(mConfig.server); // use SRV
-		this.mXMPPConfig.setReconnectionAllowed(false);
-		this.mXMPPConfig.setSendPresence(false);
-		this.mXMPPConfig.setCompressionEnabled(false); // disable for now
-		this.mXMPPConfig.setDebuggerEnabled(mConfig.smackdebug);
-		if (config.require_ssl)
+			mXMPPConfig = new ConnectionConfiguration(mConfig.server); // use SRV
+		mXMPPConfig.setReconnectionAllowed(false);
+		mXMPPConfig.setSendPresence(false);
+		mXMPPConfig.setCompressionEnabled(false); // disable for now
+		mXMPPConfig.setDebuggerEnabled(mConfig.smackdebug);
+		if (mConfig.require_ssl)
 			this.mXMPPConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
 
 		// register MemorizingTrustManager for HTTPS
 		try {
 			SSLContext sc = SSLContext.getInstance("TLS");
-			sc.init(null, new X509TrustManager[] { YaximApplication.getApp(service).mMTM },
+			sc.init(null, new X509TrustManager[] { YaximApplication.getApp(mService).mMTM },
 					new java.security.SecureRandom());
 			this.mXMPPConfig.setCustomSSLContext(sc);
 		} catch (java.security.GeneralSecurityException e) {
 			debugLog("initialize MemorizingTrustManager: " + e);
 		}
 
-		this.mXMPPConnection = new XMPPConnection(mXMPPConfig);
-		this.mContentResolver = contentResolver;
-		this.mService = service;
-		
 		this.multiUserChats = new HashMap<String, MultiUserChat>();
+		this.mXMPPConnection = new XmppStreamHandler.ExtXMPPConnection(mXMPPConfig);
+		mConfig.reconnect_required = false;
 	}
 
+	// blocking, run from a thread!
 	public boolean doConnect(boolean create_account) throws YaximXMPPException {
+		mRequestedState = ConnectionState.ONLINE;
+		updateConnectionState(ConnectionState.CONNECTING);
+		if (mXMPPConnection == null || mConfig.reconnect_required)
+			initXMPPConnection();
 		tryToConnect(create_account);
 		// actually, authenticated must be true now, or an exception must have
 		// been thrown.
 		if (isAuthenticated()) {
 			registerMessageListener();
-			registerMessageSendFailureListener();
 			registerPongListener();
 			sendOfflineMessages(); // TODO: before or after the mServiceCallBack==null block?
 			syncDbRooms();
@@ -201,16 +221,102 @@ public class SmackableImp implements Smackable {
 				// sometimes we get disconnected while not yet quite connected.
 				// bail out if this is the case
 				debugLog("doConnect: mServiceCallBack is null, aborting connection...");
-				mXMPPConnection.disconnect();
+				mXMPPConnection.quickShutdown();
 				return false;
 			}
 			// we need to "ping" the service to let it know we are actually
 			// connected, even when no roster entries will come in
-			mServiceCallBack.rosterChanged();
-		}
+			updateConnectionState(ConnectionState.ONLINE);
+		} else onDisconnected(null);
 		return isAuthenticated();
 	}
 
+	// called from outside, possible inputs:
+	// OFFLINE to disconnect
+	// ONLINE to connect
+	@Override
+	public void requestConnectionState(ConnectionState new_state) {
+		Log.d(TAG, "requestConnState: " + new_state + " from " + mState);
+		mRequestedState = new_state;
+		if (new_state == mState)
+			return;
+		switch (new_state) {
+		case ONLINE:
+			switch (mState) {
+			case RECONNECT_DELAYED:
+				// TODO: cancel timer
+			case OFFLINE:
+				Thread starter = new Thread() {
+					@Override
+					public void run() {
+						try {
+							updateConnectionState(ConnectionState.CONNECTING);
+							doConnect(false);
+							updateConnectionState(ConnectionState.ONLINE);
+						} catch (YaximXMPPException e) {
+							onDisconnected(e.getLocalizedMessage());
+						}
+					}
+				}; 
+				starter.start();
+				break;
+			case CONNECTING:
+			case RECONNECT_NETWORK:
+			case DISCONNECTING:
+				// ignore all other cases
+				break;
+			}
+			break;
+		case RECONNECT_NETWORK:
+			// TODO: spawn thread to do disconnect
+			if (mState == ConnectionState.ONLINE) {
+				new Thread() {
+					public void run() {
+						updateConnectionState(ConnectionState.DISCONNECTING);
+						mXMPPConnection.quickShutdown();
+						updateConnectionState(ConnectionState.OFFLINE);
+					}
+				}.start();
+			}
+			break;
+		case OFFLINE:
+			switch (mState) {
+			case CONNECTING:
+			case ONLINE:
+				// TODO: spawn thread to do disconnect
+				new Thread() {
+					public void run() {
+						updateConnectionState(ConnectionState.DISCONNECTING);
+						mXMPPConnection.shutdown();
+						mStreamHandler.close();
+						updateConnectionState(ConnectionState.OFFLINE);
+					}
+				}.start();
+				break;
+			case DISCONNECTING:
+				break;
+			case RECONNECT_DELAYED:
+				// TODO: clear timer
+			case RECONNECT_NETWORK:
+				updateConnectionState(ConnectionState.OFFLINE);
+			}
+		}
+	}
+	
+
+	@Override
+	public ConnectionState getConnectionState() {
+		return mState;
+	}
+
+	// called at the end of a state transition
+	private synchronized void updateConnectionState(ConnectionState new_state) {
+		Log.d(TAG, "updateConnectionState: " + mState + " -> " + new_state);
+		if (new_state == mState)
+			return;
+		mState = new_state;
+		mServiceCallBack.stateChanged();
+	}
 	private void initServiceDiscovery() {
 		// register connection features
 		ServiceDiscoveryManager sdm = ServiceDiscoveryManager.getInstanceFor(mXMPPConnection);
@@ -230,7 +336,7 @@ public class SmackableImp implements Smackable {
 
 		DeliveryReceiptManager dm = DeliveryReceiptManager.getInstanceFor(mXMPPConnection);
 		dm.enableAutoReceipts();
-		dm.registerReceiptReceivedListener(new DeliveryReceiptManager.ReceiptReceivedListener() {
+		dm.addReceiptReceivedListener(new ReceiptReceivedListener() {
 			public void onReceiptReceived(String fromJid, String toJid, String receiptId) {
 				Log.d(TAG, "got delivery receipt for " + receiptId);
 				changeMessageDeliveryStatus(receiptId, ChatConstants.DS_ACKED);
@@ -246,7 +352,7 @@ public class SmackableImp implements Smackable {
 		debugLog("removeRosterItem(" + user + ")");
 
 		tryToRemoveRosterEntry(user);
-		mServiceCallBack.rosterChanged();
+		mServiceCallBack.stateChanged();
 	}
 
 	public void renameRosterItem(String user, String newName)
@@ -281,33 +387,48 @@ public class SmackableImp implements Smackable {
 		response.setTo(user);
 		mXMPPConnection.sendPacket(response);
 	}
+	
+	private void onDisconnected(String reason) {
+		mServiceCallBack.disconnectOnError();
+		mLastError = reason;
+		updateConnectionState(ConnectionState.OFFLINE);
+	}
 
 	private void tryToConnect(boolean create_account) throws YaximXMPPException {
 		try {
 			if (mXMPPConnection.isConnected()) {
 				try {
-					mXMPPConnection.disconnect();
+					mXMPPConnection.shutdown();
 				} catch (Exception e) {
-					debugLog("conn.disconnect() failed: " + e);
+					debugLog("conn.shutdown() failed: " + e);
 				}
 			}
 			SmackConfiguration.setPacketReplyTimeout(PACKET_TIMEOUT);
-			SmackConfiguration.setKeepAliveInterval(-1);
 			SmackConfiguration.setDefaultPingInterval(0);
 			registerRosterListener();
-			mXMPPConnection.connect();
+			boolean need_bind = !(mStreamHandler != null && mStreamHandler.isResumePossible());
+			if (mStreamHandler == null)
+				mStreamHandler = new XmppStreamHandler(mXMPPConnection);
+
+			mXMPPConnection.connect(need_bind);
 			if (!mXMPPConnection.isConnected()) {
 				throw new YaximXMPPException("SMACK connect failed without exception!");
 			}
-			mXMPPConnection.addConnectionListener(new ConnectionListener() {
+			if (mConnectionListener != null)
+				mXMPPConnection.removeConnectionListener(mConnectionListener);
+			mConnectionListener = new ConnectionListener() {
 				public void connectionClosedOnError(Exception e) {
-					mServiceCallBack.disconnectOnError();
+					onDisconnected(e.getLocalizedMessage());
 				}
-				public void connectionClosed() { }
+				public void connectionClosed() {
+					onDisconnected(null);
+				}
 				public void reconnectingIn(int seconds) { }
 				public void reconnectionFailed(Exception e) { }
 				public void reconnectionSuccessful() { }
-			});
+			};
+			mXMPPConnection.addConnectionListener(mConnectionListener);
+
 			initServiceDiscovery();
 			// SMACK auto-logins if we were authenticated before
 			if (!mXMPPConnection.isAuthenticated()) {
@@ -319,7 +440,11 @@ public class SmackableImp implements Smackable {
 				mXMPPConnection.login(mConfig.userName, mConfig.password,
 						mConfig.ressource);
 			}
-			setStatusFromConfig();
+			Log.d(TAG, "SM: can resume = " + mStreamHandler.isResumePossible() + " needbind=" + need_bind);
+			if (need_bind) {
+				mStreamHandler.notifyInitialLogin();
+				setStatusFromConfig();
+			}
 
 		} catch (XMPPException e) {
 			throw new YaximXMPPException(e.getLocalizedMessage(), e.getWrappedThrowable());
@@ -532,7 +657,7 @@ public class SmackableImp implements Smackable {
 		try {
 			mXMPPConnection.getRoster().removeRosterListener(mRosterListener);
 			mXMPPConnection.removePacketListener(mPacketListener);
-			mXMPPConnection.removePacketSendFailureListener(mSendFailureListener);
+
 			mXMPPConnection.removePacketListener(mPongListener);
 			((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPingAlarmPendIntent);
 			((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPongTimeoutAlarmPendIntent);
@@ -540,17 +665,9 @@ public class SmackableImp implements Smackable {
 			mService.unregisterReceiver(mPongTimeoutAlarmReceiver);
 		} catch (Exception e) {
 			// ignore it!
+			e.printStackTrace();
 		}
-		if (mXMPPConnection.isConnected()) {
-			// work around SMACK's #%&%# blocking disconnect()
-			new Thread() {
-				public void run() {
-					debugLog("shutDown thread started");
-					mXMPPConnection.disconnect();
-					debugLog("shutDown thread finished");
-				}
-			}.start();
-		}
+		requestConnectionState(ConnectionState.OFFLINE);
 		setStatusOffline();
 		this.mServiceCallBack = null;
 	}
@@ -572,6 +689,8 @@ public class SmackableImp implements Smackable {
 	private void registerRosterListener() {
 		// flush roster on connecting.
 		mRoster = mXMPPConnection.getRoster();
+		if (mRosterListener != null)
+			mRoster.removeRosterListener(mRosterListener);
 
 		mRosterListener = new RosterListener() {
 			private boolean first_roster = true;
@@ -590,7 +709,7 @@ public class SmackableImp implements Smackable {
 				if (first_roster) {
 					removeOldRosterEntries();
 					first_roster = false;
-					mServiceCallBack.rosterChanged();
+					mServiceCallBack.stateChanged();
 				}
 				debugLog("entriesAdded() done");
 			}
@@ -601,7 +720,7 @@ public class SmackableImp implements Smackable {
 				for (String entry : entries) {
 					deleteRosterEntryFromDB(entry);
 				}
-				mServiceCallBack.rosterChanged();
+				mServiceCallBack.stateChanged();
 			}
 
 			public void entriesUpdated(Collection<String> entries) {
@@ -611,21 +730,22 @@ public class SmackableImp implements Smackable {
 					RosterEntry rosterEntry = mRoster.getEntry(entry);
 					updateRosterEntryInDB(rosterEntry);
 				}
-				mServiceCallBack.rosterChanged();
+				mServiceCallBack.stateChanged();
 			}
 
 			public void presenceChanged(Presence presence) {
 				debugLog("presenceChanged(" + presence.getFrom() + "): " + presence);
 
-				String jabberID = getJabberID(presence.getFrom())[0];
+				String jabberID = getBareJID(presence.getFrom());
 				RosterEntry rosterEntry = mRoster.getEntry(jabberID);
 				updateRosterEntryInDB(rosterEntry);
-				mServiceCallBack.rosterChanged();
+				mServiceCallBack.stateChanged();
 			}
 		};
 		mRoster.addRosterListener(mRosterListener);
 	}
 
+	// TODO: make them one, refactor all uses...
 	private String[] getJabberID(String from) {
 		if(from.contains("/")) {
 			String[] res = from.split("/");
@@ -633,6 +753,11 @@ public class SmackableImp implements Smackable {
 		} else {
 			return new String[] {from, ""};
 		}
+	}
+	
+	private String getBareJID(String from) {
+		String[] res = from.split("/");
+		return res[0].toLowerCase();
 	}
 
 	public void changeMessageDeliveryStatus(String packetID, int new_status) {
@@ -671,7 +796,7 @@ public class SmackableImp implements Smackable {
 		public void onReceive(Context ctx, Intent i) {
 			debugLog("Ping: timeout for " + mPingID);
 			mServiceCallBack.disconnectOnError();
-			unRegisterCallback();
+			requestConnectionState(ConnectionState.OFFLINE);
 		}
 	}
 
@@ -725,34 +850,6 @@ public class SmackableImp implements Smackable {
 		mService.registerReceiver(mPongTimeoutAlarmReceiver, new IntentFilter(PONG_TIMEOUT_ALARM));
 		((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).setInexactRepeating(AlarmManager.RTC_WAKEUP, 
 				System.currentTimeMillis() + AlarmManager.INTERVAL_FIFTEEN_MINUTES, AlarmManager.INTERVAL_FIFTEEN_MINUTES, mPingAlarmPendIntent);
-	}
-
-	private void registerMessageSendFailureListener() {
-		// do not register multiple packet listeners
-		if (mSendFailureListener != null)
-			mXMPPConnection.removePacketSendFailureListener(mSendFailureListener);
-
-		PacketTypeFilter filter = new PacketTypeFilter(Message.class);
-
-		mSendFailureListener = new PacketListener() {
-			public void processPacket(Packet packet) {
-				try {
-				if (packet instanceof Message) {
-					Message msg = (Message) packet;
-					String chatMessage = msg.getBody();
-
-					Log.d("SmackableImp", "message " + chatMessage + " could not be sent (ID:" + (msg.getPacketID() == null ? "null" : msg.getPacketID()) + ")");
-					changeMessageDeliveryStatus(msg.getPacketID(), ChatConstants.DS_NEW);
-				}
-				} catch (Exception e) {
-					// SMACK silently discards exceptions dropped from processPacket :(
-					Log.e(TAG, "failed to process packet:");
-					e.printStackTrace();
-				}
-			}
-		};
-
-		mXMPPConnection.addPacketSendFailureListener(mSendFailureListener, filter);
 	}
 
 	private void registerMessageListener() {
@@ -823,7 +920,6 @@ public class SmackableImp implements Smackable {
 						ts = timestamp.getStamp().getTime();
 					else
 						ts = System.currentTimeMillis();
-
 				
 					String[] fromJID = getJabberID(msg.getFrom());
 					
@@ -1208,5 +1304,10 @@ public class SmackableImp implements Smackable {
 		while(occIter.hasNext())
 			tmpList.add(occIter.next().split("/")[1]);
 		return (String[]) tmpList.toArray(new String[]{});
+	}
+	
+	@Override
+	public String getLastError() {
+		return mLastError;
 	}
 }
