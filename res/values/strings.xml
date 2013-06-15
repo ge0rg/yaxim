@@ -107,6 +107,8 @@
 	<string name="Menu_about">About yaxim</string>
 	<string name="Menu_muc">MUC Actions</string>
     <string name="Menu_userlist">Users</string>
+	<string name="Menu_MarkAllRead">Mark All Read</string>
+
 
 	<!-- AddFriend -->
 	<string name="addFriend_Title">Add a Contact</string>
