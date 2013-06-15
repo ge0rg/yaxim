@@ -21,6 +21,7 @@ import org.yaxim.androidclient.util.StatusMode;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -448,6 +449,10 @@ public class MainWindow extends SherlockExpandableListActivity {
 			case R.id.roster_contextmenu_contact_delmsg:
 				removeChatHistoryDialog(userJid, userName);
 				return true;
+			
+			case R.id.roster_contextmenu_contact_markread:
+				markAsRead(userJid);
+				return true;
 
 			case R.id.roster_contextmenu_contact_delete:
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
@@ -484,6 +489,12 @@ public class MainWindow extends SherlockExpandableListActivity {
 			}
 		}
 		return false;
+	}
+
+	private void markAsRead(String userJid) {
+		ContentValues cv = new ContentValues();
+		cv.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
+		getContentResolver().update(ChatProvider.CONTENT_URI, cv, ChatConstants.JID+"='"+userJid+"'", null);
 	}
 
 	private boolean isChild(long packedPosition) {
