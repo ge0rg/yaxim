@@ -491,6 +491,12 @@ public class MainWindow extends SherlockExpandableListActivity {
 		return false;
 	}
 
+	private void markAllAsRead() {
+		ContentValues cv = new ContentValues();
+		cv.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
+		getContentResolver().update(ChatProvider.CONTENT_URI, cv, "", null);		
+	}
+	
 	private void markAsRead(String userJid) {
 		ContentValues cv = new ContentValues();
 		cv.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
@@ -677,6 +683,10 @@ public class MainWindow extends SherlockExpandableListActivity {
 		case R.id.menu_show_hide:
 			setOfflinceContactsVisibility(!showOffline);
 			updateRoster();
+			return true;
+			
+		case R.id.menu_markallread:
+			markAllAsRead();
 			return true;
 
 		case android.R.id.home:
