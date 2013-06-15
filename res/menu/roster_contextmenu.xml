@@ -68,6 +68,11 @@
 			android:orderInCategory="2" android:id="@+id/roster_contextmenu_contact_delmsg"
 			android:title="@string/roster_contextmenu_contact_delmsg">
 	</item>
+	
+	<item android:visible="true" android:enabled="true"
+			android:orderInCategory="2" android:id="@+id/roster_contextmenu_contact_markread"
+			android:title="@string/roster_contextmenu_contact_markread">
+	</item>
 
 	</group>
 </menu>
