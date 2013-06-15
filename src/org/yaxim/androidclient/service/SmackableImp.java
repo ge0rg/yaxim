@@ -826,19 +826,19 @@ public class SmackableImp implements Smackable {
 
 				
 					String[] fromJID = getJabberID(msg.getFrom());
-					
-//					Log.d(TAG, 
-//							String.format("attempting to add message '''%s''' from %s to db, msgtype==groupchat?: %b, checkaddmucmessage is: %b", chatMessage, fromJID[0], msg.getType()==Message.Type.groupchat, checkAddMucMessage(msg, ts, fromJID))
-//							);
-//					if(msg.getType() != Message.Type.groupchat
-//						|| 
-//						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, ts, fromJID))
-//						) {
-//						Log.d(TAG, "actually adding msg...");
-						addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, ChatConstants.DS_NEW, 
-								ts, msg.getPacketID(), wasCarbon);
-						mServiceCallBack.newMessage(fromJID, chatMessage, msg.getType(), wasCarbon==ChatConstants.MSG_CARBON);
-					//}
+
+					Log.d(TAG, 
+							String.format("attempting to add message '''%s''' from %s to db, msgtype==groupchat?: %b, checkaddmucmessage is: %b", chatMessage, fromJID[0], msg.getType()==Message.Type.groupchat, checkAddMucMessage(msg, ts, fromJID))
+							);
+					if(msg.getType() != Message.Type.groupchat
+						|| 
+						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, ts, fromJID))
+						) {
+							Log.d(TAG, "actually adding msg...");
+							addChatMessageToDB(ChatConstants.INCOMING, fromJID, chatMessage, 
+									   ChatConstants.DS_NEW, ts, msg.getPacketID(), wasCarbon);
+							mServiceCallBack.newMessage(fromJID, chatMessage, msg.getType(), wasCarbon==ChatConstants.MSG_CARBON);
+						}
 					}
 				} catch (Exception e) {
 					// SMACK silently discards exceptions dropped from processPacket :(
@@ -858,26 +858,24 @@ public class SmackableImp implements Smackable {
 				ChatConstants.PACKET_ID
 		};
 				
-		String content_match= ChatConstants.JID+"='"+fromJid[0]+"' AND "+ChatConstants.MESSAGE+"='"+msg.getBody()+"'"
-				+" AND "+ChatConstants.DATE+"='"+ts+"'"; // TODO: and this, dear children, IS A SQL INJECTION VULNERABILITY
-		String packet_match = ChatConstants.PACKET_ID+"='"+msg.getPacketID()+"'";
-		final String selection = "("+content_match+") OR ("+packet_match+")";
-		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, null);
-		
-		Log.d(TAG, "in checkAddMucMessage, got newmsg packetid: "+msg.getPacketID()+" from: "+fromJid[0]+" body: "+msg.getBody()+" and ts: "+ts);
-		
-		if(cursor.getCount()==0) {
-			Log.d(TAG, "returning true, NO hit");
-			return true;	
-		} else {
-			cursor.moveToFirst();
-			long dts = cursor.getLong( cursor.getColumnIndexOrThrow(projection[1]) );
-			String djid = cursor.getString( cursor.getColumnIndexOrThrow(projection[2]) );
-			String dmsg = cursor.getString( cursor.getColumnIndexOrThrow(projection[3]) );
-			long dpid = cursor.getLong( cursor.getColumnIndexOrThrow(projection[4]) );
-			Log.d(TAG, "FOUND hit, returning false: ts: "+dts+" jid: "+djid+" msg: "+dmsg+" pid: "+dpid);
-			return false;
+		//final String content_match= ChatConstants.JID+"='"+fromJid[0]+"' AND "+ChatConstants.MESSAGE+"='"+msg.getBody()+"'"
+		//		+" AND "+ChatConstants.DATE+"='"+ts+"'";
+		//final String packet_match = ChatConstants.PACKET_ID+"='"+msg.getPacketID()+"'";
+		//final String selection = "("+content_match+") OR ("+packet_match+")";
+		final String selection = ChatConstants.JID+"='"+fromJid[0]+"'";
+		final String order = ChatConstants.DATE+" DESC LIMIT 5";
+		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, order);
+		cursor.moveToFirst();
+		while(!cursor.isLast()) {
+			String pid = cursor.getString( cursor.getColumnIndexOrThrow(ChatConstants.PACKET_ID) );
+			Log.d(TAG, "processing cursor row, got pid: "+pid+" comparing with "+msg.getPacketID());
+			if( pid.equals(msg.getPacketID()) ) {
+				return false;
+			}
+			cursor.moveToNext();
 		}
+
+		return true;	
 	}
 
 	private void addChatMessageToDB(int direction, String[] JID,
