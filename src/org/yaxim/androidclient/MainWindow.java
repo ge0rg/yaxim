@@ -29,6 +29,7 @@ import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.DialogInterface.OnClickListener;
@@ -537,6 +538,12 @@ public class MainWindow extends SherlockExpandableListActivity {
 			}
 		}
 		return false;
+	}
+
+	private void markAsRead(String userJid) {
+		ContentValues cv = new ContentValues();
+		cv.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
+		getContentResolver().update(ChatProvider.CONTENT_URI, cv, ChatConstants.JID+"='"+userJid+"'", null);
 	}
 
 	private boolean isChild(long packedPosition) {
