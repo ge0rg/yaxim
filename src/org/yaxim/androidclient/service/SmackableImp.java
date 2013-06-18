@@ -629,7 +629,7 @@ public class SmackableImp implements Smackable {
 	private String[] getJabberID(String from) {
 		if(from.contains("/")) {
 			String[] res = from.split("/");
-			return new String[] { res[0].toLowerCase(), res[1].toLowerCase() };
+			return new String[] { res[0], res[1] };
 		} else {
 			return new String[] {from, ""};
 		}
@@ -864,16 +864,18 @@ public class SmackableImp implements Smackable {
 		//final String selection = "("+content_match+") OR ("+packet_match+")";
 		final String selection = ChatConstants.JID+"='"+fromJid[0]+"'";
 		final String order = ChatConstants.DATE+" DESC LIMIT 5";
-		Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, order);
-		cursor.moveToFirst();
-		while(!cursor.isLast()) {
-			String pid = cursor.getString( cursor.getColumnIndexOrThrow(ChatConstants.PACKET_ID) );
-			Log.d(TAG, "processing cursor row, got pid: "+pid+" comparing with "+msg.getPacketID());
-			if( pid.equals(msg.getPacketID()) ) {
-				return false;
+		try {
+			Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, null, order);
+			cursor.moveToFirst();
+			while(!cursor.isLast()) {
+				String pid = cursor.getString( cursor.getColumnIndexOrThrow(ChatConstants.PACKET_ID) );
+				Log.d(TAG, "processing cursor row, got pid: "+pid+" comparing with "+msg.getPacketID());
+				if( pid.equals(msg.getPacketID()) ) {
+					return false;
+				}
+				cursor.moveToNext();
 			}
-			cursor.moveToNext();
-		}
+		} catch (Exception e) {} // just return true...
 
 		return true;	
 	}
