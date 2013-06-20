@@ -150,11 +150,12 @@ public class XMPPService extends GenericService {
 				return START_STICKY;
 			} else
 			if ("ping".equals(intent.getAction())) {
-				if (mSmackable != null && mSmackable.isAuthenticated()) {
-					mSmackable.sendServerPing();
+				if (mSmackable != null) {
+					if (mConnectingThread == null)
+						mSmackable.sendServerPing();
 					return START_STICKY;
 				}
-				// if not authenticated, fall through to doConnect()
+				// if not yet connected, fall through to doConnect()
 			}
 		}
 		
@@ -509,7 +510,7 @@ public class XMPPService extends GenericService {
 			mReconnectInfo = "";
 			updateServiceNotification();
 			if (mSmackable != null) {
-				mSmackable.requestConnectionState(ConnectionState.RECONNECT_NETWORK);
+				mSmackable.requestConnectionState(ConnectionState.DISCONNECTED);
 			}
 			YaximBroadcastReceiver.initNetworkStatus(getApplicationContext());
 		} else if (mConnectionDemanded.get()) {

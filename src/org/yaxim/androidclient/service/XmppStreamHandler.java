@@ -34,7 +34,7 @@ public class XmppStreamHandler {
 	private boolean isSmAvailable = false;
 	private boolean isSmEnabled = false;
 	private boolean isOutgoingSmEnabled = false;
-	private long previousIncomingStanzaCount = -1;
+	private long previousIncomingStanzaCount = 0;
 	private String sessionId;
 	private long incomingStanzaCount = 0;
 	private long outgoingStanzaCount = 0;
@@ -119,7 +119,7 @@ public class XmppStreamHandler {
 		mConnection.addConnectionListener(new ConnectionListener() {
 			public void reconnectionSuccessful() {
 				synchronized (XmppStreamHandler.this) {
-					if (!isSmAvailable) {
+					if (isResumePossible() && !isSmAvailable) {
 						Log.d(TAG, "reconnected, waiting for SM packet to arrive...");
 						try {
 							XmppStreamHandler.this.wait(30000); // HACK: wait for SM packet to arrive

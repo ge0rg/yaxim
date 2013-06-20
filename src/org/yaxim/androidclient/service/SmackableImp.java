@@ -217,13 +217,6 @@ public class SmackableImp implements Smackable {
 			registerPongListener();
 			sendOfflineMessages(); // TODO: before or after the mServiceCallBack==null block?
 			syncDbRooms();
-			if (mServiceCallBack == null) {
-				// sometimes we get disconnected while not yet quite connected.
-				// bail out if this is the case
-				debugLog("doConnect: mServiceCallBack is null, aborting connection...");
-				mXMPPConnection.quickShutdown();
-				return false;
-			}
 			// we need to "ping" the service to let it know we are actually
 			// connected, even when no roster entries will come in
 			updateConnectionState(ConnectionState.ONLINE);
@@ -232,8 +225,9 @@ public class SmackableImp implements Smackable {
 	}
 
 	// called from outside, possible inputs:
-	// OFFLINE to disconnect
+	// OFFLINE to properly close the connection
 	// ONLINE to connect
+	// DISCONNECTED when network goes down
 	@Override
 	public void requestConnectionState(ConnectionState new_state) {
 		Log.d(TAG, "requestConnState: " + new_state + " from " + mState);
@@ -267,7 +261,7 @@ public class SmackableImp implements Smackable {
 				break;
 			}
 			break;
-		case RECONNECT_NETWORK:
+		case DISCONNECTED:
 			// TODO: spawn thread to do disconnect
 			if (mState == ConnectionState.ONLINE) {
 				new Thread() {
@@ -389,6 +383,7 @@ public class SmackableImp implements Smackable {
 	}
 	
 	private void onDisconnected(String reason) {
+		unregisterPongListener();
 		mServiceCallBack.disconnectOnError();
 		mLastError = reason;
 		updateConnectionState(ConnectionState.OFFLINE);
@@ -398,7 +393,7 @@ public class SmackableImp implements Smackable {
 		try {
 			if (mXMPPConnection.isConnected()) {
 				try {
-					mXMPPConnection.shutdown();
+					mXMPPConnection.quickShutdown(); // blocking shutdown prior to re-connection
 				} catch (Exception e) {
 					debugLog("conn.shutdown() failed: " + e);
 				}
@@ -649,6 +644,8 @@ public class SmackableImp implements Smackable {
 
 	public void registerCallback(XMPPServiceCallback callBack) {
 		this.mServiceCallBack = callBack;
+		mService.registerReceiver(mPingAlarmReceiver, new IntentFilter(PING_ALARM));
+		mService.registerReceiver(mPongTimeoutAlarmReceiver, new IntentFilter(PONG_TIMEOUT_ALARM));
 	}
 
 	public void unRegisterCallback() {
@@ -659,16 +656,15 @@ public class SmackableImp implements Smackable {
 			mXMPPConnection.removePacketListener(mPacketListener);
 
 			mXMPPConnection.removePacketListener(mPongListener);
-			((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPingAlarmPendIntent);
-			((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPongTimeoutAlarmPendIntent);
-			mService.unregisterReceiver(mPingAlarmReceiver);
-			mService.unregisterReceiver(mPongTimeoutAlarmReceiver);
+			unregisterPongListener();
 		} catch (Exception e) {
 			// ignore it!
 			e.printStackTrace();
 		}
 		requestConnectionState(ConnectionState.OFFLINE);
 		setStatusOffline();
+		mService.unregisterReceiver(mPingAlarmReceiver);
+		mService.unregisterReceiver(mPongTimeoutAlarmReceiver);
 		this.mServiceCallBack = null;
 	}
 	
@@ -796,7 +792,7 @@ public class SmackableImp implements Smackable {
 		public void onReceive(Context ctx, Intent i) {
 			debugLog("Ping: timeout for " + mPingID);
 			mServiceCallBack.disconnectOnError();
-			requestConnectionState(ConnectionState.OFFLINE);
+			requestConnectionState(ConnectionState.DISCONNECTED);
 		}
 	}
 
@@ -846,10 +842,12 @@ public class SmackableImp implements Smackable {
 					PendingIntent.FLAG_UPDATE_CURRENT);
 		mPongTimeoutAlarmPendIntent = PendingIntent.getBroadcast(mService.getApplicationContext(), 0, mPongTimeoutAlarmIntent,
 					PendingIntent.FLAG_UPDATE_CURRENT);
-		mService.registerReceiver(mPingAlarmReceiver, new IntentFilter(PING_ALARM));
-		mService.registerReceiver(mPongTimeoutAlarmReceiver, new IntentFilter(PONG_TIMEOUT_ALARM));
 		((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).setInexactRepeating(AlarmManager.RTC_WAKEUP, 
 				System.currentTimeMillis() + AlarmManager.INTERVAL_FIFTEEN_MINUTES, AlarmManager.INTERVAL_FIFTEEN_MINUTES, mPingAlarmPendIntent);
+	}
+	private void unregisterPongListener() {
+		((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPingAlarmPendIntent);
+		((AlarmManager)mService.getSystemService(Context.ALARM_SERVICE)).cancel(mPongTimeoutAlarmPendIntent);
 	}
 
 	private void registerMessageListener() {

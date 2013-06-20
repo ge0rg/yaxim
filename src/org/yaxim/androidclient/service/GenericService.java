@@ -127,7 +127,13 @@ public abstract class GenericService extends Service {
 		if (!showNotification && beNoisy) {
 			// only play sound and return
 			Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
-			RingtoneManager.getRingtone(getApplicationContext(), sound).play();
+			try {
+				RingtoneManager.getRingtone(getApplicationContext(), sound).play();
+			} catch (NullPointerException e) {
+				Toast t = new Toast(getApplicationContext());
+				t.setText("ERROR: Ringtone not found");
+				t.show();
+			}
 			return;
 		}
 
