@@ -964,6 +964,18 @@ public class MainWindow extends SherlockExpandableListActivity {
 		RosterConstants.GROUP,
 		"(" + countAvailableMembers + ") || '/' || (" + countMembers + ") AS members"
 	};
+
+	final String countAvailableMembersTotals =
+			"SELECT COUNT() FROM " + RosterProvider.TABLE_ROSTER + " inner_query" +
+					" WHERE inner_query." + OFFLINE_EXCLUSION;
+	final String countMembersTotals =
+			"SELECT COUNT() FROM " + RosterProvider.TABLE_ROSTER;
+	final String[] GROUPS_QUERY_CONTACTS_DISABLED = new String[] {
+			RosterConstants._ID,
+			"? AS " + RosterConstants.GROUP,
+			"(" + countAvailableMembersTotals + ") || '/' || (" + countMembersTotals + ") AS members"
+	};
+
 	private static final String[] GROUPS_FROM = new String[] {
 		RosterConstants.GROUP,
 		"members"
@@ -1036,8 +1048,15 @@ public class MainWindow extends SherlockExpandableListActivity {
 			String selectWhere = null;
 			if (!mConfig.showOffline)
 				selectWhere = OFFLINE_EXCLUSION;
+
+			String[] args = null;
+			String[] query = GROUPS_QUERY_COUNTED;
+			if(mConfig.disableGroups) {
+				args = new String[] { getString(R.string.all_contacts_group) };
+				query = GROUPS_QUERY_CONTACTS_DISABLED;
+			}
 			Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI,
-					GROUPS_QUERY_COUNTED, selectWhere, null, RosterConstants.GROUP);
+					query, selectWhere, args, RosterConstants.GROUP);
 			Cursor oldCursor = getCursor();
 			changeCursor(cursor);
 			stopManagingCursor(oldCursor);
@@ -1046,14 +1065,20 @@ public class MainWindow extends SherlockExpandableListActivity {
 		@Override
 		protected Cursor getChildrenCursor(Cursor groupCursor) {
 			// Given the group, we return a cursor for all the children within that group
+			String selectWhere;
 			int idx = groupCursor.getColumnIndex(RosterConstants.GROUP);
 			String groupname = groupCursor.getString(idx);
+			String[] args = null;
 
-			String selectWhere = RosterConstants.GROUP + " = ?";
-			if (!mConfig.showOffline)
-				selectWhere += " AND " + OFFLINE_EXCLUSION;
+			if(groupname.equals(getString(R.string.all_contacts_group))) {
+				selectWhere = mConfig.showOffline ? "" : OFFLINE_EXCLUSION;
+			} else {
+				selectWhere = mConfig.showOffline ? "" : OFFLINE_EXCLUSION + " AND ";
+				selectWhere += RosterConstants.GROUP + " = ?";
+				args = new String[] { groupname };
+			}
 			return getContentResolver().query(RosterProvider.CONTENT_URI, ROSTER_QUERY,
-				selectWhere, new String[] { groupname }, null);
+				selectWhere, args, null);
 		}
 
 		@Override
