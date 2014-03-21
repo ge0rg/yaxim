@@ -301,16 +301,16 @@ public class MainWindow extends SherlockExpandableListActivity {
 		menu.setHeaderTitle(getString(R.string.roster_contextmenu_title, menuName));
 	}
 
-    void doMarkAllAsRead(final String JID) {
-        ContentValues values = new ContentValues();
-        values.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
+	void doMarkAllAsRead(final String JID) {
+		ContentValues values = new ContentValues();
+		values.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
 
-        getContentResolver().update(ChatProvider.CONTENT_URI, values,
-                ChatProvider.ChatConstants.JID + " = ? AND "
-                        + ChatConstants.DIRECTION + " = " + ChatConstants.INCOMING + " AND "
-                        + ChatConstants.DELIVERY_STATUS + " = " + ChatConstants.DS_NEW,
-                new String[]{JID});
-    }
+		getContentResolver().update(ChatProvider.CONTENT_URI, values,
+				ChatProvider.ChatConstants.JID + " = ? AND "
+						+ ChatConstants.DIRECTION + " = " + ChatConstants.INCOMING + " AND "
+						+ ChatConstants.DELIVERY_STATUS + " = " + ChatConstants.DS_NEW,
+				new String[]{JID});
+	}
 
 	void removeChatHistory(final String JID) {
 		getContentResolver().delete(ChatProvider.CONTENT_URI,
@@ -467,8 +467,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 				startChatActivity(userJid, userName, null);
 				return true;
 
-            case R.id.roster_contextmenu_contact_mark_all_as_read:
-                doMarkAllAsRead(userJid);
+			case R.id.roster_contextmenu_contact_mark_all_as_read:
+				doMarkAllAsRead(userJid);
 				return true;
 
 			case R.id.roster_contextmenu_contact_delmsg:
