@@ -972,7 +972,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			"SELECT COUNT() FROM " + RosterProvider.TABLE_ROSTER;
 	final String[] GROUPS_QUERY_CONTACTS_DISABLED = new String[] {
 			RosterConstants._ID,
-			"? AS " + RosterConstants.GROUP,
+			"'' AS " + RosterConstants.GROUP,
 			"(" + countAvailableMembersTotals + ") || '/' || (" + countMembersTotals + ") AS members"
 	};
 
@@ -1049,14 +1049,12 @@ public class MainWindow extends SherlockExpandableListActivity {
 			if (!mConfig.showOffline)
 				selectWhere = OFFLINE_EXCLUSION;
 
-			String[] args = null;
 			String[] query = GROUPS_QUERY_COUNTED;
-			if(mConfig.disableGroups) {
-				args = new String[] { getString(R.string.all_contacts_group) };
+			if(!mConfig.enableGroups) {
 				query = GROUPS_QUERY_CONTACTS_DISABLED;
 			}
 			Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI,
-					query, selectWhere, args, RosterConstants.GROUP);
+					query, selectWhere, null, RosterConstants.GROUP);
 			Cursor oldCursor = getCursor();
 			changeCursor(cursor);
 			stopManagingCursor(oldCursor);
@@ -1070,7 +1068,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			String groupname = groupCursor.getString(idx);
 			String[] args = null;
 
-			if(groupname.equals(getString(R.string.all_contacts_group))) {
+			if(!mConfig.enableGroups) {
 				selectWhere = mConfig.showOffline ? "" : OFFLINE_EXCLUSION;
 			} else {
 				selectWhere = mConfig.showOffline ? "" : OFFLINE_EXCLUSION + " AND ";
@@ -1086,7 +1084,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			super.bindGroupView(view, context, cursor, isExpanded);
 			if (cursor.getString(cursor.getColumnIndexOrThrow(RosterConstants.GROUP)).length() == 0) {
 				TextView groupname = (TextView)view.findViewById(R.id.groupname);
-				groupname.setText(R.string.default_group);
+				groupname.setText(mConfig.enableGroups ? R.string.default_group : R.string.all_contacts_group);
 			}
 		}
 

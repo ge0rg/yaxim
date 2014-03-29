@@ -56,13 +56,6 @@
 			android:defaultValue="true"
 		/>
 		<CheckBoxPreference
-			android:id="@+id/disableGroups"
-			android:key="disableGroups"
-			android:title="@string/disableGroups_title"
-			android:summary="@string/disableGroups_summ"
-			android:defaultValue="false"
-		/>
-		<CheckBoxPreference
 			android:id="@+id/foregroundService"
 			android:key="foregroundService"
 			android:title="@string/foregroundService_title"
@@ -86,6 +79,13 @@
 			android:entryValues="@array/fontSizesChatCodes"
 			android:dialogTitle="@string/FontChat_dialog"
 		    android:defaultValue="18"
+		/>
+		<CheckBoxPreference
+			android:id="@+id/enableGroups"
+			android:key="enableGroups"
+			android:title="@string/enableGroups_title"
+			android:summary="@string/enableGroups_summ"
+			android:defaultValue="true"
 		/>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/preftitle_debug">

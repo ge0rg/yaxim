@@ -62,7 +62,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
     public String theme;
     public String chatFontSize;
     public boolean showOffline;
-	public boolean disableGroups;
+	public boolean enableGroups;
 
     public boolean reconnect_required = false;
     public boolean presence_required = false;
@@ -152,7 +152,7 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
         this.theme = prefs.getString(PreferenceConstants.THEME, "dark");
         this.chatFontSize = prefs.getString("setSizeChat", "18");
         this.showOffline = prefs.getBoolean(PreferenceConstants.SHOW_OFFLINE, false);
-		this.disableGroups = prefs.getBoolean(PreferenceConstants.DISABLE_GROUPS, false);
+		this.enableGroups = prefs.getBoolean(PreferenceConstants.ENABLE_GROUPS, true);
 
 		try {
 			splitAndSetJabberID(XMPPHelper.verifyJabberID(jabberID));
