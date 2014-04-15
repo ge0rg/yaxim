@@ -1311,6 +1311,7 @@ public class SmackableImp implements Smackable {
 			}
 			//debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
 		}
+		cursor.close();
 		
 		for(String room : joinedRooms) {
 			if(!dbRooms.contains(room)) {
