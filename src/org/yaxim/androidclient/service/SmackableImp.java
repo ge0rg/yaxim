@@ -1489,7 +1489,6 @@ public class SmackableImp implements Smackable {
 
 	@Override
 	public boolean isRoom(String jid) {
-		syncDbRooms();
 		return new ArrayList<String>(Arrays.asList(getJoinedRooms())).contains(jid);
 	}
 
