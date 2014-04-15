@@ -1147,6 +1147,7 @@ public class SmackableImp implements Smackable {
 				}
 				cursor.moveToNext();
 			}
+			cursor.close();
 		} catch (Exception e) {} // just return true...
 
 		return true;	
