@@ -87,6 +87,24 @@
 			android:summary="@string/ticker_summ"
 			android:defaultValue="true"
 		/>
+		<EditTextPreference
+			android:id="@+id/notifyTimeout"
+			android:key="notifyTimeout"
+			android:title="@string/notifytimeout_title"
+			android:summary="@string/notifytimeout_summ"
+			android:defaultValue="0"
+			android:inputType="number"
+			android:numeric="integer"	 
+		/>
+		<EditTextPreference
+			android:id="@+id/notifyCarbonTimeout"
+			android:key="notifyInhibitCarbons"
+			android:title="@string/notifyinhibitcarbons_title"
+			android:summary="@string/notifyinhibitcarbons_summ"
+			android:defaultValue="0"
+			android:inputType="number"
+			android:numeric="integer"
+		/>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/preftitle_boot">
 		<CheckBoxPreference

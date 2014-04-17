@@ -3,11 +3,11 @@ package org.yaxim.androidclient.service;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jivesoftware.smack.packet.Message;
 import org.yaxim.androidclient.chat.ChatWindow;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
+import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.util.LogConstants;
 
 import android.app.Notification;
@@ -25,19 +25,17 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
-import android.telephony.gsm.SmsMessage.MessageClass;
 import android.util.Log;
 import android.widget.Toast;
-
 import org.yaxim.androidclient.R;
 
-public abstract class GenericService extends Service {
+public abstract class GenericServiceOld extends Service {
 
 	private static final String TAG = "yaxim.Service";
 	private static final String APP_NAME = "yaxim";
 	private static final int MAX_TICKER_MSG_LEN = 50;
 
-	protected NotificationManager mNotificationMGR;
+	private NotificationManager mNotificationMGR;
 	private Notification mNotification;
 	private Vibrator mVibrator;
 	private Intent mNotificationIntent;
@@ -47,7 +45,7 @@ public abstract class GenericService extends Service {
 	private Map<String, Integer> notificationCount = new HashMap<String, Integer>(2);
 	private Map<String, Integer> notificationId = new HashMap<String, Integer>(2);
 	protected static int SERVICE_NOTIFICATION = 1;
-	protected int lastNotificationId = 2;
+	private int lastNotificationId = 2;
 
 	protected YaximConfiguration mConfig;
 
@@ -73,7 +71,8 @@ public abstract class GenericService extends Service {
 	public void onCreate() {
 		Log.i(TAG, "called onCreate()");
 		super.onCreate();
-		mConfig = org.yaxim.androidclient.YaximApplication.getConfig(this);
+		mConfig = new YaximConfiguration(PreferenceManager
+				.getDefaultSharedPreferences(this));
 		mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 		mWakeLock = ((PowerManager)getSystemService(Context.POWER_SERVICE))
 				.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, APP_NAME);
@@ -97,37 +96,35 @@ public abstract class GenericService extends Service {
 		mNotificationIntent = new Intent(this, ChatWindow.class);
 	}
 
-	protected void notifyClient(String[] jid, String fromUserName, String message,
-			boolean showNotification, boolean silent_notification, boolean is_error, Message.Type msgType, boolean isCarbon) {
-		
-		String fromJid = jid[0];
-		boolean isMuc = (msgType==Message.Type.groupchat);
-		
+	protected void notifyClient(String fromJid, String fromUserName, String message,
+			boolean showNotification, boolean isCarbon) {
 		if (!showNotification) {
-			if (is_error)
-				shortToastNotify(getString(R.string.notification_error) + " " + message);
 			// only play sound and return
-			try {
-				if (!silent_notification) {
-					Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
-					RingtoneManager.getRingtone(getApplicationContext(), sound).play();
-				}
-			} catch (NullPointerException e) {
-				Log.e(TAG, "Could not play ringtone sound for notification: "+e);
-			}
+			RingtoneManager.getRingtone(getApplicationContext(), mConfig.notifySound).play();
 			return;
 		}
+		
 		mWakeLock.acquire();
 
-		// check whether we notified only recently, or if there was an own carbon message incoming recently
 		boolean notifyTimeout = System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
 		boolean notifyCarbon = System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid) < mConfig.notifyInhibitCarbons*1000;
 		Log.d(TAG, System.currentTimeMillis()+"-"+fetchNewestOwnMsgDate(fromJid)+"="+(System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid))+" ?<? "+mConfig.notifyInhibitCarbons*1000);
 		Log.d(TAG, String.format("on message '%s' -- got system millis %d, lastMsgDate %d, lastNewOwnMsgDate %d, isCarbon %b, notifyTimout %d, inhibitCarbons %d, notifyTimeout: %b, notifyCarbon: %b", 
 				message, System.currentTimeMillis(), fetchLastMsgDate(fromJid), fetchNewestOwnMsgDate(fromJid), isCarbon, mConfig.notifyTimeout, mConfig.notifyInhibitCarbons, notifyTimeout, notifyCarbon));
-
 		
-		setNotification(fromJid, fromUserName, message, is_error, isMuc);
+		setNotification(fromJid, fromUserName, message);
+	
+		// make notification ring/vibrate/led only if not in timeout
+		if( notifyTimeout && !notifyCarbon ) {
+			Log.d(TAG, "will notify");
+			setLEDNotification();
+			mNotification.sound = mConfig.notifySound;
+			if("SYSTEM".equals(mConfig.vibraNotify)) {
+				mNotification.defaults |= Notification.DEFAULT_VIBRATE;
+			} else if("ALWAYS".equals(mConfig.vibraNotify)) {
+				mVibrator.vibrate(400);
+			}
+		} else Log.d(TAG, "will NOT notify");
 		
 		int notifyId = 0;
 		if (notificationId.containsKey(fromJid)) {
@@ -138,29 +135,9 @@ public abstract class GenericService extends Service {
 			notificationId.put(fromJid, Integer.valueOf(notifyId));
 		}
 
-		if( notifyTimeout && !notifyCarbon ) {
-			setLEDNotification(isMuc);
-			mNotification.sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
-			// If vibration is set to "system default", add the vibration flag to the 
-			// notification and let the system decide.
-			if((!isMuc && "SYSTEM".equals(mConfig.vibraNotify)) 
-				|| (isMuc && "SYSTEM".equals(mConfig.vibraNotifyMuc))) {
-				mNotification.defaults |= Notification.DEFAULT_VIBRATE;
-			}	
-			
-			// If vibration is forced, vibrate now.
-			if((!isMuc && "ALWAYS".equals(mConfig.vibraNotify))
-				|| (isMuc && "ALWAYS".equals(mConfig.vibraNotifyMuc))) {
-				mVibrator.vibrate(400);
-			}
-		} else  Log.d(TAG, "will NOT notify");
-
 		mNotificationMGR.notify(notifyId, mNotification);
-		
 		mWakeLock.release();
 	}
-	
-	
 	
 	private long fetchNewestOwnMsgDate(String fromJid) {
 		Cursor cursor = getContentResolver().query(ChatProvider.CONTENT_URI, 
@@ -194,9 +171,7 @@ public abstract class GenericService extends Service {
 		return ret;
 	}
 
-	
-	private void setNotification(String fromJid, String fromUserId, String message, boolean is_error,
-			boolean isMuc) {
+	private void setNotification(String fromJid, String fromUserId, String message) {
 		
 		int mNotificationCounter = 0;
 		if (notificationCount.containsKey(fromJid)) {
@@ -212,7 +187,7 @@ public abstract class GenericService extends Service {
 		}
 		String title = getString(R.string.notification_message, author);
 		String ticker;
-		if ((!isMuc && mConfig.ticker) || (isMuc && mConfig.tickerMuc)) {
+		if (mConfig.ticker) {
 			int newline = message.indexOf('\n');
 			int limit = 0;
 			String messageSummary = message;
@@ -242,8 +217,8 @@ public abstract class GenericService extends Service {
 		mNotification.flags = Notification.FLAG_AUTO_CANCEL;
 	}
 
-	private void setLEDNotification(boolean isMuc) {
-		if ((!isMuc && mConfig.isLEDNotify) || (isMuc && mConfig.isLEDNotifyMuc)) {
+	private void setLEDNotification() {
+		if (mConfig.isLEDNotify) {
 			mNotification.ledARGB = Color.MAGENTA;
 			mNotification.ledOnMS = 300;
 			mNotification.ledOffMS = 1000;
@@ -254,12 +229,6 @@ public abstract class GenericService extends Service {
 	protected void shortToastNotify(String msg) {
 		Toast toast = Toast.makeText(this, msg, Toast.LENGTH_SHORT);
 		toast.show();
-	}
-	protected void shortToastNotify(Throwable e) {
-		e.printStackTrace();
-		while (e.getCause() != null)
-			e = e.getCause();
-		shortToastNotify(e.getMessage());
 	}
 
 	public void resetNotificationCounter(String userJid) {
