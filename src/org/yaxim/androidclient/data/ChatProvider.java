@@ -101,7 +101,9 @@ public class ChatProvider extends ContentProvider {
 		}
 
 		SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-
+		
+		Log.d(TAG, "inserting values "+values);
+		
 		long rowId = db.insert(TABLE_NAME, ChatConstants.DATE, values);
 
 		if (rowId < 0) {
@@ -216,7 +218,7 @@ public class ChatProvider extends ContentProvider {
 					+ ChatConstants.MESSAGE + " TEXT,"
 					+ ChatConstants.DELIVERY_STATUS + " INTEGER,"
 					+ ChatConstants.PACKET_ID + " TEXT,"
-					+ ChatConstants.RESOURCE + " TEXT DEFAULT NULL),"
+					+ ChatConstants.RESOURCE + " TEXT DEFAULT NULL,"
 					+ ChatConstants.WAS_CARBON + " INTEGER);");		}
 
 		@Override

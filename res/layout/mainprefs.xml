@@ -87,6 +87,8 @@
 			android:summary="@string/ticker_summ"
 			android:defaultValue="true"
 		/>
+		</PreferenceCategory>
+		<PreferenceCategory android:title="@string/preftitle_inhib">
 		<EditTextPreference
 			android:id="@+id/notifyTimeout"
 			android:key="notifyTimeout"

@@ -98,33 +98,38 @@ public abstract class GenericService extends Service {
 	}
 
 	protected void notifyClient(String[] jid, String fromUserName, String message,
-			boolean showNotification, boolean silent_notification, boolean is_error, Message.Type msgType, boolean isCarbon) {
+			boolean showNotification, boolean is_error, Message.Type msgType, boolean isCarbon, String ownNick) {
 		
 		String fromJid = jid[0];
-		boolean isMuc = (msgType==Message.Type.groupchat);
+		boolean isMuc = (msgType==Message.Type.groupchat);		
+		
+		if(isMuc && ownNick != null && fromUserName.equals(ownNick)) { // Don't notify on own messages
+			Log.d(TAG, "found an own muc message, not notifying...");
+			return;
+		}
 		
 		if (!showNotification) {
 			if (is_error)
 				shortToastNotify(getString(R.string.notification_error) + " " + message);
 			// only play sound and return
 			try {
-				if (!silent_notification) {
-					Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
-					RingtoneManager.getRingtone(getApplicationContext(), sound).play();
-				}
+				Uri sound = isMuc? mConfig.notifySoundMuc : mConfig.notifySound;
+				RingtoneManager.getRingtone(getApplicationContext(), sound).play();
 			} catch (NullPointerException e) {
 				Log.e(TAG, "Could not play ringtone sound for notification: "+e);
 			}
 			return;
 		}
+		
 		mWakeLock.acquire();
 
 		// check whether we notified only recently, or if there was an own carbon message incoming recently
-		boolean notifyTimeout = System.currentTimeMillis() - fetchLastMsgDate(fromJid) > mConfig.notifyTimeout*1000;
-		boolean notifyCarbon = System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid) < mConfig.notifyInhibitCarbons*1000;
-		Log.d(TAG, System.currentTimeMillis()+"-"+fetchNewestOwnMsgDate(fromJid)+"="+(System.currentTimeMillis() - fetchNewestOwnMsgDate(fromJid))+" ?<? "+mConfig.notifyInhibitCarbons*1000);
+		long lastMsgDate = fetchLastMsgDate(fromJid);
+		long newestOwnMsgDate = fetchNewestOwnMsgDate(fromJid);
+		boolean notifyTimeout = System.currentTimeMillis() - lastMsgDate > mConfig.notifyTimeout*1000;
+		boolean notifyCarbon = System.currentTimeMillis() - newestOwnMsgDate < mConfig.notifyInhibitCarbons*1000;
 		Log.d(TAG, String.format("on message '%s' -- got system millis %d, lastMsgDate %d, lastNewOwnMsgDate %d, isCarbon %b, notifyTimout %d, inhibitCarbons %d, notifyTimeout: %b, notifyCarbon: %b", 
-				message, System.currentTimeMillis(), fetchLastMsgDate(fromJid), fetchNewestOwnMsgDate(fromJid), isCarbon, mConfig.notifyTimeout, mConfig.notifyInhibitCarbons, notifyTimeout, notifyCarbon));
+				message, System.currentTimeMillis(), lastMsgDate, newestOwnMsgDate, isCarbon, mConfig.notifyTimeout, mConfig.notifyInhibitCarbons, notifyTimeout, notifyCarbon));
 
 		
 		setNotification(fromJid, fromUserName, message, is_error, isMuc);
