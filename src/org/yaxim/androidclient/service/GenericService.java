@@ -170,11 +170,16 @@ public abstract class GenericService extends Service {
 		mNotificationCounter++;
 		notificationCount.put(fromJid, mNotificationCounter);
 		String author;
-		if (null == fromUserId || fromUserId.length() == 0) {
+		if (!isMuc && (fromUserId == null || fromUserId.length() == 0)) {
 			author = fromJid;
-		} else {
+		} else if (!isMuc) {
 			author = fromUserId;
+		} else {
+			author = fromUserId+" in "+fromJid;
 		}
+		
+		
+		
 		String title = getString(R.string.notification_message, author);
 		String ticker;
 		if ((!isMuc && mConfig.ticker) || (isMuc && mConfig.tickerMuc)) {

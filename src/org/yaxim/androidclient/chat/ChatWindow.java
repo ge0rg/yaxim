@@ -333,6 +333,7 @@ public class ChatWindow extends SherlockListActivity implements OnKeyListener,
 			//getTheme().resolveAttribute(R.attr.AllFriends, tv, true);
 			item.setIcon(R.drawable.ic_groupchat); // TODO: make themed
 			item.setTitle(R.string.Menu_userlist);
+			setCustomTitle(mWithJabberID);
 			return true;
 		} 
 		return false;
