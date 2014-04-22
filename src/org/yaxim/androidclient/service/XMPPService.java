@@ -319,7 +319,7 @@ public class XMPPService extends GenericService {
 		}
 		Notification n = new Notification(R.drawable.ic_offline, null,
 				System.currentTimeMillis());
-		n.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR | Notification.PRIORITY_MIN;
+		n.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;
 
 		Intent notificationIntent = new Intent(this, MainWindow.class);
 		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
