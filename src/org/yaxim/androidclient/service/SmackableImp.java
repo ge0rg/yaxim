@@ -557,6 +557,7 @@ public class SmackableImp implements Smackable {
 				public void connectionClosed() {
 					// TODO: fix reconnect when we got kicked by the server or SM failed!
 					//onDisconnected(null);
+					multiUserChats.clear();
 					updateConnectionState(ConnectionState.OFFLINE);
 				}
 				public void reconnectingIn(int seconds) { }
@@ -1109,16 +1110,23 @@ public class SmackableImp implements Smackable {
 						return;
 					}
 
+					// carbons are old. all others are new
+					int is_new = (cc == null) ? ChatConstants.DS_NEW : ChatConstants.DS_SENT_OR_READ;
+					if (msg.getType() == Message.Type.error)
+						is_new = ChatConstants.DS_FAILED;
+
+
 					Log.d(TAG, 
-							String.format("attempting to add message '''%s''' from %s to db, msgtype==groupchat?: %b", chatMessage, fromJID[0], msg.getType()==Message.Type.groupchat)
-							);
+							String.format("attempting to add message '''%s''' from %s to db, msgtype==groupchat?: %b",
+									chatMessage, fromJID[0], msg.getType()==Message.Type.groupchat));
 					if(msg.getType() != Message.Type.groupchat
 						|| 
 						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, msg.getPacketID(), fromJID))
 						) {
 						Log.d(TAG, "actually adding msg...");
 						int wasCarbon = (cc!=null) ? ChatConstants.MSG_CARBON : ChatConstants.MSG_NO_CARBON;
-						addChatMessageToDB(direction, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID(), wasCarbon);
+						addChatMessageToDB(direction, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID(),
+								wasCarbon);
 						if (direction == ChatConstants.INCOMING)
 							mServiceCallBack.newMessage(fromJID, chatMessage, (cc != null), msg.getType());
 						}
@@ -1314,7 +1322,7 @@ public class SmackableImp implements Smackable {
 			dbRooms.add(jid);
 			//debugLog("Found MUC Room: "+jid+" with nick "+nickname+" and pw "+password);
 			if(!joinedRooms.contains(jid)) {
-				debugLog("room isn't joined yet, i wanna join...");
+				debugLog("room " + jid + " isn't joined yet, i wanna join...");
 				joinRoom(jid, nickname, password); // TODO: make historyLen configurable
 			}
 			//debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
@@ -1523,6 +1531,7 @@ public class SmackableImp implements Smackable {
 		ArrayList<String> tmpList = new ArrayList<String>();
 		while(occIter.hasNext())
 			tmpList.add(occIter.next().split("/")[1]);
+		Collections.sort(tmpList, java.text.Collator.getInstance());
 		return (String[]) tmpList.toArray(new String[]{});
 	}
 }
