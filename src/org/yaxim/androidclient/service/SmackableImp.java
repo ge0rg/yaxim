@@ -556,6 +556,7 @@ public class SmackableImp implements Smackable {
 				public void connectionClosed() {
 					// TODO: fix reconnect when we got kicked by the server or SM failed!
 					//onDisconnected(null);
+					multiUserChats.clear();
 					updateConnectionState(ConnectionState.OFFLINE);
 				}
 				public void reconnectingIn(int seconds) { }
