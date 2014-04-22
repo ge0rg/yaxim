@@ -10,11 +10,31 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.net.Uri;
 import android.util.Log;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
 public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 	private static final String TAG = "yaxim.Configuration";
 
 	private static final String GMAIL_SERVER = "talk.google.com";
+
+	private static final HashSet<String> RECONNECT_PREFS = new HashSet<String>(Arrays.asList(
+				PreferenceConstants.JID,
+				PreferenceConstants.PASSWORD,
+				PreferenceConstants.CUSTOM_SERVER,
+				PreferenceConstants.PORT,
+				PreferenceConstants.RESSOURCE,
+				PreferenceConstants.FOREGROUND,
+				PreferenceConstants.REQUIRE_SSL,
+				PreferenceConstants.SMACKDEBUG
+			));
+	private static final HashSet<String> PRESENCE_PREFS = new HashSet<String>(Arrays.asList(
+				PreferenceConstants.MESSAGE_CARBONS,
+				PreferenceConstants.PRIORITY,
+				PreferenceConstants.STATUS_MODE,
+				PreferenceConstants.STATUS_MESSAGE
+			));
 
 	public String password;
 	public String ressource;
@@ -22,13 +42,13 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	public int priority;
 	public boolean foregroundService;
 	public boolean autoConnect;
-	public boolean autoReconnect;
 	public boolean messageCarbons;
 	public boolean reportCrash;
 	public String userName;
 	public String server;
 	public String customServer;
 	public String jabberID;
+	public boolean jid_configured;
 	public boolean require_ssl;
 
 	public String statusMode;
@@ -42,6 +62,10 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	public boolean smackdebug;
     public String theme;
     public String chatFontSize;
+    public boolean showOffline;
+
+    public boolean reconnect_required = false;
+    public boolean presence_required = false;
 
 	private final SharedPreferences prefs;
 
@@ -59,6 +83,10 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
 		Log.i(TAG, "onSharedPreferenceChanged(): " + key);
 		loadPrefs(prefs);
+		if (RECONNECT_PREFS.contains(key))
+			reconnect_required = true;
+		if (PRESENCE_PREFS.contains(key))
+			presence_required = true;
 	}
 
 	private void splitAndSetJabberID(String jid) {
@@ -85,6 +113,8 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 	}
 
 	private void loadPrefs(SharedPreferences prefs) {
+		this.jid_configured = false;
+
 		this.isLEDNotify = prefs.getBoolean(PreferenceConstants.LEDNOTIFY,
 				false);
 		this.vibraNotify = prefs.getString(
@@ -107,8 +137,6 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 
 		this.autoConnect = prefs.getBoolean(PreferenceConstants.CONN_STARTUP,
 				false);
-		this.autoReconnect = prefs.getBoolean(
-				PreferenceConstants.AUTO_RECONNECT, false);
 		this.messageCarbons = prefs.getBoolean(
 				PreferenceConstants.MESSAGE_CARBONS, true);
 
@@ -125,10 +153,11 @@ public class YaximConfiguration implements OnSharedPreferenceChangeListener {
 		this.statusMessage = prefs.getString(PreferenceConstants.STATUS_MESSAGE, "");
         this.theme = prefs.getString(PreferenceConstants.THEME, "dark");
         this.chatFontSize = prefs.getString("setSizeChat", "18");
+        this.showOffline = prefs.getBoolean(PreferenceConstants.SHOW_OFFLINE, false);
 
 		try {
-			XMPPHelper.verifyJabberID(jabberID);
-			splitAndSetJabberID(jabberID);
+			splitAndSetJabberID(XMPPHelper.verifyJabberID(jabberID));
+			this.jid_configured = true;
 		} catch (YaximXMPPAdressMalformedException e) {
 			Log.e(TAG, "Exception in getPreferences(): " + e);
 		}

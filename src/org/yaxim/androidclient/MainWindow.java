@@ -13,6 +13,7 @@ import org.yaxim.androidclient.dialogs.AddRosterItemDialog;
 import org.yaxim.androidclient.dialogs.ChangeStatusDialog;
 import org.yaxim.androidclient.dialogs.FirstStartDialog;
 import org.yaxim.androidclient.dialogs.GroupNameView;
+import org.yaxim.androidclient.preferences.AccountPrefs;
 import org.yaxim.androidclient.preferences.MainPrefs;
 import org.yaxim.androidclient.service.XMPPService;
 import org.yaxim.androidclient.util.ConnectionState;
@@ -21,6 +22,7 @@ import org.yaxim.androidclient.util.StatusMode;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -79,10 +81,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 	private Stub rosterCallback;
 	private RosterExpListAdapter rosterListAdapter;
 	private TextView mConnectingText;
-	private boolean showOffline;
-
-	private String mStatusMessage;
-	private StatusMode mStatusMode;
 
 	private ContentObserver mRosterObserver = new RosterObserver();
 	private ContentObserver mChatObserver = new ChatObserver();
@@ -104,8 +102,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 		actionBar = getSupportActionBar();
 		actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_TITLE, ActionBar.DISPLAY_SHOW_TITLE);
 		actionBar.setHomeButtonEnabled(true);
-		mConfig = new YaximConfiguration(PreferenceManager
-				.getDefaultSharedPreferences(this));
 		registerCrashReporter();
 
 		showFirstStartUpDialogIfPrefsEmpty();
@@ -117,8 +113,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 		createUICallback();
 		setupContenView();
 		registerListAdapter();
-
-		actionBar.setSubtitle(mStatusMessage);
 	}
 
 	@Override
@@ -196,16 +190,14 @@ public class MainWindow extends SherlockExpandableListActivity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		getPreferences(PreferenceManager.getDefaultSharedPreferences(this));
-		String theme = PreferenceManager.getDefaultSharedPreferences(this).getString(PreferenceConstants.THEME, "dark");
-		if (theme.equals(mTheme) == false) {
+		if (mConfig.theme.equals(mTheme) == false) {
 			// restart
 			Intent restartIntent = new Intent(this, MainWindow.class);
 			restartIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			startActivity(restartIntent);
 			finish();
 		}
-		updateRoster();
+		displayOwnStatus();
 		bindXMPPService();
 
 		YaximApplication.getApp(this).mMTM.bindDisplayActivity(this);
@@ -248,12 +240,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 				}
 			}
 			// did not find in roster, try to add
-			if (serviceAdapter != null && serviceAdapter.isAuthenticated()) {
-				new AddRosterItemDialog(this, serviceAdapter, jid).show();
-			} else {
-				showToastNotification(R.string.Global_authenticate_first);
+			if (!addToRosterDialog(jid))
 				finish();
-			}
 		}
 	}
 
@@ -297,27 +285,32 @@ public class MainWindow extends SherlockExpandableListActivity {
 		long packedPosition = info.packedPosition;
 		boolean isChild = isChild(packedPosition);
 
-		getMenuInflater().inflate(R.menu.roster_contextmenu, menu);
-
 		// get the entry name for the item
 		String menuName;
 		if (isChild) {
+			getMenuInflater().inflate(R.menu.roster_item_contextmenu, menu);
 			menuName = String.format("%s (%s)",
 				getPackedItemRow(packedPosition, RosterConstants.ALIAS),
 				getPackedItemRow(packedPosition, RosterConstants.JID));
 		} else {
 			menuName = getPackedItemRow(packedPosition, RosterConstants.GROUP);
 			if (menuName.equals(""))
-				menuName = getString(R.string.default_group);
+				return; // no options for default menu
+			getMenuInflater().inflate(R.menu.roster_group_contextmenu, menu);
 		}
 
-		// display contact menu for contacts
-		menu.setGroupVisible(R.id.roster_contextmenu_contact_menu, isChild);
-		// display group menu for non-standard group
-		menu.setGroupVisible(R.id.roster_contextmenu_group_menu, !isChild &&
-				(menuName.length() > 0));
-
 		menu.setHeaderTitle(getString(R.string.roster_contextmenu_title, menuName));
+	}
+
+	void doMarkAllAsRead(final String JID) {
+		ContentValues values = new ContentValues();
+		values.put(ChatConstants.DELIVERY_STATUS, ChatConstants.DS_SENT_OR_READ);
+
+		getContentResolver().update(ChatProvider.CONTENT_URI, values,
+				ChatProvider.ChatConstants.JID + " = ? AND "
+						+ ChatConstants.DIRECTION + " = " + ChatConstants.INCOMING + " AND "
+						+ ChatConstants.DELIVERY_STATUS + " = " + ChatConstants.DS_NEW,
+				new String[]{JID});
 	}
 
 	void removeChatHistory(final String JID) {
@@ -350,6 +343,36 @@ public class MainWindow extends SherlockExpandableListActivity {
 						}
 					})
 			.setNegativeButton(android.R.string.no, null)
+			.create().show();
+	}
+
+	boolean addToRosterDialog(String jid) {
+		if (serviceAdapter != null && serviceAdapter.isAuthenticated()) {
+			new AddRosterItemDialog(this, serviceAdapter, jid).show();
+			return true;
+		} else {
+			showToastNotification(R.string.Global_authenticate_first);
+			return false;
+		}
+	}
+
+	void rosterAddRequestedDialog(final String jid, String message) {
+		new AlertDialog.Builder(this)
+			.setTitle(R.string.subscriptionRequest_title)
+			.setMessage(getString(R.string.subscriptionRequest_text, jid, message))
+			.setPositiveButton(android.R.string.yes,
+					new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							serviceAdapter.sendPresenceRequest(jid, "subscribed");
+							addToRosterDialog(jid);
+						}
+					})
+			.setNegativeButton(android.R.string.no, 
+					new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							serviceAdapter.sendPresenceRequest(jid, "unsubscribed");
+						}
+					})
 			.create().show();
 	}
 
@@ -445,6 +468,10 @@ public class MainWindow extends SherlockExpandableListActivity {
 				startChatActivity(userJid, userName, null);
 				return true;
 
+			case R.id.roster_contextmenu_contact_mark_all_as_read:
+				doMarkAllAsRead(userJid);
+				return true;
+
 			case R.id.roster_contextmenu_contact_delmsg:
 				removeChatHistoryDialog(userJid, userName);
 				return true;
@@ -461,7 +488,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 			case R.id.roster_contextmenu_contact_request_auth:
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
-				serviceAdapter.requestAuthorizationForRosterItem(userJid);
+				serviceAdapter.sendPresenceRequest(userJid, "subscribe");
 				return true;
 
 			case R.id.roster_contextmenu_contact_change_group:
@@ -506,7 +533,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getSupportMenuInflater().inflate(R.menu.roster_options, menu);
-		actionBar.setIcon(getStatusActionIcon());
 		return true;
 	}
 
@@ -534,7 +560,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 	private int getShowHideMenuIcon() {
 		TypedValue tv = new TypedValue();
-		if (showOffline) {
+		if (mConfig.showOffline) {
 			getTheme().resolveAttribute(R.attr.OnlineFriends, tv, true);
 			return tv.resourceId;
 		}
@@ -543,36 +569,23 @@ public class MainWindow extends SherlockExpandableListActivity {
 	}
 
 	private String getShowHideMenuText() {
-		return showOffline ? getString(R.string.Menu_HideOff)
+		return mConfig.showOffline ? getString(R.string.Menu_HideOff)
 				: getString(R.string.Menu_ShowOff);
 	}
 
 	public StatusMode getStatusMode() {
-		return mStatusMode;
+		return StatusMode.fromString(mConfig.statusMode);
 	}
 
 	public String getStatusMessage() {
-		return mStatusMessage;
+		return mConfig.statusMessage;
 	}
 
 	public int getAccountPriority() {
 		return mConfig.priority;
 	}
 
-	public static String getStatusTitle(Context context, String status, String statusMessage) {
-		status = context.getString(StatusMode.fromString(status).getTextId());
-
-		if (statusMessage.length() > 0) {
-			status = status + " (" + statusMessage + ")";
-		}
-
-		return status;
-	}
-
 	public void setAndSaveStatus(StatusMode statusMode, String message, int priority) {
-		setStatus(statusMode, message);
-
-
 		SharedPreferences.Editor prefedit = PreferenceManager
 				.getDefaultSharedPreferences(this).edit();
 		// do not save "offline" to prefs, or else!
@@ -581,6 +594,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 		prefedit.putString(PreferenceConstants.STATUS_MESSAGE, message);
 		prefedit.putString(PreferenceConstants.PRIORITY, String.valueOf(priority));
 		prefedit.commit();
+
+		displayOwnStatus();
 
 		// check if we are connected and want to go offline
 		boolean needToDisconnect = (statusMode == StatusMode.offline) && isConnected();
@@ -594,17 +609,14 @@ public class MainWindow extends SherlockExpandableListActivity {
 			serviceAdapter.setStatusFromConfig();
 	}
 
-	private void setStatus(StatusMode statusMode, String message) {
-		mStatusMode = statusMode;
-		mStatusMessage = message;
-
+	private void displayOwnStatus() {
 		// This and many other things like it should be done with observer
 		actionBar.setIcon(getStatusActionIcon());
 
-		if (mStatusMessage.equals("")) {
+		if (mConfig.statusMessage.equals("")) {
 			actionBar.setSubtitle(null);
 		} else {
-			actionBar.setSubtitle(mStatusMessage);
+			actionBar.setSubtitle(mConfig.statusMessage);
 		}
 	}
 
@@ -656,15 +668,11 @@ public class MainWindow extends SherlockExpandableListActivity {
 			return true;
 
 		case R.id.menu_add_friend:
-			if (serviceAdapter.isAuthenticated()) {
-				new AddRosterItemDialog(this, serviceAdapter).show();
-			} else {
-				showToastNotification(R.string.Global_authenticate_first);
-			}
+			addToRosterDialog(null);
 			return true;
 
 		case R.id.menu_show_hide:
-			setOfflinceContactsVisibility(!showOffline);
+			setOfflinceContactsVisibility(!mConfig.showOffline);
 			updateRoster();
 			return true;
 
@@ -697,11 +705,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 	/** Sets if all contacts are shown in the roster or online contacts only. */
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB) // required for Sherlock's invalidateOptionsMenu */
 	private void setOfflinceContactsVisibility(boolean showOffline) {
-		this.showOffline = showOffline;
-		invalidateOptionsMenu();
-
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.SHOW_OFFLINE, showOffline).commit();
+		invalidateOptionsMenu();
 	}
 
 	@Override
@@ -709,37 +715,52 @@ public class MainWindow extends SherlockExpandableListActivity {
 			int groupPosition, int childPosition, long id) {
 
 		long packedPosition = ExpandableListView.getPackedPositionForChild(groupPosition, childPosition);
-		String userJid = getPackedItemRow(packedPosition, RosterConstants.JID);
-		String userName = getPackedItemRow(packedPosition, RosterConstants.ALIAS);
+		Cursor c = (Cursor)getExpandableListView().getItemAtPosition(getExpandableListView().getFlatListPosition(packedPosition));
+		String userJid = c.getString(c.getColumnIndexOrThrow(RosterConstants.JID));
+		String userName = c.getString(c.getColumnIndexOrThrow(RosterConstants.ALIAS));
 		Intent i = getIntent();
 		if (i.getAction() != null && i.getAction().equals(Intent.ACTION_SEND)) {
 			// delegate ACTION_SEND to child window and close self
 			startChatActivity(userJid, userName, i.getStringExtra(Intent.EXTRA_TEXT));
 			finish();
-		} else
-			startChatActivity(userJid, userName, null);
+		} else {
+			StatusMode s = StatusMode.values()[c.getInt(c.getColumnIndexOrThrow(RosterConstants.STATUS_MODE))];
+			if (s == StatusMode.subscribe)
+				rosterAddRequestedDialog(userJid,
+					c.getString(c.getColumnIndexOrThrow(RosterConstants.STATUS_MESSAGE)));
+			else
+				startChatActivity(userJid, userName, null);
+		}
 
 		return true;
 	}
 
-	private void setConnectingStatus(boolean isConnecting) {
-
-		String lastStatus;
-
-		if (serviceAdapter != null && !serviceAdapter.isAuthenticated() &&
-				(lastStatus = serviceAdapter.getConnectionStateString()) != null) {
+	private void updateConnectionState(ConnectionState cs) {
+		Log.d(TAG, "updateConnectionState: " + cs);
+		displayOwnStatus();
+		boolean spinTheSpinner = false;
+		switch (cs) {
+		case CONNECTING:
+		case DISCONNECTING:
+			spinTheSpinner = true;
+		case DISCONNECTED:
+		case RECONNECT_NETWORK:
+		case RECONNECT_DELAYED:
+		case OFFLINE:
+			if (cs == ConnectionState.OFFLINE) // override with "Offline" string, no error message
+				mConnectingText.setText(R.string.conn_offline);
+			else
+				mConnectingText.setText(serviceAdapter.getConnectionStateString());
 			mConnectingText.setVisibility(View.VISIBLE);
-			mConnectingText.setText(lastStatus);
-		} else
-		if (serviceAdapter == null || serviceAdapter.isAuthenticated() == false) {
-			mConnectingText.setVisibility(View.VISIBLE);
-			mConnectingText.setText(R.string.conn_offline);
-		} else
+			setSupportProgressBarIndeterminateVisibility(spinTheSpinner);
+			break;
+		case ONLINE:
 			mConnectingText.setVisibility(View.GONE);
+			setSupportProgressBarIndeterminateVisibility(false);
+		}
 	}
 	
 	public void startConnection(boolean create_account) {
-		setConnectingStatus(true);
 		xmppServiceIntent.putExtra("create_account", create_account);
 		startService(xmppServiceIntent);
 	}
@@ -747,19 +768,17 @@ public class MainWindow extends SherlockExpandableListActivity {
 	// this function changes the prefs to keep the connection
 	// according to the requested state
 	private void toggleConnection() {
+		if (!mConfig.jid_configured) {
+			startActivity(new Intent(this, AccountPrefs.class));
+			return;
+		}
 		boolean oldState = isConnected() || isConnecting();
+
 		PreferenceManager.getDefaultSharedPreferences(this).edit().
 			putBoolean(PreferenceConstants.CONN_STARTUP, !oldState).commit();
-		setSupportProgressBarIndeterminateVisibility(true);
 		if (oldState) {
-			setConnectingStatus(false);
-			(new Thread() {
-				public void run() {
-					serviceAdapter.disconnect();
-					stopService(xmppServiceIntent);
-				}
-			}).start();
-
+			serviceAdapter.disconnect();
+			stopService(xmppServiceIntent);
 		} else
 			startConnection(false);
 	}
@@ -794,9 +813,17 @@ public class MainWindow extends SherlockExpandableListActivity {
 				Log.i(TAG, "getConnectionState(): "
 						+ serviceAdapter.getConnectionState());
 				invalidateOptionsMenu();	// to load the action bar contents on time for access to icons/progressbar
-				actionBar.setIcon(getStatusActionIcon());	// refresh on orientation change
-				setConnectingStatus(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
-				setSupportProgressBarIndeterminateVisibility(serviceAdapter.getConnectionState() == ConnectionState.CONNECTING);
+				ConnectionState cs = serviceAdapter.getConnectionState();
+				updateConnectionState(cs);
+				updateRoster();
+
+				// when returning from prefs to main activity, apply new config
+				if (mConfig.reconnect_required && cs == ConnectionState.ONLINE) {
+					// login config changed, force reconnection
+					serviceAdapter.disconnect();
+					serviceAdapter.connect();
+				} else if (mConfig.presence_required && isConnected())
+					serviceAdapter.setStatusFromConfig();
 			}
 
 			public void onServiceDisconnected(ComponentName name) {
@@ -826,15 +853,14 @@ public class MainWindow extends SherlockExpandableListActivity {
 	private void createUICallback() {
 		rosterCallback = new IXMPPRosterCallback.Stub() {
 			@Override
-			public void connectionStatusChanged(final boolean isConnected,
-						final boolean willReconnect)
+			public void connectionStateChanged(final int connectionstate)
 						throws RemoteException {
 				mainHandler.post(new Runnable() {
 					@TargetApi(Build.VERSION_CODES.HONEYCOMB) // required for Sherlock's invalidateOptionsMenu */
 					public void run() {
-						Log.d(TAG, "connectionStatusChanged: " + isConnected + "/" + willReconnect);
-						setConnectingStatus(!isConnected && willReconnect);
-						setSupportProgressBarIndeterminateVisibility(false);
+						ConnectionState cs = ConnectionState.values()[connectionstate];
+						//Log.d(TAG, "connectionStatusChanged: " + cs);
+						updateConnectionState(cs);
 						invalidateOptionsMenu();
 					}
 				});
@@ -875,30 +901,21 @@ public class MainWindow extends SherlockExpandableListActivity {
 	}
 
 	private void showFirstStartUpDialogIfPrefsEmpty() {
-		SharedPreferences prefs = PreferenceManager
-				.getDefaultSharedPreferences(this);
-		String configuredJabberID = prefs
-				.getString(PreferenceConstants.JID, "");
-
-		Log.i(TAG,
-				"called showFirstStartUpDialogIfPrefsEmpty, string from pref was:"
-						+ configuredJabberID);
-		if (configuredJabberID.length() < 3) {
+		Log.i(TAG, "showFirstStartUpDialogIfPrefsEmpty, JID: "
+						+ mConfig.jabberID);
+		if (mConfig.jabberID.length() < 3) {
 			// load preference defaults
 			PreferenceManager.setDefaultValues(this, R.layout.mainprefs, false);
 			PreferenceManager.setDefaultValues(this, R.layout.accountprefs, false);
 
+			// prevent a start-up with empty JID
+			SharedPreferences prefs = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			prefs.edit().putBoolean(PreferenceConstants.CONN_STARTUP, false).commit();
+
 			// show welcome dialog
 			new FirstStartDialog(this, serviceAdapter).show();
 		}
-	}
-
-	private void getPreferences(SharedPreferences prefs) {
-		showOffline = prefs.getBoolean(PreferenceConstants.SHOW_OFFLINE, true);
-
-		setStatus(StatusMode.fromString(prefs.getString(
-				PreferenceConstants.STATUS_MODE, StatusMode.available.name())),
-				prefs.getString(PreferenceConstants.STATUS_MESSAGE, ""));
 	}
 
 	public static Intent createIntent(Context context) {
@@ -1008,7 +1025,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 
 		public void requery() {
 			String selectWhere = null;
-			if (!showOffline)
+			if (!mConfig.showOffline)
 				selectWhere = OFFLINE_EXCLUSION;
 			Cursor cursor = getContentResolver().query(RosterProvider.GROUPS_URI,
 					GROUPS_QUERY_COUNTED, selectWhere, null, RosterConstants.GROUP);
@@ -1024,7 +1041,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			String groupname = groupCursor.getString(idx);
 
 			String selectWhere = RosterConstants.GROUP + " = ?";
-			if (!showOffline)
+			if (!mConfig.showOffline)
 				selectWhere += " AND " + OFFLINE_EXCLUSION;
 			return getContentResolver().query(RosterProvider.CONTENT_URI, ROSTER_QUERY,
 				selectWhere, new String[] { groupname }, null);
@@ -1067,6 +1084,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 		 }
 
 		private int getIconForPresenceMode(int presenceMode) {
+			if (!isConnected()) // override icon if we are offline
+				presenceMode = 0;
 			return StatusMode.values()[presenceMode].getDrawableId();
 		}
 	}

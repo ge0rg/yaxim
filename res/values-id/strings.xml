@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">yaxim</string>
+
+	<!-- Connection state -->
+	<string name="conn_title">Status sambungan</string>
+	<string name="conn_connecting">Menghubungi erver</string>
+	<string name="conn_disconnecting">Disconnecting…</string>
+	<string name="conn_online">Tersambung</string>
+	<string name="conn_offline">Terputus</string>
+	<string name="conn_empty_roster">Tidak ada daftar alamat</string>
+	<string name="conn_reconnect">Mencoba lagi dalam %d detik</string>
+	<string name="conn_disconnected">Koneksi terputus</string>
+	<string name="conn_no_network">No network connection</string>
+
+	<!-- Global Strings -->
+	<string name="Global_Exit">Keluar</string>
+	<string name="Global_authenticate_first">Harus tersambung dulu</string>
+	<string name="Global_JID_hint">user@yax.im</string>
+	<!-- tooltip message when the user entered an invalid XMPP address -->
+	<string name="Global_JID_malformed">Check address format!</string>
+
+	<!-- FirstStartUpDialog -->
+	<string name="StartupDialog_Title">Selamat datang</string>
+	<string name="StartupDialog_Summary">Anda harus mengkonfigurasi Yaxim terlebih dahulu. Silahkan masukan Jabber ID dan kata sandi</string>
+	<string name="StartupDialog_pwHint">Masukkan kata sandi</string>
+	<string name="StartupDialog_Username_title">Jabber ID:</string>
+	<string name="StartupDialog_passwd_title">Kata sandi:</string>
+	<string name="StartupDialog_advanced">Lanjutan...</string>
+	<string name="StartupDialog_create_new">Daftar akun baru</string>
+
+	<!-- Notifications -->
+	<string name="notification_message">Pesan dari %s</string>
+	<string name="notification_anonymous_message">Pesan diterima</string>
+
+	<!-- Notifications -->
+	<string name="notification_error">Error while sending message!</string>
+
+	<!-- Notification Settings -->
+	<string name="preftitle_notify">Pemberitahuan Pesan</string>
+	<string name="led_title">LED berkedip</string>
+	<string name="led_summ">LED berkedip ketika ada pesan baru</string>
+	<string name="vibr_title">Getar</string>
+	<string name="vibr_summ">Bergetar ketika ada pesan baru</string>
+	<string-array name="vibr_values_displayed">
+		<item>Tidak Pernah</item>
+		<item>System preference</item>
+		<item>Selalu</item>
+	</string-array>
+	<string name="ringtone_title">Nada dering</string>
+	<string name="ringtone_summ">Nada pesan baru</string>
+	<string name="ticker_title">Lihat pesan</string>
+	<string name="ticker_summ">Tampilkan pengirim dan pesan di status</string>
+
+	<!-- Startup Setting Strings -->
+	<string name="preftitle_boot">Startup Options</string>
+	<string name="statuspopup_name">Atur status</string>
+	<string name="showOffline_summ">Always show all contacts in the roster</string>
+	<string name="showOffline_title">Show offline contacts</string>
+	<string name="foregroundService_summ">Keep yaxim in memory to ensure always-on connection (foreground service)</string>
+	<string name="foregroundService_title">Statusbar icon</string>
+
+	<string name="preftitle_debug">Debugging</string>
+	<string name="smackdebug_summ">Packet and debug output via logcat (may contain personal information)</string>
+	<string name="smackdebug_title">SMACK debugging</string>
+
+	<string name="reportcrash_title">Send crash reports</string>
+	<string name="reportcrash_summ">Send anonymous crash reports to developer</string>
+
+	<!-- Appearence Strings -->
+	<string name="preftitle_app">Tampilan</string>
+	<string name="FontChat_title">Ukuran huruf</string>
+	<string name="FontChat_summ">Atur ukuran huruf</string>
+	<string name="FontChat_dialog">Ukuran huruf</string>
+	<!--
+	<string name="FontRost_title">Roster font size</string>
+	<string name="FontRost_summ">Set roster font size</string>
+	<string name="FontRost_dialog">Roster font fize</string>
+	<string name="setFontRoster">Set roster font size</string>
+	-->
+	<string name="pref_theme">Tema</string>
+	<string-array name="pref_theme_entries">
+		<item>Gelap</item>
+		<item>Terang</item>
+	</string-array>
+	<string name="preftitle_ui">Tampilan</string>
+	<string-array name="fontSizesChat">
+		<item>kecil</item>
+		<item>normal</item>
+		<item>large</item>
+	</string-array>
+
+	<!-- Mainmenu 	-->
+	<string name="Menu_addFriend">Tambah Kontak</string>
+	<string name="Menu_ShowOff">Show Offline</string>
+	<string name="Menu_HideOff">Hide Offline</string>
+	<string name="Menu_AccSettings">Sunting Akun</string>
+	<string name="Menu_Settings">Pengaturan</string>
+	<string name="Menu_Status">Status</string>
+	<string name="Menu_connect">Sambung</string>
+	<string name="Menu_disconnect">Putus</string>
+	<string name="Menu_about">Tentang Yaxim</string>
+
+	<!-- AddFriend -->
+	<string name="addFriend_Title">Tambah kontak</string>
+	<string name="addFriend_Summ">Please enter the Jabber ID of your friend, the
+		desired screen name and choose their contact group!</string>
+	<string name="addFriend_aliasHint">Screen name</string>
+	<string name="addrosteritemaddgroupchoice">Add to a new group</string>
+	<string name="NewGroup_EditTextField_Hint">Name for the new group</string>
+
+	<!-- Roster CONTEXTMENU -->
+	<string name="roster_contextmenu_title">Options for %s</string>
+	<string name="roster_contextmenu_group_rename">Rename group</string>
+	<string name="roster_contextmenu_contact_delete">Delete Contact</string>
+	<string name="roster_contextmenu_contact_delmsg">Delete Chat History</string>
+	<string name="roster_contextmenu_contact_open_chat">Open Chat</string>
+	<string name="roster_contextmenu_contact_rename">Rename</string>
+	<string name="roster_contextmenu_contact_request_auth">Request Authorization</string>
+	<string name="roster_contextmenu_contact_change_group">Change Group</string>
+
+	<!-- Accountprefs -->
+	<string name="account_settings_login">Login Information</string>
+	<string name="account_settings_title">Account Settings</string>
+	<string name="account_options_title">Connecting Options</string>
+	<string name="account_options_advanced">Advanced Options</string>
+	<string name="connstartup_title">Connect at Startup</string>
+	<string name="connstartup_summOn">Go online when yaxim is opened</string>
+	<string name="connstartup_summOff">Do not automatically connect</string>
+	<string name="carbons_title">Message Carbons (XEP-0280)</string>
+	<string name="carbons_summ">Request message copies from your other client(s)</string>
+	<string name="account_jabberID_title">Jabber ID</string>
+	<string name="account_jabberID_sum">example: me@jabber.example.com</string>
+	<string name="account_jabberID_dialog_title">Enter your Jabber ID:</string>
+	<string name="account_jabberPW_title">Account Password</string>
+	<string name="account_jabberPW_sum">Your Jabber account password</string>
+	<string name="account_jabberPW_dialog_title">Enter password:</string>
+
+	<!-- accountprefs -->
+	<string name="account_resource_title">Client Resource</string>
+	<string name="account_resource_summ">Default: yaxim</string>
+	<string name="account_resource_dialog_title">Enter your resource:</string>
+	<string name="account_resource_hint">yaxim</string>
+	<string name="account_prio_title">Client Priority</string>
+	<string name="account_prio_summ">Default: 0 (allowed: -128 .. 127)</string>
+	<string name="account_prio_error">Allowed values: -128 .. 127</string>
+	<string name="account_prio_dialog_title">Enter your priority:</string>
+	<string name="account_port_title">Server Port</string>
+	<string name="account_port_sum">Default: 5222</string>
+	<string name="account_port_dialog_title">Enter the server port:</string>
+	<string name="account_port_hint">5222</string>
+	<string name="account_customserver_title">Custom Server</string>
+	<string name="account_customserver_summ">(Optional) alternative server hostname</string>
+	<string name="account_customserver_dialog_title">Enter server hostname:</string>
+	<string name="account_customserver_hint">host.example.com</string>
+	<string name="require_ssl_title">Require SSL/TLS</string>
+	<string name="require_ssl_summ">Always encrypt server connection</string>
+
+	<!--StatusPopUp-->
+	<string name="AddContact_SpinnerPrompt">Choose Group</string>
+	<string name="setStatusmsgHint">Your status message</string>
+	<string name="setStatusTitle">Atur status</string>
+	<string name="RenameGroup_summ">Rename group %s to:</string>
+	<string name="RenameGroup_title">Rename group</string>
+	<string name="RenameEntry_summ">Rename %1$s (%2$s) to: </string>
+	<string name="RenameEntry_title">Rename contact</string>
+	<string name="MoveRosterEntryToGroupDialog_summ">Select a group from the spinner below</string>
+	<string name="MoveRosterEntryToGroupDialog_title">Change group</string>
+	<string name="deleteRosterItem_text">Really remove %1$s (%2$s)?</string>
+	<string name="deleteRosterItem_title">Delete Contact</string>
+	<string name="deleteChatHistory_text">Really remove all messages with %1$s (%2$s)?</string>
+	<string name="deleteChatHistory_title">Delete Chat History</string>
+	<string name="subscriptionRequest_text">%1$s wants to add you as a contact: \"%2$s\"</string>
+	<string name="subscriptionRequest_title">Subscription Request</string>
+
+	<!-- CHATWINDOW -->
+	<string name="chat_from_me">Me:</string>
+	<string name="toast_connectfail_message">Connection closed!</string>
+	<string name="toast_stored_offline">The message has been stored for transmission.</string>
+	<string name="chat_enterMsgHint">Enter message</string> 
+
+	<!-- Chat menu -->
+	<string name="chatmenu_resend">Resend</string>
+
+	<!-- GPS settings -->
+	<!--
+	<string name="showGPS_title">GPS to status</string>
+	<string name="showGPS_summ_on">GPS is send to StatusMessage</string>
+	<string name="showGPS_summ_off">GPS is send to StatusMessage</string>
+	-->
+
+	<!-- About Dialog -->
+	<string name="AboutDialog_title">Tentang Yaxim</string>
+	<string name="AboutDialog_DevelopersTitle">Developers</string>
+	<string name="AboutDialog_DevelopersText">Contact the developers at http://yaxim.org or on freenode IRC: #yaxim</string>
+	<string name="AboutDialog_LicenceTitle">Licensing</string>
+	<string name="AboutDialog_Vote">Give Feedback</string>
+	<string name="AboutDialog_LicenceText">
+		This program is free software; you can redistribute
+		it and/or
+		modify it under the terms of the GNU General Public License
+		version 2
+		as published by the Free Software Foundation.
+		Link:
+		http://www.gnu.org/licenses/gpl-2.0.html\n
+		\n
+		Parts of this software are
+		provided under the MIT License:\n
+		\n
+		Copyright © 2009 Mads
+		Kristiansen, Nullwire ApS\n
+		\n
+		Permission is hereby granted, free of
+		charge, to any person obtaining
+		a copy
+		of this software and associated
+		documentation files (the
+		"Software"), to deal
+		in the Software without
+		restriction, including
+		without limitation the rights
+		to use, copy,
+		modify, merge, publish,
+		distribute, sublicense, and/or sell
+		copies of
+		the Software, and to
+		permit persons to whom the Software is
+		furnished to
+		do so, subject to
+		the following conditions:
+		\n
+		The above copyright notice
+		and this permission notice shall be
+		included in all
+		copies or
+		substantial portions of the Software.
+		\n
+		THE SOFTWARE IS PROVIDED "AS
+		IS", WITHOUT WARRANTY OF ANY KIND,
+		EXPRESS OR
+		IMPLIED, INCLUDING BUT NOT
+		LIMITED TO THE WARRANTIES OF
+		MERCHANTABILITY,
+		FITNESS FOR A PARTICULAR
+		PURPOSE AND NONINFRINGEMENT.
+		IN NO EVENT SHALL THE
+		AUTHORS OR COPYRIGHT
+		HOLDERS BE LIABLE FOR ANY
+		CLAIM, DAMAGES OR OTHER
+		LIABILITY, WHETHER IN
+		AN ACTION OF CONTRACT,
+		TORT OR OTHERWISE, ARISING FROM,
+		OUT OF OR IN
+		CONNECTION WITH THE
+		SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+		SOFTWARE.
+    </string>
+
+	<string name="status_available">Tersambung</string>
+	<string name="status_away">Away</string>
+	<string name="status_chat">Free for chat</string>
+	<string name="status_dnd">Do not disturb</string>
+	<string name="status_xa">Not available</string>
+	<string name="status_offline">Terputus</string>
+
+	<string name="translator_credits">Launchpad Contributions:
+  Wiha Sjah https://launchpad.net/~wihasjah</string>
+
+	<!-- default roster group with no name -->
+	<string name="default_group">General</string>
+
+	<!-- SEND listener popup -->
+	<string name="chooseContact">Choose contact</string>
+</resources>

@@ -110,9 +110,9 @@ public class XMPPRosterServiceAdapter {
 		}
 	}
 
-	public int getConnectionState() {
+	public ConnectionState getConnectionState() {
 		try {
-			return xmppServiceStub.getConnectionState();
+			return ConnectionState.values()[xmppServiceStub.getConnectionState()];
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -129,17 +129,14 @@ public class XMPPRosterServiceAdapter {
 	}
 
 	public boolean isAuthenticated() {
-		return getConnectionState() == ConnectionState.AUTHENTICATED;
+		return getConnectionState() == ConnectionState.ONLINE;
 	}
 
-	public void requestAuthorizationForRosterItem(String user) {
+	public void sendPresenceRequest(String user, String type) {
 		try {
-			xmppServiceStub.requestAuthorizationForRosterItem(user);
+			xmppServiceStub.sendPresenceRequest(user, type);
 		} catch (RemoteException e) {
-			e.printStackTrace();
-		} catch (NullPointerException e) {
 			e.printStackTrace();
 		}
 	}
-
 }

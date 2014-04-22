@@ -5,19 +5,21 @@ import org.yaxim.androidclient.exceptions.YaximXMPPAdressMalformedException;
 import org.yaxim.androidclient.util.PreferenceConstants;
 import org.yaxim.androidclient.util.XMPPHelper;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockPreferenceActivity;
+
 import org.yaxim.androidclient.R;
 
-public class AccountPrefs extends PreferenceActivity {
+public class AccountPrefs extends SherlockPreferenceActivity {
 
 	private SharedPreferences sharedPreference;
 
@@ -25,15 +27,17 @@ public class AccountPrefs extends PreferenceActivity {
 
 	private EditTextPreference prefPrio;
 	private EditTextPreference prefAccountID;
-	private int themedTextColor;
 
 	public void onCreate(Bundle savedInstanceState) {
 		setTheme(YaximApplication.getConfig(this).getTheme());
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.layout.accountprefs);
 
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setHomeButtonEnabled(true);
+		actionBar.setDisplayHomeAsUpEnabled(true);
+
 		sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
-		themedTextColor = XMPPHelper.getEditTextColor(this);
 
 		this.prefAccountID = (EditTextPreference) findPreference(PreferenceConstants.JID);
 		this.prefAccountID.getEditText().addTextChangedListener(
@@ -52,9 +56,9 @@ public class AccountPrefs extends PreferenceActivity {
 
 						try {
 							XMPPHelper.verifyJabberID(s.toString());
-							prefAccountID.getEditText().setTextColor(themedTextColor);
+							prefAccountID.getEditText().setError(null);
 						} catch (YaximXMPPAdressMalformedException e) {
-							prefAccountID.getEditText().setTextColor(Color.RED);
+							prefAccountID.getEditText().setError(getString(R.string.Global_JID_malformed));
 						}
 					}
 				});
@@ -88,14 +92,14 @@ public class AccountPrefs extends PreferenceActivity {
 				try {
 					prioIntValue = Integer.parseInt(s.toString());
 					if (prioIntValue <= 127 && prioIntValue >= -128) {
-						prefPrio.getEditText().setTextColor(themedTextColor);
+						prefPrio.getEditText().setError(null);
 						prefPrio.setPositiveButtonText(android.R.string.ok);
 					} else {
-						prefPrio.getEditText().setTextColor(Color.RED);
+						prefPrio.getEditText().setError(getString(R.string.account_prio_error));
 					}
 				} catch (NumberFormatException numF) {
 					prioIntValue = 0;
-					prefPrio.getEditText().setTextColor(Color.RED);
+					prefPrio.getEditText().setError(getString(R.string.account_prio_error));
 				}
 
 			}
@@ -112,6 +116,19 @@ public class AccountPrefs extends PreferenceActivity {
 
 		});
 
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(com.actionbarsherlock.view.MenuItem item) {
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			Intent intent = new Intent(this, MainPrefs.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 
 }

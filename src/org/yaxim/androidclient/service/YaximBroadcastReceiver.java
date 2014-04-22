@@ -12,7 +12,7 @@ import android.preference.PreferenceManager;
 
 
 public class YaximBroadcastReceiver extends BroadcastReceiver {
-	static final String TAG = "YaximBroadcastReceiver";
+	static final String TAG = "yaxim.BroadcastReceiver";
 	private static int networkType = -1;
 	
 	public static void initNetworkStatus(Context context) {
@@ -30,7 +30,7 @@ public class YaximBroadcastReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d(TAG, "onReceive "+intent.getAction());
+		Log.d(TAG, "onReceive " + intent);
 
 		if (intent.getAction().equals(Intent.ACTION_SHUTDOWN)) {
 			Log.d(TAG, "System shutdown, stopping yaxim.");
@@ -44,8 +44,14 @@ public class YaximBroadcastReceiver extends BroadcastReceiver {
 				return;
 
 			// refresh DNS servers from android prefs
-			org.xbill.DNS.ResolverConfig.refresh();
-			org.xbill.DNS.Lookup.refreshDefault();
+			try {
+				org.xbill.DNS.ResolverConfig.refresh();
+				org.xbill.DNS.Lookup.refreshDefault();
+			} catch (Exception e) {
+			    // sometimes refreshDefault() will cause a NetworkOnMainThreadException;
+			    // ignore and hope for the best.
+			    Log.i(TAG, "DNS init failed: " + e);
+			}
 
 			// prepare intent
 			Intent xmppServiceIntent = new Intent(context, XMPPService.class);

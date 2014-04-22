@@ -12,7 +12,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -34,7 +33,6 @@ public class FirstStartDialog extends AlertDialog implements DialogInterface.OnC
 	private EditText mEditJabberID;
 	private EditText mEditPassword;
 	private CheckBox mCreateAccount;
-	private int themedTextColor;
 
 	public FirstStartDialog(MainWindow mainWindow,
 			XMPPRosterServiceAdapter serviceAdapter) {
@@ -55,15 +53,6 @@ public class FirstStartDialog extends AlertDialog implements DialogInterface.OnC
 		mEditPassword = (EditText) group.findViewById(R.id.StartupDialog_PASSWD_EditTextField);
 		mCreateAccount = (CheckBox) group.findViewById(R.id.create_account);
 		mEditJabberID.addTextChangedListener(this);
-		TypedValue tv = new TypedValue();
-		boolean found = mainWindow.getTheme().resolveAttribute(android.R.attr.editTextColor, tv, true);
-		if (found) {
-			// SDK 11+
-			themedTextColor = mainWindow.getResources().getColor(tv.resourceId);
-		} else {
-			// SDK < 11
-			themedTextColor = mainWindow.getResources().getColor(android.R.color.primary_text_light);
-		}
 	}
 
 	public void onCreate(Bundle savedInstanceState) {
@@ -90,9 +79,18 @@ public class FirstStartDialog extends AlertDialog implements DialogInterface.OnC
 
 	private void verifyAndSavePreferences() {
 		String password = mEditPassword.getText().toString();
-		String jabberID = mEditJabberID.getText().toString();
+		String jabberID;
+		try {
+			jabberID = XMPPHelper.verifyJabberID(mEditJabberID.getText());
+		} catch (YaximXMPPAdressMalformedException e) {
+			e.printStackTrace();
+			jabberID = mEditJabberID.getText().toString();
+		}
+		String resource = String.format("%s.%08X",
+			mainWindow.getString(R.string.app_name),
+			new java.util.Random().nextInt());
 
-		savePreferences(jabberID, password);
+		savePreferences(jabberID, password, resource);
 		cancel();
 	}
 
@@ -101,10 +99,11 @@ public class FirstStartDialog extends AlertDialog implements DialogInterface.OnC
 			XMPPHelper.verifyJabberID(s);
 			mOkButton.setEnabled(true);
 			//mOkButton.setOnClickListener(this);
-			mEditJabberID.setTextColor(themedTextColor);
+			mEditJabberID.setError(null);
 		} catch (YaximXMPPAdressMalformedException e) {
 			mOkButton.setEnabled(false);
-			mEditJabberID.setTextColor(Color.RED);
+			if (s.length() > 0)
+				mEditJabberID.setError(mainWindow.getString(R.string.Global_JID_malformed));
 		}
 	}
 
@@ -115,13 +114,14 @@ public class FirstStartDialog extends AlertDialog implements DialogInterface.OnC
 	public void onTextChanged(CharSequence s, int start, int before, int count) {
 	}
 
-	private void savePreferences(String jabberID, String password) {
+	private void savePreferences(String jabberID, String password, String resource) {
 		SharedPreferences sharedPreferences = PreferenceManager
 				.getDefaultSharedPreferences(mainWindow);
 		Editor editor = sharedPreferences.edit();
 
 		editor.putString(PreferenceConstants.JID, jabberID);
 		editor.putString(PreferenceConstants.PASSWORD, password);
+		editor.putString(PreferenceConstants.RESSOURCE, resource);
 		editor.putString(PreferenceConstants.PORT, PreferenceConstants.DEFAULT_PORT);
 		editor.commit();
 	}

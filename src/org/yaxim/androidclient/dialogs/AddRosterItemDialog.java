@@ -8,7 +8,6 @@ import org.yaxim.androidclient.MainWindow;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -27,6 +26,7 @@ public class AddRosterItemDialog extends AlertDialog implements
 	private Button okButton;
 	private EditText userInputField;
 	private EditText aliasInputField;
+	private String generatedAlias = "";
 	private GroupNameView mGroupNameView;
 
 	public AddRosterItemDialog(MainWindow mainWindow,
@@ -65,12 +65,24 @@ public class AddRosterItemDialog extends AlertDialog implements
 		okButton = getButton(BUTTON_POSITIVE);
 		afterTextChanged(userInputField.getText());
 
+		aliasInputField.setText(generatedAlias);
 		userInputField.addTextChangedListener(this);
 	}
 
 	public void onClick(DialogInterface dialog, int which) {
-		mServiceAdapter.addRosterItem(userInputField.getText()
-				.toString(), aliasInputField.getText().toString(),
+		String alias = aliasInputField.getText().toString();
+		if (alias.length() == 0)
+			alias = generatedAlias;
+		String realJid;
+		try {
+			realJid = XMPPHelper.verifyJabberID(userInputField.getText());
+		} catch (YaximXMPPAdressMalformedException e) {
+			e.printStackTrace();
+			return;
+		}
+		mServiceAdapter.addRosterItem(
+				realJid,
+				alias,
 				mGroupNameView.getGroupName());
 	}
 
@@ -78,20 +90,22 @@ public class AddRosterItemDialog extends AlertDialog implements
 		try {
 			XMPPHelper.verifyJabberID(s);
 			okButton.setEnabled(true);
-			userInputField.setTextColor(XMPPHelper.getEditTextColor(mMainWindow));
+			userInputField.setError(null);
 		} catch (YaximXMPPAdressMalformedException e) {
 			okButton.setEnabled(false);
-			userInputField.setTextColor(Color.RED);
+			if (s.length() > 0)
+				userInputField.setError(mMainWindow.getString(R.string.Global_JID_malformed));
+		}
+		if (s.length() > 0) {
+			String userpart = s.toString().split("@")[0];
+			if (userpart.length() > 0) {
+				generatedAlias = XMPPHelper.capitalizeString(userpart);
+				aliasInputField.setHint(generatedAlias);
+			}
 		}
 	}
 
 	public void beforeTextChanged(CharSequence s, int start, int count,
-			int after) {
-
-	}
-
-	public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-	}
-
+			int after) {}
+	public void onTextChanged(CharSequence s, int start, int before, int count) {}
 }

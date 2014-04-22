@@ -5,17 +5,20 @@
 	<!-- Connection state -->
 	<string name="conn_title">yaxim: %s</string>
 	<string name="conn_connecting">Connecting to server…</string>
+	<string name="conn_disconnecting">Disconnecting…</string>
 	<string name="conn_online">Online</string>
 	<string name="conn_offline">Offline</string>
 	<string name="conn_empty_roster">No contacts to show!</string>
-	<string name="conn_reconnect">\nReconnect in %d seconds.</string>
+	<string name="conn_reconnect">Next connection attempt in %d seconds.</string>
 	<string name="conn_disconnected">Connection closed</string>
-	<string name="conn_networkchg">Network changed</string>
+	<string name="conn_no_network">No network connection</string>
 
 	<!-- Global Strings -->
 	<string name="Global_Exit">Exit</string>
 	<string name="Global_authenticate_first">Please connect first</string>
-	<string name="Global_JID_hint">user@jabber.example.com</string>
+	<string name="Global_JID_hint">user@yax.im</string>
+	<!-- tooltip message when the user entered an invalid XMPP address -->
+	<string name="Global_JID_malformed">Check address format!</string>
 
 	<!-- FirstStartUpDialog -->
 	<string name="StartupDialog_Title">Welcome to yaxim!</string>
@@ -29,6 +32,9 @@
 	<!-- Notifications -->
 	<string name="notification_message">Message from %s</string>
 	<string name="notification_anonymous_message">Message received</string>
+
+	<!-- Notifications -->
+	<string name="notification_error">Error while sending message!</string>
 
 	<!-- Notification Settings -->
 	<string name="preftitle_notify">Message Notification</string>
@@ -106,6 +112,7 @@
 	<!-- Roster CONTEXTMENU -->
 	<string name="roster_contextmenu_title">Options for %s</string>
 	<string name="roster_contextmenu_group_rename">Rename group</string>
+	<string name="roster_contextmenu_contact_mark_all_as_read">Mark all messages as read</string>
 	<string name="roster_contextmenu_contact_delete">Delete Contact</string>
 	<string name="roster_contextmenu_contact_delmsg">Delete Chat History</string>
 	<string name="roster_contextmenu_contact_open_chat">Open Chat</string>
@@ -121,8 +128,6 @@
 	<string name="connstartup_title">Connect at Startup</string>
 	<string name="connstartup_summOn">Go online when yaxim is opened</string>
 	<string name="connstartup_summOff">Do not automatically connect</string>
-	<string name="reconnect_title">Auto Reconnect</string>
-	<string name="reconnect_summ">Reconnect when connection drops</string>
 	<string name="carbons_title">Message Carbons (XEP-0280)</string>
 	<string name="carbons_summ">Request message copies from your other client(s)</string>
 	<string name="account_jabberID_title">Jabber ID</string>
@@ -139,6 +144,7 @@
 	<string name="account_resource_hint">yaxim</string>
 	<string name="account_prio_title">Client Priority</string>
 	<string name="account_prio_summ">Default: 0 (allowed: -128 .. 127)</string>
+	<string name="account_prio_error">Allowed values: -128 .. 127</string>
 	<string name="account_prio_dialog_title">Enter your priority:</string>
 	<string name="account_port_title">Server Port</string>
 	<string name="account_port_sum">Default: 5222</string>
@@ -165,6 +171,8 @@
 	<string name="deleteRosterItem_title">Delete Contact</string>
 	<string name="deleteChatHistory_text">Really remove all messages with %1$s (%2$s)?</string>
 	<string name="deleteChatHistory_title">Delete Chat History</string>
+	<string name="subscriptionRequest_text">%1$s wants to add you as a contact: \"%2$s\"</string>
+	<string name="subscriptionRequest_title">Subscription Request</string>
 
 	<!-- CHATWINDOW -->
 	<string name="chat_from_me">Me:</string>
