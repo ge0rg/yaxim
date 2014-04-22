@@ -1312,7 +1312,7 @@ public class SmackableImp implements Smackable {
 			dbRooms.add(jid);
 			//debugLog("Found MUC Room: "+jid+" with nick "+nickname+" and pw "+password);
 			if(!joinedRooms.contains(jid)) {
-				debugLog("room isn't joined yet, i wanna join...");
+				debugLog("room " + jid + " isn't joined yet, i wanna join...");
 				joinRoom(jid, nickname, password); // TODO: make historyLen configurable
 			}
 			//debugLog("found data in contentprovider: "+jid+" "+password+" "+nickname);
