@@ -1123,12 +1123,18 @@ public class SmackableImp implements Smackable {
 						|| 
 						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, msg.getPacketID(), fromJID))
 						) {
-						Log.d(TAG, "actually adding msg...");
-						int wasCarbon = (cc!=null) ? ChatConstants.MSG_CARBON : ChatConstants.MSG_NO_CARBON;
-						addChatMessageToDB(direction, fromJID, chatMessage, ChatConstants.DS_NEW, ts, msg.getPacketID(),
-								wasCarbon);
-						if (direction == ChatConstants.INCOMING)
-							mServiceCallBack.newMessage(fromJID, chatMessage, (cc != null), msg.getType());
+							Log.d(TAG, "actually adding msg...");
+							
+							int wasCarbon = (cc!=null) ? ChatConstants.MSG_CARBON : ChatConstants.MSG_NO_CARBON;
+							addChatMessageToDB(direction, fromJID, chatMessage, ChatConstants.DS_NEW, ts, 
+									msg.getPacketID(), wasCarbon);
+							
+							if (direction == ChatConstants.INCOMING) {
+								String ownNick = null;
+								if(msg.getType()==Message.Type.groupchat)
+									ownNick = multiUserChats.get(fromJID[0]).getNickname();
+								mServiceCallBack.newMessage(fromJID, chatMessage, msg.getType(), (cc != null), ownNick);
+							}
 						}
 					}
 				} catch (Exception e) {

@@ -2,6 +2,7 @@
 <resources>
 	<string name="app_name">yaxim</string>
 	<string name="build_version">dev</string>
+	<string name="build_revision">dev</string>
 	
 
 	<!-- Connection state -->
@@ -41,6 +42,7 @@
 	<!-- Notification Settings -->
 	<string name="preftitle_notify">Message Notification</string>
 	<string name="preftitle_notify_muc">MUC Notification</string>
+	<string name="preftitle_inhib">Notification Inhibition</string>
 	<string name="muc_highlight_title">Only notify on nickname</string>
 	<string name="muc_highlight_sum">Only notify when your nickname is mentioned in a room</string>
 	<string name="led_title">Blinking LED</string>
@@ -56,6 +58,10 @@
 	<string name="ringtone_summ">Tone for incoming messages</string>
 	<string name="ticker_title">Message preview</string>
 	<string name="ticker_summ">Show sender and message in status bar</string>
+	<string name="notifyinhibitcarbons_title">Less noticiations on carbons</string>
+	<string name="notifytimeout_title">Notification Timeout</string>
+	<string name="notifyinhibitcarbons_summ">Only notify on a received carbon if no other resource is actually active (0: always notify)</string>
+	<string name="notifytimeout_summ">Notify again only after timeout elapsed (0: no timeout)</string>
 
 	<!-- Startup Setting Strings -->
 	<string name="preftitle_boot">Startup Options</string>
@@ -283,11 +289,9 @@
 
 	<!-- SEND listener popup -->
 	<string name="chooseContact">Choose contact</string>
-	<string name="build_version"> </string>
 	<string name="Menu_testmuc">MUC-Test</string>
 	<string name="muc_add">Add Room</string>
 	<string name="muc_remove">Remove Room</string>
-    <string name="title_activity_muc_invite">Invitation to Muc</string>
     <string name="title_activity_muc_invite">Invitation to Muc</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>

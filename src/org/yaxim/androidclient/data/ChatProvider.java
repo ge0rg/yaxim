@@ -101,7 +101,9 @@ public class ChatProvider extends ContentProvider {
 		}
 
 		SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-
+		
+		Log.d(TAG, "inserting values "+values);
+		
 		long rowId = db.insert(TABLE_NAME, ChatConstants.DATE, values);
 
 		if (rowId < 0) {
