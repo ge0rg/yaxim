@@ -283,7 +283,7 @@ public class RosterProvider extends ContentProvider {
 	private static class RosterDatabaseHelper extends SQLiteOpenHelper {
 
 		private static final String DATABASE_NAME = "roster.db";
-		private static final int DATABASE_VERSION = 6;
+		private static final int DATABASE_VERSION = 7;
 
 		public RosterDatabaseHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -313,8 +313,11 @@ public class RosterProvider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + TABLE_MUCS + " ("
 					+ RosterConstants._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
 					+ RosterConstants.JID + " TEXT UNIQUE ON CONFLICT REPLACE, "
+					+ RosterConstants.ROOMNAME + " TEXT, "
+					+ RosterConstants.DESCRIPTION + " TEXT, "
 					+ RosterConstants.NICKNAME + " TEXT, "
-					+ RosterConstants.PASSWORD + " TEXT"
+					+ RosterConstants.PASSWORD + " TEXT,"
+					+ RosterConstants.AUTOJOIN + " INTEGER"
 					+ ");");
 			
 		}
@@ -328,9 +331,17 @@ public class RosterProvider extends ContentProvider {
 				db.execSQL("CREATE TABLE " + TABLE_MUCS + " ("
 						+ RosterConstants._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
 						+ RosterConstants.JID + " TEXT UNIQUE ON CONFLICT REPLACE, "
+						+ RosterConstants.ROOMNAME + " TEXT, "
+						+ RosterConstants.DESCRIPTION + " TEXT, "
 						+ RosterConstants.NICKNAME + " TEXT, "
 						+ RosterConstants.PASSWORD + " TEXT"
 						+ ");");
+			case 6:
+				db.execSQL("ALTER TABLE " + TABLE_MUCS + " ADD " + RosterConstants.ROOMNAME + " TEXT");
+				db.execSQL("UPDATE " + TABLE_MUCS + " SET " + RosterConstants.ROOMNAME + " = " + RosterConstants.JID);
+				db.execSQL("ALTER TABLE " + TABLE_MUCS + " ADD " + RosterConstants.DESCRIPTION + " TEXT");
+				db.execSQL("ALTER TABLE " + TABLE_MUCS + " ADD " + RosterConstants.AUTOJOIN + " INTEGER DEFAULT 1");
+				break;
 			default:
 				db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);
 				db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROSTER);
@@ -355,8 +366,11 @@ public class RosterProvider extends ContentProvider {
 		public static final String GROUP = "roster_group";
 		public static final String MUCS = "\uFFFF"; // XXX: hack to end up at the end of the alphabetical list
 		
+		public static final String ROOMNAME = "roomname";
 		public static final String PASSWORD = "password";
 		public static final String NICKNAME = "nickname";
+		public static final String AUTOJOIN = "autojoin";
+		public static final String DESCRIPTION = "description";
 
 		public static final String DEFAULT_SORT_ORDER = STATUS_MODE + " DESC, " + ALIAS + " COLLATE NOCASE";
 
