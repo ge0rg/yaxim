@@ -15,6 +15,7 @@ import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.dialogs.AddRosterItemDialog;
 import org.yaxim.androidclient.dialogs.ChangeStatusDialog;
+import org.yaxim.androidclient.dialogs.EditMUCDialog;
 import org.yaxim.androidclient.dialogs.FirstStartDialog;
 import org.yaxim.androidclient.dialogs.GroupNameView;
 import org.yaxim.androidclient.preferences.AccountPrefs;
@@ -532,6 +533,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 			case R.id.roster_contextmenu_contact_invite:
 				if (!isConnected()) { showToastNotification(R.string.Global_authenticate_first); return true; }
 				mucInviteDialog(userJid, userName);
+				return true;
+			case R.id.roster_contextmenu_muc_edit:
+				new EditMUCDialog(this, userJid).show();
 				return true;
 			}
 		} else {
@@ -1323,40 +1327,6 @@ public class MainWindow extends SherlockExpandableListActivity {
 			
 		}
 		
-		public void clickAddButton(Activity parent) { 
-			LayoutInflater inflater = parent.getLayoutInflater();
-			View view = inflater.inflate(R.layout.muc_new_dialog, null);
-			final EditText jidET = (EditText) view.findViewById(R.id.muc_new_jid);
-			final EditText nickET = (EditText) view.findViewById(R.id.muc_new_nick);
-			final EditText pwET = (EditText) view.findViewById(R.id.muc_new_pw);
-
-			AlertDialog.Builder builder = new AlertDialog.Builder(MainWindow.this);
-			
-			builder.setTitle("Add MUC via JID"); // TODO: make translatable
-			builder.setView(view);
-			builder.setPositiveButton("Add", new OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					String jid = jidET.getText().toString();
-					String nick = nickET.getText().toString();
-					String pw = pwET.getText().toString();
-					addRoom(jid, nick, pw);
-				}});
-			builder.setNegativeButton("Cancel", new OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					// do nothing
-				}});
-			AlertDialog dialog = builder.create();
-			dialog.show();
-		}
-		
-		public void addRoom(final String jid, final String nick, final String pw) {
-			if (ChatRoomHelper.addRoom(MainWindow.this, jid, pw, nick))
-				ChatRoomHelper.syncDbRooms();
-		}
-
-		
 		public Dialog createDialog(final Activity parent) {
 			Log.d(TAG, "crateing MucDialog with mode: "+mode);
 			AlertDialog.Builder builder = new AlertDialog.Builder(parent);
@@ -1382,10 +1352,10 @@ public class MainWindow extends SherlockExpandableListActivity {
 			}
 			
 			mucAddButton.setOnClickListener(new View.OnClickListener() {
-	             public void onClick(View v) {
-	                 clickAddButton(parent);
-	             }
-	         });
+				public void onClick(View v) {
+					new EditMUCDialog(MainWindow.this).show();
+				}
+			});
 
 			
 			mucsCursor = getContentResolver().query(RosterProvider.MUCS_URI,
@@ -1404,6 +1374,9 @@ public class MainWindow extends SherlockExpandableListActivity {
 				public void onItemClick(AdapterView<?> parent, View view,
 						int position, long id) {
 					if(mode != INVITE_DIALOG) {
+						Cursor c = (Cursor) mucsList.getItemAtPosition(position);
+						final String jid = c.getString(c.getColumnIndex(RosterConstants.JID));
+						new EditMUCDialog(MainWindow.this, jid).show();
 						return;
 					}
 					selectInviteMuc(position, id);
