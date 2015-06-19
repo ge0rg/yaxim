@@ -1181,15 +1181,11 @@ public class SmackableImp implements Smackable {
 					if (msg.getType() == Message.Type.error)
 						is_new = ChatConstants.DS_FAILED;
 
+					boolean is_muc = (msg.getType() == Message.Type.groupchat);
+					boolean is_from_me = (direction == ChatConstants.OUTGOING) ||
+						(is_muc && multiUserChats.get(fromJID[0]).getNickname().equals(fromJID[1]));
 
-					Log.d(TAG, 
-							String.format("attempting to add message '''%s''' from %s to db, msgtype==groupchat?: %b", chatMessage, fromJID[0], msg.getType()==Message.Type.groupchat)
-							);
-					if(msg.getType() != Message.Type.groupchat
-						|| 
-						(msg.getType()==Message.Type.groupchat && checkAddMucMessage(msg, msg.getPacketID(), fromJID, timestamp))
-						) {
-						Log.d(TAG, "actually adding msg...");
+					if (!is_muc || checkAddMucMessage(msg, msg.getPacketID(), fromJID, timestamp)) {
 						addChatMessageToDB(direction, fromJID, chatMessage, is_new, ts, msg.getPacketID());
 						// prevent if highlighting is enabled and message does not match
 						boolean prevent_notify = msg.getType() == Message.Type.groupchat && mConfig.highlightNickMuc &&
@@ -1197,9 +1193,9 @@ public class SmackableImp implements Smackable {
 						if (direction == ChatConstants.INCOMING && !prevent_notify)
 							mServiceCallBack.notifyMessage(fromJID, chatMessage, (cc != null), msg.getType());
 						// outgoing carbon -> clear notification by signalling 'null' message
-						if (direction == ChatConstants.OUTGOING)
+						if (is_from_me)
 							mServiceCallBack.notifyMessage(fromJID, null, true, msg.getType());
-						}
+					}
 					sendReceiptIfRequested(packet);
 				}
 				} catch (Exception e) {
