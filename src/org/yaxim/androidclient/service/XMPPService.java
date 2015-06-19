@@ -538,11 +538,11 @@ public class XMPPService extends GenericService {
 				//TypedValue tv = new TypedValue();
 				//getTheme().resolveAttribute(R.attr.AllFriends, tv, true);
 				Notification invNotify = new NotificationCompat.Builder(getApplicationContext()) // TODO: make translateable
-											 .setContentTitle("New invitation to MUC "+room)
-											 .setContentText(body)
-											 .setSmallIcon(R.drawable.ic_groupchat) // TODO: make themed		
-											 .setTicker("New invitation to Muc "+room+": "+body)
-											 .getNotification();
+						 .setContentTitle("Chat Room "+room)
+						 .setContentText(body)
+						 .setSmallIcon(R.drawable.ic_action_group_dark) // TODO: make themed		
+						 .setTicker(body)
+						 .getNotification();
 				Intent invIntent = new Intent(getApplicationContext(), MucInviteActivity.class);
 				invIntent.putExtra(MucInviteActivity.INTENT_EXTRA_BODY, body);
 				invIntent.putExtra(MucInviteActivity.INTENT_EXTRA_ROOM, room);
