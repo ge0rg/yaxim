@@ -1196,6 +1196,9 @@ public class SmackableImp implements Smackable {
 								!chatMessage.toLowerCase().contains(multiUserChats.get(fromJID[0]).getNickname().toLowerCase());
 						if (direction == ChatConstants.INCOMING && !prevent_notify)
 							mServiceCallBack.notifyMessage(fromJID, chatMessage, (cc != null), msg.getType());
+						// outgoing carbon -> clear notification by signalling 'null' message
+						if (direction == ChatConstants.OUTGOING)
+							mServiceCallBack.notifyMessage(fromJID, null, true, msg.getType());
 						}
 					sendReceiptIfRequested(packet);
 				}
