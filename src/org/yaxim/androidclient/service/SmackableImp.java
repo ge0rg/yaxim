@@ -1446,7 +1446,7 @@ public class SmackableImp implements Smackable {
 		}
 		cursor.close();
 		
-		for(String room : joinedRooms) {
+		for(String room : new HashSet<String>(joinedRooms)) {
 			if(!mucJIDs.contains(room)) {
 				quitRoom(room);
 			}
