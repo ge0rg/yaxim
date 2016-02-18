@@ -84,6 +84,7 @@ import org.yaxim.androidclient.data.YaximConfiguration;
 import org.yaxim.androidclient.data.ChatProvider.ChatConstants;
 import org.yaxim.androidclient.data.RosterProvider.RosterConstants;
 import org.yaxim.androidclient.exceptions.YaximXMPPException;
+import org.yaxim.androidclient.packet.Replace;
 import org.yaxim.androidclient.util.ConnectionState;
 import org.yaxim.androidclient.util.LogConstants;
 import org.yaxim.androidclient.util.PreferenceConstants;
@@ -160,6 +161,9 @@ public class SmackableImp implements Smackable {
 		
 		// XEP-0115 Entity Capabilities
 		pm.addExtensionProvider("c", "http://jabber.org/protocol/caps", new CapsExtensionProvider());
+
+		// XEP-0308 Last Message Correction
+		pm.addExtensionProvider("replace", Replace.NAMESPACE, new Replace.Provider());
 
 		//  MUC User
 		pm.addExtensionProvider("x","http://jabber.org/protocol/muc#user", new MUCUserProvider());
@@ -872,6 +876,18 @@ public class SmackableImp implements Smackable {
 		}			
 	}
 
+	public long getRowIdForMessage(String jid, String resource, int direction, String packet_id) {
+		// query the DB for the RowID, return -1 if packet_id does not match
+		Cursor c = mContentResolver.query(ChatProvider.CONTENT_URI, new String[] { ChatConstants._ID, ChatConstants.PACKET_ID },
+				"jid = ? AND resource = ? AND from_me = ?",
+				new String[] { jid, resource, "" + direction }, "_id DESC");
+		long result = -1;
+		if (c.moveToFirst() && c.getString(1).equals(packet_id))
+			result = c.getLong(0);
+		c.close();
+		return result;
+	}
+
 	private void setStatusOffline() {
 		ContentValues values = new ContentValues();
 		values.put(RosterConstants.STATUS_MODE, StatusMode.offline.ordinal());
@@ -1177,6 +1193,10 @@ public class SmackableImp implements Smackable {
 						return;
 					}
 
+					// obtain Last Message Correction, if present
+					Replace replace = (Replace)msg.getExtension(Replace.NAMESPACE);
+					String replace_id = (replace != null) ? replace.getId() : null;
+
 					// carbons are old. all others are new
 					int is_new = (cc == null) ? ChatConstants.DS_NEW : ChatConstants.DS_SENT_OR_READ;
 					if (msg.getType() == Message.Type.error)
@@ -1187,7 +1207,7 @@ public class SmackableImp implements Smackable {
 						(is_muc && multiUserChats.get(fromJID[0]).getNickname().equals(fromJID[1]));
 
 					if (!is_muc || checkAddMucMessage(msg, msg.getPacketID(), fromJID, timestamp)) {
-						addChatMessageToDB(direction, fromJID, chatMessage, is_new, ts, msg.getPacketID());
+						addChatMessageToDB(direction, fromJID, chatMessage, is_new, ts, msg.getPacketID(), replace_id);
 						// prevent if highlighting is enabled and message does not match
 						boolean prevent_notify = msg.getType() == Message.Type.groupchat && mConfig.highlightNickMuc &&
 								!chatMessage.toLowerCase().contains(multiUserChats.get(fromJID[0]).getNickname().toLowerCase());
@@ -1286,7 +1306,7 @@ public class SmackableImp implements Smackable {
 	}
 
 	private void addChatMessageToDB(int direction, String[] tJID,
-			String message, int delivery_status, long ts, String packetID) {
+			String message, int delivery_status, long ts, String packetID, String replaceID) {
 		ContentValues values = new ContentValues();
 
 		values.put(ChatConstants.DIRECTION, direction);
@@ -1297,13 +1317,21 @@ public class SmackableImp implements Smackable {
 		values.put(ChatConstants.DATE, ts);
 		values.put(ChatConstants.PACKET_ID, packetID);
 
+		if (replaceID != null) {
+			// obtain row id for last message with that full JID, or -1
+			long _id = getRowIdForMessage(tJID[0], tJID[1], direction, replaceID);
+			Log.d(TAG, "Replacing last message from " + tJID[0] + "/" + tJID[1] + ": " + replaceID + " -> " + packetID);
+			Uri row = Uri.withAppendedPath(ChatProvider.CONTENT_URI, "" + _id);
+			if (_id >= 0 && mContentResolver.update(row, values, null, null) == 1)
+				return;
+		}
 		mContentResolver.insert(ChatProvider.CONTENT_URI, values);
 	}
 
 	private void addChatMessageToDB(int direction, String JID,
 			String message, int delivery_status, long ts, String packetID) {
 		String[] tJID = {JID, ""};
-		addChatMessageToDB(direction, tJID, message, delivery_status, ts, packetID);
+		addChatMessageToDB(direction, tJID, message, delivery_status, ts, packetID, null);
 	}
 
 	private ContentValues getContentValuesForRosterEntry(final RosterEntry entry) {
