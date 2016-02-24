@@ -78,6 +78,7 @@ import org.jivesoftware.smackx.receipts.DeliveryReceiptManager;
 import org.jivesoftware.smackx.receipts.DeliveryReceiptRequest;
 import org.jivesoftware.smackx.receipts.ReceiptReceivedListener;
 import org.yaxim.androidclient.YaximApplication;
+import org.yaxim.androidclient.data.ChatHelper;
 import org.yaxim.androidclient.data.ChatProvider;
 import org.yaxim.androidclient.data.RosterProvider;
 import org.yaxim.androidclient.data.YaximConfiguration;
@@ -1214,8 +1215,11 @@ public class SmackableImp implements Smackable {
 						if (direction == ChatConstants.INCOMING && !prevent_notify)
 							mServiceCallBack.notifyMessage(fromJID, chatMessage, (cc != null), msg.getType());
 						// outgoing carbon -> clear notification by signalling 'null' message
-						if (is_from_me)
+						if (is_from_me) {
 							mServiceCallBack.notifyMessage(fromJID, null, true, msg.getType());
+							// TODO: MUC PMs
+							ChatHelper.markAsRead(mService, fromJID[0]);
+						}
 					}
 					sendReceiptIfRequested(packet);
 				}
