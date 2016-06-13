@@ -780,7 +780,8 @@ public class MainWindow extends SherlockExpandableListActivity {
 			startActivity(Intent.createChooser(new Intent(android.content.Intent.ACTION_SEND)
 						.setType("text/plain")
 						.putExtra(Intent.EXTRA_TEXT,
-							XMPPHelper.createInvitationLink(mConfig.jabberID)),
+							XMPPHelper.createInvitationLink(mConfig.jabberID,
+								mConfig.createInvitationCode())),
 						getString(R.string.Menu_send_invitation)));
 			return true;
 
@@ -1027,7 +1028,7 @@ public class MainWindow extends SherlockExpandableListActivity {
 			// show welcome dialog
 			showFirstStartUpDialog();
 		} else
-			XMPPHelper.setNFC(this, mConfig.jabberID);
+			XMPPHelper.setNFCInvitation(this, mConfig);
 	}
 
 	public static Intent createIntent(Context context) {
