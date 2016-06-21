@@ -1302,6 +1302,8 @@ public class SmackableImp implements Smackable {
 
 
 	private boolean checkAddMucMessage(Message msg, String packet_id, String[] fromJid, DelayInfo timestamp) {
+		String muc = fromJid[0];
+		String nick = fromJid[1];
 		if (timestamp == null)
 			return true;
 
@@ -1315,10 +1317,10 @@ public class SmackableImp implements Smackable {
 
 		if (packet_id == null) packet_id = "";
 		final String selection = "resource = ? AND (pid = ? OR date = ? OR message = ?) AND _id >= (SELECT MIN(_id) FROM chats WHERE jid = ? ORDER BY _id DESC LIMIT 50)";
-		final String[] selectionArgs = new String[] { fromJid[1], packet_id, ""+ts, msg.getBody(), fromJid[0] };
+		final String[] selectionArgs = new String[] { nick, packet_id, ""+ts, msg.getBody(), muc };
 		try {
 			Cursor cursor = mContentResolver.query(ChatProvider.CONTENT_URI, projection, selection, selectionArgs, null);
-			Log.d(TAG, "message from " + fromJid[1] + " matched " + cursor.getCount() + " items.");
+			Log.d(TAG, "message from " + nick + " matched " + cursor.getCount() + " items.");
 			boolean result = (cursor.getCount() == 0);
 			cursor.close();
 			return result;
