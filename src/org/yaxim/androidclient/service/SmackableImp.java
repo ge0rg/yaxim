@@ -1668,7 +1668,11 @@ public class SmackableImp implements Smackable {
 	@Override
 	public void sendMucMessage(String room, String message) {
 		try {
-			multiUserChats.get(room).sendMessage(message);
+			Message message = new Message(room, Message.Type.groupchat);
+			message.setBody(message);
+			addChatMessageToDB(ChatConstants.OUTGOING, room, message, ChatConstants.DS_NEW,
+					System.currentTimeMillis(), message.getPacketID());
+			mXMPPConnection.sendMessage(message);
 		} catch (XMPPException e) {
 			Log.e(TAG, "error while sending message to muc room "+room);
 			e.printStackTrace();
