@@ -1646,9 +1646,6 @@ public class SmackableImp implements Smackable {
 			cvR.put(RosterProvider.RosterConstants.STATUS_MESSAGE, "Error: " + e.getLocalizedMessage());
 			cvR.put(RosterProvider.RosterConstants.STATUS_MODE, StatusMode.offline.ordinal());
 			upsertRoster(cvR, room);
-			if(nickname == null || nickname.equals("")) {
-				return joinRoom(room, "NoNick", password);
-			}
 			return false;
 		}
 
