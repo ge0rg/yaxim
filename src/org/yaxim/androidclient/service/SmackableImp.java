@@ -223,6 +223,7 @@ public class SmackableImp implements Smackable {
 	
 	private final HashSet<String> mucJIDs = new HashSet<String>();
 	private Map<String, MultiUserChat> multiUserChats;
+	private Map<String, Long> mucLastPong;				//< per-MUC timestamp of last incoming ping result
 	private Map<String, Presence> subscriptionRequests = new HashMap<String, Presence>();
 
 
@@ -1137,15 +1138,24 @@ public class SmackableImp implements Smackable {
 		public void onReceive(Context ctx, Intent i) {
 				sendServerPing();
 				// ping all MUCs. TODO: We ignore the result for now and hope we'll get kicked
-				for (MultiUserChat muc : multiUserChats.values()) {
-					Ping ping = new Ping();
-					ping.setType(Type.GET);
-					String jid = muc.getRoom() + "/" + muc.getNickname();
-					ping.setTo(jid);
-					mPingID = ping.getPacketID();
-					debugLog("Ping: sending ping to " + jid);
-					mXMPPConnection.sendPacket(ping);
+				Iterator<MultiUserChat> muc_it = multiUserChats.values().iterator();
+				while (muc_it.hasNext()) {
+					MultiUserChat muc = muc_it.next();
+					Long lastPong = mucLastPong.get(muc.getRoom());
+					if (lastPong != null && (System.currentTimeMillis() - lastPong) > 2*PACKET_TIMEOUT) {
+						debugLog("Ping timeout from " + muc.getRoom());
+						muc_it.remove();
+					} else {
+						Ping ping = new Ping();
+						ping.setType(Type.GET);
+						String jid = muc.getRoom() + "/" + muc.getNickname();
+						ping.setTo(jid);
+						mPingID = ping.getPacketID();
+						debugLog("Ping: sending ping to " + jid);
+						mXMPPConnection.sendPacket(ping);
+					}
 				}
+				syncDbRooms();
 
 		}
 	}
@@ -1169,8 +1179,17 @@ public class SmackableImp implements Smackable {
 			public void processPacket(Packet packet) {
 				if (packet == null) return;
 
+				if (packet instanceof Ping) {
+					Ping ping = (Ping)packet;
+					String from_bare = getBareJID(ping.getFrom());
+					Log.d(TAG, "got PingPong" + ping.toXML());
+					// check for ping error or RESULT
+					if (ping.getType() != Type.GET && mucJIDs.contains(from_bare))
+						mucLastPong.put(from_bare, System.currentTimeMillis());
+				}
 				if (mPingID != null && mPingID.equals(packet.getPacketID()))
 					gotServerPong(packet.getPacketID());
+
 			}
 
 		};
