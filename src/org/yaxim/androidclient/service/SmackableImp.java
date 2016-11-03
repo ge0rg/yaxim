@@ -1287,7 +1287,7 @@ public class SmackableImp implements Smackable {
 
 					boolean is_muc = (msg.getType() == Message.Type.groupchat);
 					boolean is_from_me = (direction == ChatConstants.OUTGOING) ||
-						(is_muc && multiUserChats.get(fromJID[0]).getNickname().equals(fromJID[1]));
+						(is_muc && multiUserChats.contains(fromJID[0]) && multiUserChats.get(fromJID[0]).getNickname().equals(fromJID[1]));
 
 					if (!is_muc || checkAddMucMessage(msg, msg.getPacketID(), fromJID, timestamp)) {
 						addChatMessageToDB(direction, fromJID, chatMessage, is_new, ts, msg.getPacketID(), replace_id);
