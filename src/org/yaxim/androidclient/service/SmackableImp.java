@@ -221,9 +221,10 @@ public class SmackableImp implements Smackable {
 	private PongTimeoutAlarmReceiver mPongTimeoutAlarmReceiver = new PongTimeoutAlarmReceiver();
 	private BroadcastReceiver mPingAlarmReceiver = new PingAlarmReceiver();
 	
-	private final HashSet<String> mucJIDs = new HashSet<String>();
+	private final HashSet<String> mucJIDs = new HashSet<String>();	//< all configured MUCs, joined or not
 	private Map<String, MultiUserChat> multiUserChats;
-	private Map<String, Long> mucLastPong;				//< per-MUC timestamp of last incoming ping result
+	private long mucLastPing = 0;
+	private Map<String, Long> mucLastPong = new HashMap<String, Long>();	//< per-MUC timestamp of last incoming ping result
 	private Map<String, Presence> subscriptionRequests = new HashMap<String, Presence>();
 
 
@@ -606,6 +607,8 @@ public class SmackableImp implements Smackable {
 					// here:
 					if (!mStreamHandler.isResumePossible()) {
 						multiUserChats.clear();
+						mucLastPong.clear();
+						mucLastPing = 0;
 					}
 					onDisconnected(e);
 				}
@@ -613,6 +616,8 @@ public class SmackableImp implements Smackable {
 					// TODO: fix reconnect when we got kicked by the server or SM failed!
 					//onDisconnected(null);
 					multiUserChats.clear();
+					mucLastPong.clear();
+					mucLastPing = 0;
 					updateConnectionState(ConnectionState.OFFLINE);
 				}
 				public void reconnectingIn(int seconds) { }
@@ -1137,14 +1142,22 @@ public class SmackableImp implements Smackable {
 	private class PingAlarmReceiver extends BroadcastReceiver {
 		public void onReceive(Context ctx, Intent i) {
 				sendServerPing();
-				// ping all MUCs. TODO: We ignore the result for now and hope we'll get kicked
+				// ping all MUCs. if no ping was received since last attempt, /cycle
 				Iterator<MultiUserChat> muc_it = multiUserChats.values().iterator();
+				long ts = System.currentTimeMillis();
+				ContentValues cvR = new ContentValues();
+				cvR.put(RosterProvider.RosterConstants.STATUS_MESSAGE, "Ping timeout");
+				cvR.put(RosterProvider.RosterConstants.STATUS_MODE, StatusMode.dnd.ordinal());
+				cvR.put(RosterProvider.RosterConstants.GROUP, RosterProvider.RosterConstants.MUCS);
 				while (muc_it.hasNext()) {
 					MultiUserChat muc = muc_it.next();
+					if (!muc.isJoined())
+						continue;
 					Long lastPong = mucLastPong.get(muc.getRoom());
-					if (lastPong != null && (System.currentTimeMillis() - lastPong) > 2*PACKET_TIMEOUT) {
+					if (mucLastPing > 0 && (lastPong == null || lastPong < mucLastPing)) {
 						debugLog("Ping timeout from " + muc.getRoom());
-						muc_it.remove();
+						muc.leave();
+						upsertRoster(cvR, muc.getRoom());
 					} else {
 						Ping ping = new Ping();
 						ping.setType(Type.GET);
@@ -1156,6 +1169,7 @@ public class SmackableImp implements Smackable {
 					}
 				}
 				syncDbRooms();
+				mucLastPing = ts;
 
 		}
 	}
@@ -1179,13 +1193,14 @@ public class SmackableImp implements Smackable {
 			public void processPacket(Packet packet) {
 				if (packet == null) return;
 
-				if (packet instanceof Ping) {
-					Ping ping = (Ping)packet;
+				if (packet instanceof IQ && packet.getFrom() != null) {
+					IQ ping = (IQ)packet;
 					String from_bare = getBareJID(ping.getFrom());
-					Log.d(TAG, "got PingPong" + ping.toXML());
 					// check for ping error or RESULT
-					if (ping.getType() != Type.GET && mucJIDs.contains(from_bare))
+					if (ping.getType() != Type.GET && mucJIDs.contains(from_bare)) {
+						Log.d(TAG, "Ping: got response from MUC " + from_bare);
 						mucLastPong.put(from_bare, System.currentTimeMillis());
+					}
 				}
 				if (mPingID != null && mPingID.equals(packet.getPacketID()))
 					gotServerPong(packet.getPacketID());
@@ -1371,6 +1386,7 @@ public class SmackableImp implements Smackable {
 
 	private void handleKickedFromMUC(String room, boolean banned, String actor, String reason) {
 		multiUserChats.remove(room);
+		mucLastPong.remove(room);
 		ContentValues cvR = new ContentValues();
 		String message;
 		if (actor != null && actor.length() > 0)
@@ -1737,6 +1753,7 @@ public class SmackableImp implements Smackable {
 		MultiUserChat muc = multiUserChats.get(room); 
 		muc.leave();
 		multiUserChats.remove(room);
+		mucLastPong.remove(room);
 		mContentResolver.delete(RosterProvider.CONTENT_URI, "jid LIKE ?", new String[] {room});
 	}
 
