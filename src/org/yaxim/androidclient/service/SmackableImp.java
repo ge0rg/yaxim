@@ -634,7 +634,7 @@ public class SmackableImp implements Smackable {
 					AccountManager am = new AccountManager(mXMPPConnection);
 					am.createAccount(mConfig.userName, mConfig.password);
 				}
-				mXMPPConnection.login(mConfig.userName, mConfig.password,
+				mXMPPConnection.login(StringUtils.parseName(mConfig.userName), mConfig.password,
 						mConfig.ressource);
 			}
 			Log.d(TAG, "SM: can resume = " + mStreamHandler.isResumePossible() + " needbind=" + need_bind);
