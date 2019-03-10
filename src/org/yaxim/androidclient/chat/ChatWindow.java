@@ -599,8 +599,8 @@ public class ChatWindow extends ThemedActivity implements OnKeyListener,
 		case R.id.roster_contextmenu_send_image:
 		case R.id.roster_contextmenu_send_file:
 			if (!mChatServiceAdapter.isServiceAuthenticated()) { showToastNotification(R.string.Global_authenticate_first); return true; }
-			//runPermissionAction(requestIdForMenuId(item.getItemId()));
-			requestStoragePermissionAndRun(requestIdForMenuId(item.getItemId()));
+			runPermissionAction(requestIdForMenuId(item.getItemId()));
+			//requestStoragePermissionAndRun(requestIdForMenuId(item.getItemId()));
 			return true;
 
 		// items that require an authenticated connection
