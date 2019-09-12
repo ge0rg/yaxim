@@ -142,7 +142,7 @@ public class ChangePasswordDialog extends AlertDialog implements
 
 		mPasswordWarning.setVisibility(mChangeOnServer.isChecked() ? View.GONE : View.VISIBLE);
 
-		boolean is_ok = (mEditPassword.length() >= 6);
+		boolean is_ok = (mEditPassword.length() == 0) || (mEditPassword.length() >= 6);
 		// TODO: check old password length and match
 		mEditPassword.setError((is_ok || mEditPassword.length() == 0) ?
 				null : mContext.getString(R.string.StartupDialog_error_password));

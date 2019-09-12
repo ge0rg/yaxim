@@ -246,6 +246,8 @@ public class SmackableImp implements Smackable {
 		SmackConfiguration.DEBUG = mConfig.smackdebug;
 		if (mConfig.require_ssl)
 			cb.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
+		if (TextUtils.isEmpty(mConfig.password))
+			cb.performSaslAnonymousAuthentication();
 
 		// register MemorizingTrustManager for XMPP and HTTPS
 		try {
